@@ -81,13 +81,6 @@ CircuitReader::CircuitReader(
 	parseAndEval(arithFilepath, inputsFilepath);
 	constructCircuit(arithFilepath);
 	mapValuesToProtoboard();
-
-	wireLinearCombinations.clear();
-	wireValues.clear();
-	variables.clear();
-	variableMap.clear();
-	zeropMap.clear();
-	zeroPwires.clear();
 }
 
 void CircuitReader::parseAndEval(char* arithFilepath, char* inputsFilepath) {
@@ -112,8 +105,6 @@ void CircuitReader::parseAndEval(char* arithFilepath, char* inputsFilepath) {
 	}
 
 	wireValues.resize(numWires);
-	wireUseCounters.resize(numWires);
-	wireLinearCombinations.resize(numWires);
 
 	if (!inputfs.good()) {
 		printf("Unable to open input file %s \n", inputsFilepath);
@@ -159,18 +150,20 @@ void CircuitReader::parseAndEval(char* arithFilepath, char* inputsFilepath) {
 
 		if (line[0] == '#') {
 			continue;
-		} else if (1 == sscanf(line.c_str(), "input %u", &wireId)) {
+		}
+		else if (1 == sscanf(line.c_str(), "input %u", &wireId)) {
 			numInputs++;
-			inputWireIds.push_back(wireId);
-		} else if (1 == sscanf(line.c_str(), "nizkinput %u", &wireId)) {
+			varNew(wireId, "input");
+		}
+		else if (1 == sscanf(line.c_str(), "nizkinput %u", &wireId)) {
 			numNizkInputs++;
-			nizkWireIds.push_back(wireId);
-		} else if (1 == sscanf(line.c_str(), "output %u", &wireId)) {
+			varNew(wireId, "nizkinput");
+		}
+		else if (1 == sscanf(line.c_str(), "output %u", &wireId)) {
 			numOutputs++;
-			outputWireIds.push_back(wireId);
-			wireUseCounters[wireId]++;
-		} else if (5
-				== sscanf(line.c_str(), "%s in %u <%[^>]> out %u <%[^>]>", type,
+			varNew(wireId, "output");
+		}
+		else if (5 == sscanf(line.c_str(), "%s in %u <%[^>]> out %u <%[^>]>", type,
 						&numGateInputs, inputStr, &numGateOutputs, outputStr)) {
 
 			istringstream iss_i(inputStr, istringstream::in);
@@ -178,7 +171,6 @@ void CircuitReader::parseAndEval(char* arithFilepath, char* inputsFilepath) {
 			std::vector<Wire> outWires;
 			Wire inWireId;
 			while (iss_i >> inWireId) {
-				wireUseCounters[inWireId]++;
 				inValues.push_back(wireValues[inWireId]);
 			}
 			readIds(outputStr, outWires);
@@ -187,30 +179,39 @@ void CircuitReader::parseAndEval(char* arithFilepath, char* inputsFilepath) {
 			FieldT constant;
 			if (strcmp(type, "add") == 0) {
 				opcode = ADD_OPCODE;
-			} else if (strcmp(type, "mul") == 0) {
+			}
+			else if (strcmp(type, "mul") == 0) {
 				opcode = MUL_OPCODE;
-			} else if (strcmp(type, "xor") == 0) {
+			}
+			else if (strcmp(type, "xor") == 0) {
 				opcode = XOR_OPCODE;
-			} else if (strcmp(type, "or") == 0) {
+			}
+			else if (strcmp(type, "or") == 0) {
 				opcode = OR_OPCODE;
-			} else if (strcmp(type, "assert") == 0) {
-				wireUseCounters[outWires[0]]++;
+			}
+			else if (strcmp(type, "assert") == 0) {
 				opcode = CONSTRAINT_OPCODE;
-			} else if (strcmp(type, "pack") == 0) {
+			}
+			else if (strcmp(type, "pack") == 0) {
 				opcode = PACK_OPCODE;
-			} else if (strcmp(type, "zerop") == 0) {
+			}
+			else if (strcmp(type, "zerop") == 0) {
 				opcode = NONZEROCHECK_OPCODE;
-			} else if (strcmp(type, "split") == 0) {
+			}
+			else if (strcmp(type, "split") == 0) {
 				opcode = SPLIT_OPCODE;
-			} else if (strstr(type, "const-mul-neg-")) {
+			}
+			else if (strstr(type, "const-mul-neg-")) {
 				opcode = MULCONST_OPCODE;
 				char* constStr = type + sizeof("const-mul-neg-") - 1;
 				constant = readFieldElementFromHex(constStr) * negOneElement;
-			} else if (strstr(type, "const-mul-")) {
+			}
+			else if (strstr(type, "const-mul-")) {
 				opcode = MULCONST_OPCODE;
 				char* constStr = type + sizeof("const-mul-") - 1;
 				constant = readFieldElementFromHex(constStr);
-			} else {
+			}
+			else {
 				printf("Error: unrecognized line: %s\n", line.c_str());
 				exit(-1);
 			}
@@ -221,37 +222,44 @@ void CircuitReader::parseAndEval(char* arithFilepath, char* inputsFilepath) {
 				for (auto &v : inValues)
 					sum += v;
 				wireValues[outWires[0]] = sum;
-			} else if (opcode == MUL_OPCODE) {
+			}
+			else if (opcode == MUL_OPCODE) {
 				wireValues[outWires[0]] = inValues[0] * inValues[1];
-			} else if (opcode == XOR_OPCODE) {
+			}
+			else if (opcode == XOR_OPCODE) {
 				wireValues[outWires[0]] =
 						(inValues[0] == inValues[1]) ? zeroElement : oneElement;
-			} else if (opcode == OR_OPCODE) {
+			}
+			else if (opcode == OR_OPCODE) {
 				wireValues[outWires[0]] =
 						(inValues[0] == zeroElement
 								&& inValues[1] == zeroElement) ?
 								zeroElement : oneElement;
-			} else if (opcode == NONZEROCHECK_OPCODE) {
-				wireValues[outWires[1]] =
-						(inValues[0] == zeroElement) ? zeroElement : oneElement;
-			} else if (opcode == PACK_OPCODE) {
-				FieldT sum, coeff;
+			}
+			else if (opcode == NONZEROCHECK_OPCODE) {
+				wireValues[outWires[1]] = (inValues[0] == zeroElement) ? zeroElement : oneElement;
+			}
+			else if (opcode == PACK_OPCODE) {
+				FieldT sum;
 				FieldT two = oneElement;
 				for (auto &v : inValues) {
 					sum += two * v;
 					two += two;
 				}
 				wireValues[outWires[0]] = sum;
-			} else if (opcode == SPLIT_OPCODE) {
+			}
+			else if (opcode == SPLIT_OPCODE) {
 				int size = outWires.size();
 				FieldT& inVal = inValues[0];
 				for (int i = 0; i < size; i++) {
 					wireValues[outWires[i]] = inVal.as_bigint().test_bit(i);
 				}
-			} else if (opcode == MULCONST_OPCODE) {
+			}
+			else if (opcode == MULCONST_OPCODE) {
 				wireValues[outWires[0]] = constant * inValues[0];
 			}
-		} else {
+		}
+		else {
 			printf("Error: unrecognized line: %s\n", line.c_str());
 			assert(0);
 		}
@@ -268,29 +276,6 @@ void CircuitReader::constructCircuit(char* arithFilepath) {
 	cout << "Translating Constraints ... " << endl;
 	unsigned int i;
 
-	currentVariableIdx = currentLinearCombinationIdx = 0;
-	for (i = 0; i < numInputs; i++) {
-		VariableT v;
-		v.allocate(pb, "input");
-		variables.push_back(v);
-		variableMap[inputWireIds[i]] = currentVariableIdx;
-		currentVariableIdx++;
-	}
-	for (i = 0; i < numOutputs; i++) {
-		VariableT v;
-		v.allocate(pb, "output");
-		variables.push_back(v);
-		variableMap[outputWireIds[i]] = currentVariableIdx;
-		currentVariableIdx++;
-	}
-	for (i = 0; i < numNizkInputs; i++) {
-		VariableT v;
-		v.allocate(pb, "nizk input");
-		variables.push_back(v);
-		variableMap[nizkWireIds[i]] = currentVariableIdx;
-		currentVariableIdx++;
-	}
-
 	char type[200];
 	char* inputStr;
 	char* outputStr;
@@ -304,7 +289,7 @@ void CircuitReader::constructCircuit(char* arithFilepath) {
 		exit(5);
 	}
 
-	// Parse the circuit: few lines were imported from Pinocchio's code.
+	enter_block("Translating constraints");
 
 	getline(ifs2, line);
 	sscanf(line.c_str(), "total %d", &numWires);
@@ -312,9 +297,6 @@ void CircuitReader::constructCircuit(char* arithFilepath) {
 	int lineCount = 0;
 	while (getline(ifs2, line)) {
 		lineCount++;
-//		if (lineCount % 100000 == 0) {
-//			printf("At Line:: %d\n", lineCount);
-//		}
 
 		if (line.length() == 0) {
 			continue;
@@ -327,106 +309,117 @@ void CircuitReader::constructCircuit(char* arithFilepath) {
 			if (strcmp(type, "add") == 0) {
 				assert(numGateOutputs == 1);
 				handleAddition(inputStr, outputStr);
-			} else if (strcmp(type, "mul") == 0) {
+			}
+			else if (strcmp(type, "mul") == 0) {
 				assert(numGateInputs == 2 && numGateOutputs == 1);
 				addMulConstraint(inputStr, outputStr);
-			} else if (strcmp(type, "xor") == 0) {
+			}
+			else if (strcmp(type, "xor") == 0) {
 				assert(numGateInputs == 2 && numGateOutputs == 1);
 				addXorConstraint(inputStr, outputStr);
-			} else if (strcmp(type, "or") == 0) {
+			}
+			else if (strcmp(type, "or") == 0) {
 				assert(numGateInputs == 2 && numGateOutputs == 1);
 				addOrConstraint(inputStr, outputStr);
-			} else if (strcmp(type, "assert") == 0) {
+			}
+			else if (strcmp(type, "assert") == 0) {
 				assert(numGateInputs == 2 && numGateOutputs == 1);
 				addAssertionConstraint(inputStr, outputStr);
-			} else if (strstr(type, "const-mul-neg-")) {
+			}
+			else if (strstr(type, "const-mul-neg-")) {
 				assert(numGateInputs == 1 && numGateOutputs == 1);
 				handleMulNegConst(type, inputStr, outputStr);
-			} else if (strstr(type, "const-mul-")) {
+			}
+			else if (strstr(type, "const-mul-")) {
 				assert(numGateInputs == 1 && numGateOutputs == 1);
 				handleMulConst(type, inputStr, outputStr);
-			} else if (strcmp(type, "zerop") == 0) {
+			}
+			else if (strcmp(type, "zerop") == 0) {
 				assert(numGateInputs == 1 && numGateOutputs == 2);
 				addNonzeroCheckConstraint(inputStr, outputStr);
-			} else if (strstr(type, "split")) {
+			}
+			else if (strstr(type, "split")) {
 				assert(numGateInputs == 1);
 				addSplitConstraint(inputStr, outputStr, numGateOutputs);
-			} else if (strstr(type, "pack")) {
+			}
+			else if (strstr(type, "pack")) {
 				assert(numGateOutputs == 1);
 				addPackConstraint(inputStr, outputStr, numGateInputs);
 			}
-		} else {
+		}
+		else {
 //			assert(0);
 		}
 		delete[] inputStr;
 		delete[] outputStr;
-		clean();
 	}
 
 	ifs2.close();
 
-	printf("\tConstraint translation done\n");
+	leave_block("Translating constraints");
 }
 
-void CircuitReader::mapValuesToProtoboard() {
-
-	int zeropGateIndex = 0;
-	for (WireMap::iterator iter = variableMap.begin();
-			iter != variableMap.end(); ++iter) {
-		Wire wireId = iter->first;
-		pb.val(variables[variableMap[wireId]]) = wireValues[wireId];
-		if (zeropMap.find(wireId) != zeropMap.end()) {
-			auto l = *zeroPwires[zeropGateIndex++];
-			if (pb.lc_val(l) == 0) {
-				pb.val(variables[zeropMap[wireId]]) = 0;
-			} else {
-				pb.val(variables[zeropMap[wireId]]) = pb.lc_val(l).inverse();
-			}
-		}
+void CircuitReader::mapValuesToProtoboard()
+{
+	for( auto& iter : variableMap )
+	{
+		pb.val(iter.second) = wireValues[iter.first];
 	}
+
+	for( auto& item : zerop_items ) {
+		auto& X = wireGet(item.in_wire_id);
+		pb.val(item.aux_var) = pb.lc_val(X).inverse();
+	}
+
 	if (!pb.is_satisfied()) {
 		printf("Protoboard Not Satisfied");
 		assert(0);
 	}
+
 	printf("Assignment of values done .. \n");
-
 }
 
-int CircuitReader::find(Wire wireId, LinearCombinationPtr& lc,
-		bool intentionToEdit) {
 
-	LinearCombinationPtr p = wireLinearCombinations[wireId];
-	if (p) {
-		wireUseCounters[wireId]--;
-		if (wireUseCounters[wireId] == 0) {
-			toClean.push_back(wireId);
-			lc = p;
-		} else {
-			if (intentionToEdit) {
-				lc = make_shared<LinearCombination>(*p);
-			} else {
-				lc = p;
-			}
-		}
-		return 1;
-	} else {
-		wireUseCounters[wireId]--;
-		lc = make_shared<LinearCombination>(
-				LinearCombination(variables[variableMap[wireId]]));
-		if (wireUseCounters[wireId] == 0) {
-			toClean.push_back(wireId);
-		}
-		return 2;
+bool CircuitReader::wireExists( Wire wire_id )
+{
+	return wireLC.find(wire_id) != wireLC.end();
+}
+
+
+LinearCombination& CircuitReader::wireGet( Wire wire_id )
+{
+	if( ! wireExists(wire_id) ) {
+		auto& v = varGet(wire_id);
+		wireLC.emplace(wire_id, LinearCombination(v));
 	}
+
+	return wireLC[wire_id];
 }
 
-void CircuitReader::clean() {
 
-	for (Wire wireId : toClean) {
-		wireLinearCombinations[wireId].reset();
+bool CircuitReader::varExists( Wire wire_id )
+{
+	return variableMap.find(wire_id) != variableMap.end();
+}
+
+
+VariableT& CircuitReader::varNew( Wire wire_id, const std::string &annotation )
+{
+	VariableT v;
+	v.allocate(this->pb, annotation);
+	variableMap.emplace(wire_id, v);
+	return variableMap[wire_id];
+}
+
+
+VariableT& CircuitReader::varGet( Wire wire_id, const std::string &annotation )
+{
+	if ( ! varExists(wire_id) ) {
+		return varNew(wire_id, annotation);
 	}
-	toClean.clear();
+	return variableMap[wire_id];
 }
+
 
 void CircuitReader::addMulConstraint(char* inputStr, char* outputStr) {
 
@@ -438,20 +431,11 @@ void CircuitReader::addMulConstraint(char* inputStr, char* outputStr) {
 	istringstream iss_o(outputStr, istringstream::in);
 	iss_o >> outputWireId;
 
-	LinearCombinationPtr l1, l2;
-	find(inWireId1, l1);
-	find(inWireId2, l2);
+	auto& l1 = wireGet(inWireId1);
+	auto& l2 = wireGet(inWireId2);
+	auto& outvar = varGet(outputWireId, "mul out");
 
-	if (variableMap.find(outputWireId) == variableMap.end()) {
-		VariableT v;
-		v.allocate(pb, "mul out");
-		variables.push_back(v);
-		variableMap[outputWireId] = currentVariableIdx;
-		pb.add_r1cs_constraint(ConstraintT(*l1, *l2, variables[currentVariableIdx]));
-		currentVariableIdx++;
-	} else {
-		pb.add_r1cs_constraint(ConstraintT(*l1, *l2, variables[variableMap[outputWireId]]));
-	}
+	pb.add_r1cs_constraint(ConstraintT(l1, l2, outvar));
 }
 
 void CircuitReader::addXorConstraint(char* inputStr, char* outputStr) {
@@ -464,24 +448,11 @@ void CircuitReader::addXorConstraint(char* inputStr, char* outputStr) {
 	istringstream iss_o(outputStr, istringstream::in);
 	iss_o >> outputWireId;
 
-	LinearCombinationPtr lp1, lp2;
-	find(inWireId1, lp1);
-	find(inWireId2, lp2);
-	LinearCombination l1, l2;
-	l1 = *lp1;
-	l2 = *lp2;
-	if (variableMap.find(outputWireId) == variableMap.end()) {
-		VariableT v;
-		v.allocate(pb, "xor out");
-		variables.push_back(v);
-		variableMap[outputWireId] = currentVariableIdx;
-		pb.add_r1cs_constraint(ConstraintT(2 * l1, l2,
-				l1 + l2 - variables[currentVariableIdx]));
-		currentVariableIdx++;
-	} else {
-		pb.add_r1cs_constraint(ConstraintT(2 * l1, l2,
-				l1 + l2 - variables[variableMap[outputWireId]]));
-	}
+	auto& l1 = wireGet(inWireId1);
+	auto& l2 = wireGet(inWireId2);
+	auto& outvar = varGet(outputWireId, "xor out");
+
+	pb.add_r1cs_constraint(ConstraintT(2 * l1, l2, l1 + l2 - outvar));
 }
 
 void CircuitReader::addOrConstraint(char* inputStr, char* outputStr) {
@@ -494,23 +465,11 @@ void CircuitReader::addOrConstraint(char* inputStr, char* outputStr) {
 	istringstream iss_o(outputStr, istringstream::in);
 	iss_o >> outputWireId;
 
-	LinearCombinationPtr lp1, lp2;
-	find(inWireId1, lp1);
-	find(inWireId2, lp2);
-	LinearCombination l1, l2;
-	l1 = *lp1;
-	l2 = *lp2;
-	if (variableMap.find(outputWireId) == variableMap.end()) {
-		VariableT v;
-		v.allocate(pb, "or out");
-		variables.push_back(v);
-		variableMap[outputWireId] = currentVariableIdx;
-		pb.add_r1cs_constraint(ConstraintT(l1, l2, l1 + l2 - variables[currentVariableIdx]));
-		currentVariableIdx++;
-	} else {
-		pb.add_r1cs_constraint(ConstraintT(l1, l2,
-				l1 + l2 - variables[variableMap[outputWireId]]));
-	}
+	auto& l1 = wireGet(inWireId1);
+	auto& l2 = wireGet(inWireId2);
+	auto& outvar = varGet(outputWireId, "or out");
+
+	pb.add_r1cs_constraint(ConstraintT(l1, l2, l1 + l2 - outvar));
 }
 
 void CircuitReader::addAssertionConstraint(char* inputStr, char* outputStr) {
@@ -523,17 +482,11 @@ void CircuitReader::addAssertionConstraint(char* inputStr, char* outputStr) {
 	istringstream iss_o(outputStr, istringstream::in);
 	iss_o >> outputWireId;
 
-	LinearCombinationPtr lp1, lp2, lp3;
-	find(inWireId1, lp1);
-	find(inWireId2, lp2);
-	find(outputWireId, lp3);
+	auto& l1 = wireGet(inWireId1);
+	auto& l2 = wireGet(inWireId2);
+	auto& l3 = wireGet(outputWireId);
 
-	LinearCombination l1, l2, l3;
-	l1 = *lp1;
-	l2 = *lp2;
-	l3 = *lp3;
 	pb.add_r1cs_constraint(ConstraintT(l1, l2, l3));
-
 }
 
 void CircuitReader::addSplitConstraint(char* inputStr, char* outputStr,
@@ -543,8 +496,7 @@ void CircuitReader::addSplitConstraint(char* inputStr, char* outputStr,
 	istringstream iss_i(inputStr, istringstream::in);
 	iss_i >> inWireId;
 
-	LinearCombinationPtr l;
-	find(inWireId, l);
+	auto& l = wireGet(inWireId);
 
 	istringstream iss_o(outputStr, istringstream::in);
 
@@ -554,28 +506,17 @@ void CircuitReader::addSplitConstraint(char* inputStr, char* outputStr,
 	for (int i = 0; i < n; i++) {
 		Wire bitWireId;
 		iss_o >> bitWireId;
-		VariableT* vptr;
-		if (variableMap.find(bitWireId) == variableMap.end()) {
-			VariableT v;
-			v.allocate(pb, "bit out");
-			variables.push_back(v);
-			variableMap[bitWireId] = currentVariableIdx;
-			vptr = &variables[currentVariableIdx];
-			currentVariableIdx++;
-		} else {
-			vptr = &variables[variableMap[bitWireId]];
-		}
-		generate_boolean_r1cs_constraint<FieldT>(pb, *vptr);
-		sum.add_term(libsnark::linear_term<FieldT>(*vptr, two_i));
+		auto &out_bit_var = varGet(bitWireId, "bit out");
+		generate_boolean_r1cs_constraint<FieldT>(pb, out_bit_var);
+		sum.add_term(libsnark::linear_term<FieldT>(out_bit_var, two_i));
 		two_i += two_i;
 	}
 
-
-	pb.add_r1cs_constraint(ConstraintT(*l, 1, sum));
+	pb.add_r1cs_constraint(ConstraintT(l, 1, sum));
 }
 
-void CircuitReader::addPackConstraint(char* inputStr, char* outputStr,
-		unsigned short n) {
+
+void CircuitReader::addPackConstraint(char* inputStr, char* outputStr, unsigned short n) {
 
 	Wire outputWireId;
 	istringstream iss_o(outputStr, istringstream::in);
@@ -587,36 +528,41 @@ void CircuitReader::addPackConstraint(char* inputStr, char* outputStr,
 	for (int i = 0; i < n; i++) {
 		Wire bitWireId;
 		iss_i >> bitWireId;
-		LinearCombinationPtr l;
-		find(bitWireId, l);
+		auto& l = wireGet(bitWireId);
 
 		//sum.add_term(*l * two_i);
-
 		// the following should be equivalent to the above
-		for( auto& term : (*l * two_i) ) {
+		for( auto& term : (l * two_i) ) {
 			sum.add_term(term);
 		}
 
 		two_i += two_i;
 	}
 
-	VariableT* vptr;
-	if (variableMap.find(outputWireId) == variableMap.end()) {
-		VariableT v;
-		v.allocate(pb, "pack out");
-		variables.push_back(v);
-		variableMap[outputWireId] = currentVariableIdx;
-		vptr = &variables[currentVariableIdx];
-		currentVariableIdx++;
-	}
-	else {
-		vptr = &variables[variableMap[outputWireId]];
-	}
+	auto& outvar = varGet(outputWireId, "pack out");
 
-	pb.add_r1cs_constraint(ConstraintT(*vptr, 1, sum));
-
+	pb.add_r1cs_constraint(ConstraintT(outvar, 1, sum));
 }
 
+
+/**
+* Zero Equality Gate
+* 
+* Another useful type of comparison functionality is checking
+* whether a value is equal to zero. e.g.
+*
+*	Y = (X != 0) ? 1 : 0
+*
+* This is equivalent to satisfying the following two constraints:
+*
+*	X * (M - Y) = 0
+*
+* and
+*
+*	(1 - Y) * X = 0
+*
+* For some value M, where M should be (1.0/X), or the modulo inverse of X.
+*/
 void CircuitReader::addNonzeroCheckConstraint(char* inputStr, char* outputStr)
 {
 	Wire outputWireId, inWireId;
@@ -625,32 +571,16 @@ void CircuitReader::addNonzeroCheckConstraint(char* inputStr, char* outputStr)
 	iss_i >> inWireId;
 	istringstream iss_o(outputStr, istringstream::in);
 	iss_o >> outputWireId;
-	iss_o >> outputWireId;
 
-	LinearCombinationPtr l;
+	auto& X = wireGet(inWireId);
+	auto& Y = varGet(outputWireId, "zerop out");
+	VariableT M;
+	M.allocate(this->pb, "zerop aux");
 
-	find(inWireId, l);
-	VariableT *vptr;
-	if (variableMap.find(outputWireId) == variableMap.end()) {
-		VariableT v;
-		v.allocate(pb, "zerop out");
-		variables.push_back(v);
-		variableMap[outputWireId] = currentVariableIdx;
-		vptr = &variables[currentVariableIdx];
-		currentVariableIdx++;
-	} else {
-		vptr = &variables[variableMap[outputWireId]];
-	}
-	VariableT w;
-	w.allocate(pb, "zerop aux");
-	variables.push_back(w);
-	pb.add_r1cs_constraint(ConstraintT(*l, 1 - *vptr, 0));
-	pb.add_r1cs_constraint(ConstraintT(*l, variables[currentVariableIdx], *vptr)),
+	pb.add_r1cs_constraint(ConstraintT(X, 1 - Y, 0));
+	pb.add_r1cs_constraint(ConstraintT(X, M, Y));
 
-	zeroPwires.push_back(l);
-	zeropMap[outputWireId] = currentVariableIdx;
-	currentVariableIdx++;
-
+	zerop_items.push_back({inWireId, outputWireId, M});
 }
 
 void CircuitReader::handleAddition(char* inputStr, char* outputStr) {
@@ -660,18 +590,15 @@ void CircuitReader::handleAddition(char* inputStr, char* outputStr) {
 	iss_o >> outputWireId;
 
 	istringstream iss_i(inputStr, istringstream::in);
-	LinearCombinationPtr s, l;
 	iss_i >> inWireId;
-	find(inWireId, l, true);
-	s = l;
+
+	auto& outwire = wireGet(outputWireId);
 	while (iss_i >> inWireId) {
-		find(inWireId, l);
-		for( auto& term : *l ) {
-			s->add_term(term);
+		auto& l = wireGet(inWireId);
+		for( auto& term : l ) {
+			outwire.add_term(term);
 		}
-		//*s += *l;
 	}
-	wireLinearCombinations[outputWireId] = s;
 }
 
 void CircuitReader::handleMulConst(char* type, char* inputStr, char* outputStr) {
@@ -683,14 +610,14 @@ void CircuitReader::handleMulConst(char* type, char* inputStr, char* outputStr) 
 	iss_o >> outputWireId;
 	istringstream iss_i(inputStr, istringstream::in);
 	iss_i >> inWireId;
-	LinearCombinationPtr l;
-	find(inWireId, l, true);
 
-	auto v = *l * readFieldElementFromHex(constStr);
+	auto& l = wireGet(inWireId);
+	auto& outwire = wireGet(outputWireId);
+
+	auto v = l * readFieldElementFromHex(constStr);
 	for( auto& term : v ) {
-		wireLinearCombinations[outputWireId]->add_term(term);
+		outwire.add_term(term);
 	}
-	//wireLinearCombinations[outputWireId] = make_shared<LinearCombination>(v);
 }
 
 void CircuitReader::handleMulNegConst(char* type, char* inputStr, char* outputStr)
@@ -702,18 +629,11 @@ void CircuitReader::handleMulNegConst(char* type, char* inputStr, char* outputSt
 	istringstream iss_i(inputStr, istringstream::in);
 	iss_i >> inWireId;
 
-	LinearCombinationPtr l;
-	find(inWireId, l, true);
+	auto& l = wireGet(inWireId);
+	auto& outwire = wireGet(outputWireId);
 
-	/*
-	wireLinearCombinations[outputWireId] = l;
-	*(wireLinearCombinations[outputWireId]) *= readFieldElementFromHex(
-			constStr);
-	*(wireLinearCombinations[outputWireId]) *= FieldT(-1); //TODO: make shared FieldT constants
-	*/
-	auto v = *l * readFieldElementFromHex(constStr) * FieldT(-1);
+	auto v = l * (readFieldElementFromHex(constStr) * FieldT(-1));
 	for( auto& term : v ) {
-		wireLinearCombinations[outputWireId]->add_term(term);
+		outwire.add_term(term);
 	}
-	//wireLinearCombinations[outputWireId] = make_shared<LinearCombination>(*l * readFieldElementFromHex(constStr) * FieldT(-1));
 }

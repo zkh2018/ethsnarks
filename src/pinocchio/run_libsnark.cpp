@@ -6,6 +6,7 @@ int main(int argc, char **argv)
 {
 	ProtoboardT pb;
 
+	ethsnarks::ppT::init_public_params();
 
 	// Read the circuit, evaluate, and translate constraints
 	CircuitReader reader(argv[1], argv[2], pb);
