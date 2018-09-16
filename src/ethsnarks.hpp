@@ -19,6 +19,7 @@ typedef libsnark::r1cs_constraint<FieldT> ConstraintT;
 typedef libsnark::protoboard<FieldT> ProtoboardT;
 typedef libsnark::pb_variable<ethsnarks::FieldT> VariableT;
 typedef libsnark::pb_variable_array<FieldT> VariableArrayT;
+typedef libsnark::pb_linear_combination<FieldT> LinearCombinationT;
 typedef libsnark::gadget<ethsnarks::FieldT> GadgetT;
 
 typedef libsnark::r1cs_gg_ppzksnark_zok_proof<ppT> ProofT;

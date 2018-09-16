@@ -109,7 +109,8 @@ void CircuitReader::parseAndEval(char* arithFilepath, char* inputsFilepath) {
 	if (!inputfs.good()) {
 		printf("Unable to open input file %s \n", inputsFilepath);
 		exit(-1);
-	} else {
+	}
+	else {
 		char* inputStr;
 		while (getline(inputfs, line)) {
 			if (line.length() == 0) {
@@ -154,14 +155,17 @@ void CircuitReader::parseAndEval(char* arithFilepath, char* inputsFilepath) {
 		else if (1 == sscanf(line.c_str(), "input %u", &wireId)) {
 			numInputs++;
 			varNew(wireId, "input");
+			inputWireIds.push_back(wireId);
 		}
 		else if (1 == sscanf(line.c_str(), "nizkinput %u", &wireId)) {
 			numNizkInputs++;
 			varNew(wireId, "nizkinput");
+			nizkWireIds.push_back(wireId);
 		}
 		else if (1 == sscanf(line.c_str(), "output %u", &wireId)) {
 			numOutputs++;
 			varNew(wireId, "output");
+			outputWireIds.push_back(wireId);
 		}
 		else if (5 == sscanf(line.c_str(), "%s in %u <%[^>]> out %u <%[^>]>", type,
 						&numGateInputs, inputStr, &numGateOutputs, outputStr)) {
@@ -306,6 +310,23 @@ void CircuitReader::constructCircuit(char* arithFilepath) {
 
 		if (5 == sscanf(line.c_str(), "%s in %d <%[^>]> out %d <%[^>]>", type,
 						&numGateInputs, inputStr, &numGateOutputs, outputStr)) {
+
+			std::vector<Wire> inWires;
+			readIds(inputStr, inWires);
+			if( numGateInputs != inWires.size() ) {
+				std::cerr << "Error parsing line: " << line << std::endl;
+				std::cerr << " input gate mismatch, expected " << numGateInputs << " got " << inWires.size() << std::endl;
+				exit(6);
+			}
+
+			std::vector<Wire> outWires;
+			readIds(outputStr, outWires);
+			if( numGateOutputs != outWires.size() ) {
+				std::cerr << "Error parsing line: " << line << std::endl;
+				std::cerr << " output gate mismatch, expected " << numGateOutputs << " got " << outWires.size() << std::endl;
+				exit(6);
+			}
+
 			if (strcmp(type, "add") == 0) {
 				assert(numGateOutputs == 1);
 				handleAddition(inputStr, outputStr);
@@ -361,14 +382,26 @@ void CircuitReader::constructCircuit(char* arithFilepath) {
 
 void CircuitReader::mapValuesToProtoboard()
 {
+	enter_block("Assigning values");
+
 	for( auto& iter : variableMap )
 	{
 		pb.val(iter.second) = wireValues[iter.first];
 	}
 
-	for( auto& item : zerop_items ) {
+	for( auto& item : zerop_items )
+	{
 		auto& X = wireGet(item.in_wire_id);
-		pb.val(item.aux_var) = pb.lc_val(X).inverse();
+		// X * M = Y
+		// Y == 0 || Y == 1
+		if( pb.lc_val(X) != 0 ) {
+			// M = 1/X
+			pb.val(item.aux_var) = FieldT::one() * pb.lc_val(X).inverse();
+		}
+		else {
+			// M = 0
+			pb.val(item.aux_var) = 0;
+		}
 	}
 
 	if (!pb.is_satisfied()) {
@@ -376,7 +409,7 @@ void CircuitReader::mapValuesToProtoboard()
 		assert(0);
 	}
 
-	printf("Assignment of values done .. \n");
+	leave_block("Assigning values");
 }
 
 
@@ -386,11 +419,12 @@ bool CircuitReader::wireExists( Wire wire_id )
 }
 
 
-LinearCombination& CircuitReader::wireGet( Wire wire_id )
+LinearCombinationT& CircuitReader::wireGet( Wire wire_id )
 {
-	if( ! wireExists(wire_id) ) {
+	if( ! wireExists(wire_id) )
+	{
 		auto& v = varGet(wire_id);
-		wireLC.emplace(wire_id, LinearCombination(v));
+		wireLC.emplace(wire_id, LinearCombinationT(v));
 	}
 
 	return wireLC[wire_id];
@@ -500,7 +534,7 @@ void CircuitReader::addSplitConstraint(char* inputStr, char* outputStr,
 
 	istringstream iss_o(outputStr, istringstream::in);
 
-	LinearCombination sum;
+	LinearCombinationT sum;
 	auto two_i = FieldT::one();
 
 	for (int i = 0; i < n; i++) {
@@ -523,7 +557,7 @@ void CircuitReader::addPackConstraint(char* inputStr, char* outputStr, unsigned 
 	iss_o >> outputWireId;
 
 	istringstream iss_i(inputStr, istringstream::in);
-	LinearCombination sum;
+	LinearCombinationT sum;
 	auto two_i = FieldT::one();
 	for (int i = 0; i < n; i++) {
 		Wire bitWireId;
@@ -580,7 +614,7 @@ void CircuitReader::addNonzeroCheckConstraint(char* inputStr, char* outputStr)
 	pb.add_r1cs_constraint(ConstraintT(X, 1 - Y, 0));
 	pb.add_r1cs_constraint(ConstraintT(X, M, Y));
 
-	zerop_items.push_back({inWireId, outputWireId, M});
+	zerop_items.push_back({inWireId, M});
 }
 
 void CircuitReader::handleAddition(char* inputStr, char* outputStr) {

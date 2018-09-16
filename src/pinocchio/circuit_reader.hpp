@@ -31,11 +31,7 @@ typedef unsigned int Wire;
 using ethsnarks::FieldT;
 using ethsnarks::ProtoboardT;
 using ethsnarks::VariableT;
-
-typedef libsnark::pb_linear_combination<FieldT> LinearCombination;
-typedef std::shared_ptr<LinearCombination> LinearCombinationPtr;
-typedef std::map<Wire, unsigned int> WireMap;
-typedef std::map<Wire, VariableT> VariableMapT;
+using ethsnarks::LinearCombinationT;
 
 #define ADD_OPCODE 1
 #define MUL_OPCODE 2
@@ -49,7 +45,6 @@ typedef std::map<Wire, VariableT> VariableMapT;
 
 struct ZeroEqualityItem {
 	Wire in_wire_id;
-	Wire out_wire_id;
 	VariableT aux_var;
 };
 
@@ -65,7 +60,7 @@ public:
 private:
 	ProtoboardT& pb;
 
-	std::map<Wire,LinearCombination> wireLC;
+	std::map<Wire,LinearCombinationT> wireLC;
 	std::map<Wire,VariableT> variableMap;
 
 	std::vector<ZeroEqualityItem> zerop_items;
@@ -84,7 +79,7 @@ private:
 	void mapValuesToProtoboard();
 
 	bool wireExists( Wire wireId );
-	LinearCombination& wireGet( Wire wire_id );
+	LinearCombinationT& wireGet( Wire wire_id );
 
 	bool varExists( Wire wire_id );
 	VariableT& varNew( Wire wire_id, const std::string &annotation="");
