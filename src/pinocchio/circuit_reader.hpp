@@ -27,11 +27,14 @@ SOFTWARE.
 #include "libsnark/gadgetlib1/pb_variable.hpp"
 
 typedef unsigned int Wire;
+typedef std::vector<Wire> InputWires;
+typedef std::vector<Wire> OutputWires;
 
 using ethsnarks::FieldT;
 using ethsnarks::ProtoboardT;
 using ethsnarks::VariableT;
 using ethsnarks::LinearCombinationT;
+
 
 #define ADD_OPCODE 1
 #define MUL_OPCODE 2
@@ -85,19 +88,19 @@ private:
 	VariableT& varNew( Wire wire_id, const std::string &annotation="");
 	VariableT& varGet( Wire wire_id, const std::string &annotation="");
 
-	void addMulConstraint(char*, char*);
-	void addXorConstraint(char*, char*);
+	void addMulConstraint(InputWires& inputs, OutputWires& outputs);
+	void addXorConstraint(InputWires& inputs, OutputWires& outputs);
 
-	void addOrConstraint(char*, char*);
-	void addAssertionConstraint(char*, char*);
+	void addOrConstraint(InputWires& inputs, OutputWires& outputs);
+	void addAssertionConstraint(InputWires& inputs, OutputWires& outputs);
 
-	void addSplitConstraint(char*, char*, unsigned short);
-	void addPackConstraint(char*, char*, unsigned short);
-	void addNonzeroCheckConstraint(char*, char*);
+	void addSplitConstraint(InputWires& inputs, OutputWires& outputs);
+	void addPackConstraint(InputWires& inputs, OutputWires& outputs);
+	void addNonzeroCheckConstraint(InputWires& inputs, OutputWires& outputs);
 
-	void handleAddition(char*, char*);
-	void handleMulConst(char*, char*, char*);
-	void handleMulNegConst(char*, char*, char*);
+	void handleAddition(InputWires& inputs, OutputWires& outputs);
+	void handleMulConst(InputWires& inputs, OutputWires& outputs, const char*);
+	void handleMulNegConst(InputWires& inputs, OutputWires& outputs, const char*);
 
 };
 

@@ -54,7 +54,7 @@ void readIds(char* str, std::vector<unsigned int>& vec){
 }
 
 
-FieldT readFieldElementFromHex(char* inputStr){
+FieldT readFieldElementFromHex(const char* inputStr){
 	char constStrDecimal[150];
 	mpz_t integ;
 	mpz_init_set_str(integ, inputStr, 16);
@@ -275,11 +275,8 @@ void CircuitReader::parseAndEval(char* arithFilepath, char* inputsFilepath) {
 	leave_block("Parsing and Evaluating the circuit");
 }
 
-void CircuitReader::constructCircuit(char* arithFilepath) {
-
-	cout << "Translating Constraints ... " << endl;
-	unsigned int i;
-
+void CircuitReader::constructCircuit(char* arithFilepath)
+{
 	char type[200];
 	char* inputStr;
 	char* outputStr;
@@ -329,43 +326,43 @@ void CircuitReader::constructCircuit(char* arithFilepath) {
 
 			if (strcmp(type, "add") == 0) {
 				assert(numGateOutputs == 1);
-				handleAddition(inputStr, outputStr);
+				handleAddition(inWires, outWires);
 			}
 			else if (strcmp(type, "mul") == 0) {
 				assert(numGateInputs == 2 && numGateOutputs == 1);
-				addMulConstraint(inputStr, outputStr);
+				addMulConstraint(inWires, outWires);
 			}
 			else if (strcmp(type, "xor") == 0) {
 				assert(numGateInputs == 2 && numGateOutputs == 1);
-				addXorConstraint(inputStr, outputStr);
+				addXorConstraint(inWires, outWires);
 			}
 			else if (strcmp(type, "or") == 0) {
 				assert(numGateInputs == 2 && numGateOutputs == 1);
-				addOrConstraint(inputStr, outputStr);
+				addOrConstraint(inWires, outWires);
 			}
 			else if (strcmp(type, "assert") == 0) {
 				assert(numGateInputs == 2 && numGateOutputs == 1);
-				addAssertionConstraint(inputStr, outputStr);
+				addAssertionConstraint(inWires, outWires);
 			}
 			else if (strstr(type, "const-mul-neg-")) {
 				assert(numGateInputs == 1 && numGateOutputs == 1);
-				handleMulNegConst(type, inputStr, outputStr);
+				handleMulNegConst(inWires, outWires, type);
 			}
 			else if (strstr(type, "const-mul-")) {
 				assert(numGateInputs == 1 && numGateOutputs == 1);
-				handleMulConst(type, inputStr, outputStr);
+				handleMulConst(inWires, outWires, type);
 			}
 			else if (strcmp(type, "zerop") == 0) {
 				assert(numGateInputs == 1 && numGateOutputs == 2);
-				addNonzeroCheckConstraint(inputStr, outputStr);
+				addNonzeroCheckConstraint(inWires, outWires);
 			}
 			else if (strstr(type, "split")) {
 				assert(numGateInputs == 1);
-				addSplitConstraint(inputStr, outputStr, numGateOutputs);
+				addSplitConstraint(inWires, outWires);
 			}
 			else if (strstr(type, "pack")) {
 				assert(numGateOutputs == 1);
-				addPackConstraint(inputStr, outputStr, numGateInputs);
+				addPackConstraint(inWires, outWires);
 			}
 		}
 		else {
@@ -455,125 +452,81 @@ VariableT& CircuitReader::varGet( Wire wire_id, const std::string &annotation )
 }
 
 
-void CircuitReader::addMulConstraint(char* inputStr, char* outputStr) {
-
-	Wire outputWireId, inWireId1, inWireId2;
-
-	istringstream iss_i(inputStr, istringstream::in);
-	iss_i >> inWireId1;
-	iss_i >> inWireId2;
-	istringstream iss_o(outputStr, istringstream::in);
-	iss_o >> outputWireId;
-
-	auto& l1 = wireGet(inWireId1);
-	auto& l2 = wireGet(inWireId2);
-	auto& outvar = varGet(outputWireId, "mul out");
+void CircuitReader::addMulConstraint(InputWires& inputs, OutputWires& outputs)
+{
+	auto& l1 = wireGet(inputs[0]);
+	auto& l2 = wireGet(inputs[1]);
+	auto& outvar = varGet(outputs[0], "mul out");
 
 	pb.add_r1cs_constraint(ConstraintT(l1, l2, outvar));
 }
 
-void CircuitReader::addXorConstraint(char* inputStr, char* outputStr) {
-
-	Wire outputWireId, inWireId1, inWireId2;
-
-	istringstream iss_i(inputStr, istringstream::in);
-	iss_i >> inWireId1;
-	iss_i >> inWireId2;
-	istringstream iss_o(outputStr, istringstream::in);
-	iss_o >> outputWireId;
-
-	auto& l1 = wireGet(inWireId1);
-	auto& l2 = wireGet(inWireId2);
-	auto& outvar = varGet(outputWireId, "xor out");
+void CircuitReader::addXorConstraint(InputWires& inputs, OutputWires& outputs)
+{
+	auto& l1 = wireGet(inputs[0]);
+	auto& l2 = wireGet(inputs[1]);
+	auto& outvar = varGet(outputs[0], "xor out");
 
 	pb.add_r1cs_constraint(ConstraintT(2 * l1, l2, l1 + l2 - outvar));
 }
 
-void CircuitReader::addOrConstraint(char* inputStr, char* outputStr) {
-
-	Wire outputWireId, inWireId1, inWireId2;
-
-	istringstream iss_i(inputStr, istringstream::in);
-	iss_i >> inWireId1;
-	iss_i >> inWireId2;
-	istringstream iss_o(outputStr, istringstream::in);
-	iss_o >> outputWireId;
-
-	auto& l1 = wireGet(inWireId1);
-	auto& l2 = wireGet(inWireId2);
-	auto& outvar = varGet(outputWireId, "or out");
+void CircuitReader::addOrConstraint(InputWires& inputs, OutputWires& outputs)
+{
+	auto& l1 = wireGet(inputs[0]);
+	auto& l2 = wireGet(inputs[1]);
+	auto& outvar = varGet(outputs[0], "or out");
 
 	pb.add_r1cs_constraint(ConstraintT(l1, l2, l1 + l2 - outvar));
 }
 
-void CircuitReader::addAssertionConstraint(char* inputStr, char* outputStr) {
-
-	Wire outputWireId, inWireId1, inWireId2;
-
-	istringstream iss_i(inputStr, istringstream::in);
-	iss_i >> inWireId1;
-	iss_i >> inWireId2;
-	istringstream iss_o(outputStr, istringstream::in);
-	iss_o >> outputWireId;
-
-	auto& l1 = wireGet(inWireId1);
-	auto& l2 = wireGet(inWireId2);
-	auto& l3 = wireGet(outputWireId);
+void CircuitReader::addAssertionConstraint(InputWires& inputs, OutputWires& outputs)
+{
+	auto& l1 = wireGet(inputs[0]);
+	auto& l2 = wireGet(inputs[1]);
+	auto& l3 = wireGet(outputs[0]);
 
 	pb.add_r1cs_constraint(ConstraintT(l1, l2, l3));
 }
 
-void CircuitReader::addSplitConstraint(char* inputStr, char* outputStr,
-		unsigned short n) {
-
-	Wire inWireId;
-	istringstream iss_i(inputStr, istringstream::in);
-	iss_i >> inWireId;
-
-	auto& l = wireGet(inWireId);
-
-	istringstream iss_o(outputStr, istringstream::in);
-
+void CircuitReader::addSplitConstraint(InputWires& inputs, OutputWires& outputs)
+{
 	LinearCombinationT sum;
+
 	auto two_i = FieldT::one();
 
-	for (int i = 0; i < n; i++) {
-		Wire bitWireId;
-		iss_o >> bitWireId;
-		auto &out_bit_var = varGet(bitWireId, "bit out");
+	for( size_t i = 0; i < outputs.size(); i++)
+	{
+		auto &out_bit_var = wireGet(outputs[i]);
+
 		generate_boolean_r1cs_constraint<FieldT>(pb, out_bit_var);
-		sum.add_term(libsnark::linear_term<FieldT>(out_bit_var, two_i));
+
+		const auto &x = out_bit_var * two_i;
+		sum.terms.insert(sum.terms.end(), x.terms.begin(), x.terms.end());
+
 		two_i += two_i;
 	}
 
-	pb.add_r1cs_constraint(ConstraintT(l, 1, sum));
+	pb.add_r1cs_constraint(ConstraintT(wireGet(inputs[0]), 1, sum));
 }
 
 
-void CircuitReader::addPackConstraint(char* inputStr, char* outputStr, unsigned short n) {
-
-	Wire outputWireId;
-	istringstream iss_o(outputStr, istringstream::in);
-	iss_o >> outputWireId;
-
-	istringstream iss_i(inputStr, istringstream::in);
+void CircuitReader::addPackConstraint(InputWires& inputs, OutputWires& outputs)
+{
 	LinearCombinationT sum;
-	auto two_i = FieldT::one();
-	for (int i = 0; i < n; i++) {
-		Wire bitWireId;
-		iss_i >> bitWireId;
-		auto& l = wireGet(bitWireId);
 
-		//sum.add_term(*l * two_i);
-		// the following should be equivalent to the above
-		for( auto& term : (l * two_i) ) {
+	auto two_i = FieldT::one();
+
+	for( size_t i = 0; i < inputs.size(); i++ )
+	{
+		for( auto& term : (wireGet(inputs[i]) * two_i) )
+		{
 			sum.add_term(term);
 		}
 
 		two_i += two_i;
 	}
 
-	auto& outvar = varGet(outputWireId, "pack out");
+	auto& outvar = varGet(outputs[0], "pack out");
 
 	pb.add_r1cs_constraint(ConstraintT(outvar, 1, sum));
 }
@@ -597,56 +550,40 @@ void CircuitReader::addPackConstraint(char* inputStr, char* outputStr, unsigned 
 *
 * For some value M, where M should be (1.0/X), or the modulo inverse of X.
 */
-void CircuitReader::addNonzeroCheckConstraint(char* inputStr, char* outputStr)
+void CircuitReader::addNonzeroCheckConstraint(InputWires& inputs, OutputWires& outputs)
 {
-	Wire outputWireId, inWireId;
-
-	istringstream iss_i(inputStr, istringstream::in);
-	iss_i >> inWireId;
-	istringstream iss_o(outputStr, istringstream::in);
-	iss_o >> outputWireId;
-
-	auto& X = wireGet(inWireId);
-	auto& Y = varGet(outputWireId, "zerop out");
+	auto& X = wireGet(inputs[0]);
+	auto& Y = varGet(outputs[0], "zerop out");
 	VariableT M;
 	M.allocate(this->pb, "zerop aux");
 
 	pb.add_r1cs_constraint(ConstraintT(X, 1 - Y, 0));
 	pb.add_r1cs_constraint(ConstraintT(X, M, Y));
 
-	zerop_items.push_back({inWireId, M});
+	zerop_items.push_back({inputs[0], M});
 }
 
-void CircuitReader::handleAddition(char* inputStr, char* outputStr) {
 
-	Wire inWireId, outputWireId;
-	istringstream iss_o(outputStr, istringstream::in);
-	iss_o >> outputWireId;
+void CircuitReader::handleAddition(InputWires& inputs, OutputWires& outputs)
+{
+	auto& outwire = wireGet(outputs[0]);
 
-	istringstream iss_i(inputStr, istringstream::in);
-	iss_i >> inWireId;
-
-	auto& outwire = wireGet(outputWireId);
-	while (iss_i >> inWireId) {
-		auto& l = wireGet(inWireId);
-		for( auto& term : l ) {
+	for( auto& input_id : inputs )
+	{
+		for( auto& term : wireGet(input_id) )
+		{
 			outwire.add_term(term);
 		}
 	}
 }
 
-void CircuitReader::handleMulConst(char* type, char* inputStr, char* outputStr) {
 
-	char* constStr = type + sizeof("const-mul-") - 1;
-	Wire outputWireId, inWireId;
+void CircuitReader::handleMulConst(InputWires& inputs, OutputWires& outputs, const char* type) {
 
-	istringstream iss_o(outputStr, istringstream::in);
-	iss_o >> outputWireId;
-	istringstream iss_i(inputStr, istringstream::in);
-	iss_i >> inWireId;
+	const char* constStr = type + sizeof("const-mul-") - 1;
 
-	auto& l = wireGet(inWireId);
-	auto& outwire = wireGet(outputWireId);
+	auto& l = wireGet(inputs[0]);
+	auto& outwire = wireGet(outputs[0]);
 
 	auto v = l * readFieldElementFromHex(constStr);
 	for( auto& term : v ) {
@@ -654,17 +591,12 @@ void CircuitReader::handleMulConst(char* type, char* inputStr, char* outputStr) 
 	}
 }
 
-void CircuitReader::handleMulNegConst(char* type, char* inputStr, char* outputStr)
+void CircuitReader::handleMulNegConst(InputWires& inputs, OutputWires& outputs, const char* type)
 {
-	char* constStr = type + sizeof("const-mul-neg-") - 1;
-	Wire outputWireId, inWireId;
-	istringstream iss_o(outputStr, istringstream::in);
-	iss_o >> outputWireId;
-	istringstream iss_i(inputStr, istringstream::in);
-	iss_i >> inWireId;
+	const char* constStr = type + sizeof("const-mul-neg-") - 1;
 
-	auto& l = wireGet(inWireId);
-	auto& outwire = wireGet(outputWireId);
+	auto& l = wireGet(inputs[0]);
+	auto& outwire = wireGet(outputs[0]);
 
 	auto v = l * (readFieldElementFromHex(constStr) * FieldT(-1));
 	for( auto& term : v ) {
