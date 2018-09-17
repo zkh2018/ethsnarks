@@ -26,14 +26,11 @@ SOFTWARE.
 
 #include "libsnark/gadgetlib1/pb_variable.hpp"
 
+namespace ethsnarks {
+
 typedef unsigned int Wire;
 typedef std::vector<Wire> InputWires;
 typedef std::vector<Wire> OutputWires;
-
-using ethsnarks::FieldT;
-using ethsnarks::ProtoboardT;
-using ethsnarks::VariableT;
-using ethsnarks::LinearCombinationT;
 
 
 #define ADD_OPCODE 1
@@ -48,21 +45,22 @@ using ethsnarks::LinearCombinationT;
 
 struct ZeroEqualityItem {
 	Wire in_wire_id;
-	VariableT aux_var;
+	ethsnarks::VariableT aux_var;
 };
 
-class CircuitReader {
+class CircuitReader : public GadgetT {
 public:
-	CircuitReader(char* arithFilepath, char* inputsFilepath, ProtoboardT& in_pb);
+	CircuitReader(ProtoboardT& in_pb, char* arithFilepath, char* inputsFilepath);
 
 	int getNumInputs() { return numInputs;}
 	int getNumOutputs() { return numOutputs;}
 	std::vector<Wire> getInputWireIds() const { return inputWireIds; }
 	std::vector<Wire> getOutputWireIds() const { return outputWireIds; }
 
-private:
-	ProtoboardT& pb;
+	void generate_r1cs_constraints() {}
+	void generate_r1cs_witness() {}
 
+protected:
 	std::map<Wire,LinearCombinationT> wireLC;
 	std::map<Wire,VariableT> variableMap;
 
@@ -74,8 +72,10 @@ private:
 	std::vector<Wire> nizkWireIds;
 	std::vector<Wire> outputWireIds;
 
-	unsigned int numWires;
-	unsigned int numInputs, numNizkInputs, numOutputs;
+	size_t numWires {0};
+	size_t numInputs {0};
+	size_t numNizkInputs {0};
+	size_t numOutputs{0};
 
 	void parseAndEval(char* arithFilepath, char* inputsFilepath);
 	void constructCircuit(char*);  // Second Pass:
@@ -104,3 +104,5 @@ private:
 
 };
 
+// namespace ethsnarks
+}

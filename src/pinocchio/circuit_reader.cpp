@@ -34,18 +34,16 @@ using std::ifstream;
 using std::string;
 using std::cout;
 using std::endl;
-using std::make_shared;
 
 using libff::enter_block;
 using libff::leave_block;
 
 using libsnark::generate_boolean_r1cs_constraint;
 
-using ethsnarks::make_variable;
-using ethsnarks::ConstraintT;
+namespace ethsnarks {
 
 
-void readIds(char* str, std::vector<unsigned int>& vec){
+static void readIds(char* str, std::vector<unsigned int>& vec){
 	istringstream iss_i(str, istringstream::in);
 	unsigned int id;
 	while (iss_i >> id) {
@@ -54,7 +52,7 @@ void readIds(char* str, std::vector<unsigned int>& vec){
 }
 
 
-FieldT readFieldElementFromHex(const char* inputStr){
+static FieldT readFieldElementFromHex(const char* inputStr){
 	char constStrDecimal[150];
 	mpz_t integ;
 	mpz_init_set_str(integ, inputStr, 16);
@@ -67,17 +65,12 @@ FieldT readFieldElementFromHex(const char* inputStr){
 
 
 CircuitReader::CircuitReader(
+	ProtoboardT& in_pb,
 	char* arithFilepath,
-	char* inputsFilepath,
-	ProtoboardT& in_pb
+	char* inputsFilepath
 ) :
-	pb(in_pb)
+	GadgetT(in_pb, "CircuitReader")
 {
-
-	this->pb = pb;
-	numWires = 0;
-	numInputs = numNizkInputs = numOutputs = 0;
-
 	parseAndEval(arithFilepath, inputsFilepath);
 	constructCircuit(arithFilepath);
 	mapValuesToProtoboard();
@@ -97,7 +90,7 @@ void CircuitReader::parseAndEval(char* arithFilepath, char* inputsFilepath) {
 	}
 
 	getline(arithfs, line);
-	int ret = sscanf(line.c_str(), "total %u", &numWires);
+	int ret = sscanf(line.c_str(), "total %zu", &numWires);
 
 	if (ret != 1) {
 		printf("File Format Does not Match\n");
@@ -138,7 +131,6 @@ void CircuitReader::parseAndEval(char* arithFilepath, char* inputsFilepath) {
 
 	FieldT oneElement = FieldT::one();
 	FieldT zeroElement = FieldT::zero();
-	FieldT negOneElement = FieldT(-1);
 
 	// Parse the circuit: few lines were imported from Pinocchio's code.
 
@@ -208,7 +200,7 @@ void CircuitReader::parseAndEval(char* arithFilepath, char* inputsFilepath) {
 			else if (strstr(type, "const-mul-neg-")) {
 				opcode = MULCONST_OPCODE;
 				char* constStr = type + sizeof("const-mul-neg-") - 1;
-				constant = readFieldElementFromHex(constStr) * negOneElement;
+				constant = readFieldElementFromHex(constStr) * FieldT(-1);
 			}
 			else if (strstr(type, "const-mul-")) {
 				opcode = MULCONST_OPCODE;
@@ -275,6 +267,7 @@ void CircuitReader::parseAndEval(char* arithFilepath, char* inputsFilepath) {
 	leave_block("Parsing and Evaluating the circuit");
 }
 
+
 void CircuitReader::constructCircuit(char* arithFilepath)
 {
 	char type[200];
@@ -293,7 +286,9 @@ void CircuitReader::constructCircuit(char* arithFilepath)
 	enter_block("Translating constraints");
 
 	getline(ifs2, line);
-	sscanf(line.c_str(), "total %d", &numWires);
+	sscanf(line.c_str(), "total %zu", &numWires);
+
+	this->pb.set_input_sizes(numInputs);
 
 	int lineCount = 0;
 	while (getline(ifs2, line)) {
@@ -391,6 +386,7 @@ void CircuitReader::mapValuesToProtoboard()
 		auto& X = wireGet(item.in_wire_id);
 		// X * M = Y
 		// Y == 0 || Y == 1
+
 		if( pb.lc_val(X) != 0 ) {
 			// M = 1/X
 			pb.val(item.aux_var) = FieldT::one() * pb.lc_val(X).inverse();
@@ -421,6 +417,7 @@ LinearCombinationT& CircuitReader::wireGet( Wire wire_id )
 	if( ! wireExists(wire_id) )
 	{
 		auto& v = varGet(wire_id);
+
 		wireLC.emplace(wire_id, LinearCombinationT(v));
 	}
 
@@ -456,28 +453,31 @@ void CircuitReader::addMulConstraint(InputWires& inputs, OutputWires& outputs)
 {
 	auto& l1 = wireGet(inputs[0]);
 	auto& l2 = wireGet(inputs[1]);
-	auto& outvar = varGet(outputs[0], "mul out");
+	auto& outvar = wireGet(outputs[0]);
 
 	pb.add_r1cs_constraint(ConstraintT(l1, l2, outvar));
 }
+
 
 void CircuitReader::addXorConstraint(InputWires& inputs, OutputWires& outputs)
 {
 	auto& l1 = wireGet(inputs[0]);
 	auto& l2 = wireGet(inputs[1]);
-	auto& outvar = varGet(outputs[0], "xor out");
+	auto& outvar = wireGet(outputs[0]);
 
 	pb.add_r1cs_constraint(ConstraintT(2 * l1, l2, l1 + l2 - outvar));
 }
+
 
 void CircuitReader::addOrConstraint(InputWires& inputs, OutputWires& outputs)
 {
 	auto& l1 = wireGet(inputs[0]);
 	auto& l2 = wireGet(inputs[1]);
-	auto& outvar = varGet(outputs[0], "or out");
+	auto& outvar = wireGet(outputs[0]);
 
 	pb.add_r1cs_constraint(ConstraintT(l1, l2, l1 + l2 - outvar));
 }
+
 
 void CircuitReader::addAssertionConstraint(InputWires& inputs, OutputWires& outputs)
 {
@@ -487,6 +487,7 @@ void CircuitReader::addAssertionConstraint(InputWires& inputs, OutputWires& outp
 
 	pb.add_r1cs_constraint(ConstraintT(l1, l2, l3));
 }
+
 
 void CircuitReader::addSplitConstraint(InputWires& inputs, OutputWires& outputs)
 {
@@ -526,9 +527,7 @@ void CircuitReader::addPackConstraint(InputWires& inputs, OutputWires& outputs)
 		two_i += two_i;
 	}
 
-	auto& outvar = varGet(outputs[0], "pack out");
-
-	pb.add_r1cs_constraint(ConstraintT(outvar, 1, sum));
+	pb.add_r1cs_constraint(ConstraintT(wireGet(outputs[0]), 1, sum));
 }
 
 
@@ -553,11 +552,14 @@ void CircuitReader::addPackConstraint(InputWires& inputs, OutputWires& outputs)
 void CircuitReader::addNonzeroCheckConstraint(InputWires& inputs, OutputWires& outputs)
 {
 	auto& X = wireGet(inputs[0]);
+
 	auto& Y = varGet(outputs[0], "zerop out");
+
 	VariableT M;
 	M.allocate(this->pb, "zerop aux");
 
 	pb.add_r1cs_constraint(ConstraintT(X, 1 - Y, 0));
+
 	pb.add_r1cs_constraint(ConstraintT(X, M, Y));
 
 	zerop_items.push_back({inputs[0], M});
@@ -583,23 +585,33 @@ void CircuitReader::handleMulConst(InputWires& inputs, OutputWires& outputs, con
 	const char* constStr = type + sizeof("const-mul-") - 1;
 
 	auto& l = wireGet(inputs[0]);
+
 	auto& outwire = wireGet(outputs[0]);
 
 	auto v = l * readFieldElementFromHex(constStr);
-	for( auto& term : v ) {
+
+	for( auto& term : v )
+	{
 		outwire.add_term(term);
 	}
 }
+
 
 void CircuitReader::handleMulNegConst(InputWires& inputs, OutputWires& outputs, const char* type)
 {
 	const char* constStr = type + sizeof("const-mul-neg-") - 1;
 
 	auto& l = wireGet(inputs[0]);
+
 	auto& outwire = wireGet(outputs[0]);
 
 	auto v = l * (readFieldElementFromHex(constStr) * FieldT(-1));
-	for( auto& term : v ) {
+
+	for( auto& term : v )
+	{
 		outwire.add_term(term);
 	}
+}
+
+// namespace ethsnarks
 }

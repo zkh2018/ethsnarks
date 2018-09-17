@@ -30,6 +30,16 @@ bool stub_verify( const char *vk_json, const char *proof_json )
 }
 
 
+int stub_genkeys_from_pb( ProtoboardT& pb, const char *pk_file, const char *vk_file )
+{
+    auto keypair = libsnark::r1cs_gg_ppzksnark_zok_generator<ppT>(pb.get_constraint_system());
+    vk2json_file(keypair.vk, vk_file);
+    writeToFile<decltype(keypair.pk)>(pk_file, keypair.pk);
+
+    return 0;
+}
+
+
 int stub_main_verify( const char *prog_name, int argc, char **argv )
 {
     if( argc < 3 )
