@@ -1,5 +1,5 @@
-from .Wires import *
-from .FieldOps import *
+from .Wires import Wire, WireList
+from .FieldOps import FieldOp
 
 class FieldZeroP(FieldOp):
         """Adds support for the zero-equals gate described in the paper"""

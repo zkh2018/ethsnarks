@@ -1,5 +1,5 @@
-from .Storage import *
-from . import DFG
+from .Storage import Key, StorageKey
+from .DFG import StorageRef
 
 class UndefinedSymbol(Exception):
 	def __init__(self, s): self.s = repr(s)
@@ -54,7 +54,7 @@ class Symtab:
 
 	def _kvcheck(self, key, value):
 		if (isinstance(key, StorageKey)):
-			assert(not isinstance(value, DFG.StorageRef))
+			assert(not isinstance(value, StorageRef))
 
 	def assign(self, key, value):
 		assert(isinstance(key, Key))

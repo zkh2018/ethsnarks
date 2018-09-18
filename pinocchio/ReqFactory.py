@@ -1,4 +1,3 @@
-import operator
 import os
 import sys
 import traceback
@@ -6,8 +5,10 @@ import traceback
 from .Collapser import Collapser
 from .Board import Board
 from .Report import Report
-from .DFG import *
-from .BusReq import *
+from .Wires import Wire, WireList
+from .DFG import BitAnd, BitOr, BitNot, LogicalNot, LeftShift, RightShift, Xor
+from .FieldOps import FieldOutput
+from .BusReq import XorReq, LeftShiftReq, RightShiftReq, BitAndReq, BitOrReq, BitNotReq, LogicalNotReq
 
 class ReqFactory(Collapser):
 	def __init__(self, output_filename, circuit_inputs, circuit_nizk_inputs, circuit_outputs, bit_width):

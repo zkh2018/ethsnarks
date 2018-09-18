@@ -1,5 +1,5 @@
-from .BitWidth import *
-from .Buses import *
+from .BitWidth import BitWidth
+from .Buses import OneBus
 
 class Board:
 	# :: board layer: abstracts into values that travel on busses made

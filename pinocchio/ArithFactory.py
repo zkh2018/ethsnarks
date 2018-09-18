@@ -1,7 +1,9 @@
+from .BusReq import ConstantReq
 from .ReqFactory import ReqFactory
-from .TraceType import ARITHMETIC_TYPE
-from .DFG import *
-from .ArithBusReq import *
+from .TraceType import ARITHMETIC_TYPE, BOOLEAN_TYPE
+from .DFG import CmpLT, CmpLEQ, CmpEQ, NIZKInput, Input, Constant, Conditional, Add, Subtract, Negate, Multiply
+from .ArithBuses import AllOnesBus, JoinBus, SplitBus, ConstantArithmeticBus, ConstantBitXorBus, XorBus, BitOrBus, BitAndBus, EqlBusArith, ArithZero
+from .ArithBusReq import CmpEQReqArith, CmpLTReq, CmpLEQReq, AddReq, MultiplyReq, NegateReq, ConditionalReq, ArithmeticInputReq, ArithmeticNIZKInputReq, ArithmeticOutputBus
 
 class ArithFactory(ReqFactory):
 	def __init__(self, output_filename, circuit_inputs, circuit_nizk_inputs, circuit_outputs, bit_width):

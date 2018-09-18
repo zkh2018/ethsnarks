@@ -1,4 +1,3 @@
-from . import types
 from .Timing import Timing
 
 class Collapser:

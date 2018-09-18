@@ -139,7 +139,6 @@ class BaseEval(Collapser):
 
 	def evaluate(self, out_fn):
 		ofp = open(out_fn, "w")
-		output_values = {}
 		output_ids = list(self.outputs)
 		output_ids.sort()
 		for wire_id in output_ids:

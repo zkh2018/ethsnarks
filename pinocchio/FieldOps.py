@@ -1,5 +1,5 @@
 from . import types
-from .Wires import *
+from .Wires import Wire, WireList
 
 class FieldOp:
 	def __init__(self, comment):

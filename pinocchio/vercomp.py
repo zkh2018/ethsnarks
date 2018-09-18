@@ -4,10 +4,8 @@ import pickle
 import json
 import argparse
 import sys
-import types
 import subprocess
 import os
-import cProfile
 import traceback
 #from ArithBackend import ArithBackend
 from .ArithFactory import ArithFactory
@@ -22,11 +20,12 @@ import pycparser
 from pycparser import c_ast
 import StringIO
 
-from .Symtab import *
-from .DFG import *
-from .Struct import *
+from .Symtab import Symtab, UndefinedSymbol
+from .DFG import Undefined, Input, NIZKInput, Constant, DFGFactory, CmpEQ, CmpLT, CmpLEQ, Conditional, Add, Multiply, Negate, Subtract, LeftShift, RightShift, BitOr, BitNot, BitAnd, Xor, LogicalAnd, LogicalNot, Divide, Modulo, UndefinedExpression, NonconstantExpression, NonconstantArrayAccess
+from .Struct import StructType, ArrayType, PtrType, IntType, UnsignedType, Field
 from . import BitWidth
 from .Collapser import Collapser
+from .Storage import StorageKey, Storage, StorageRef, Symbol, PseudoSymbol, Null
 
 sys.setrecursionlimit(10000)
 
@@ -438,7 +437,7 @@ class Vercomp:
 		symtab = subscript_state.symtab
 		try:
 			subscript_val = self.evaluate(subscript_state.expr)
-		except NonconstantExpression, ex:
+		except NonconstantExpression:
 			msg = "Array subscript isn't a constant expression at %s;\nexpr is %s" % (
 				arrayref.subscript.coord, subscript_state.expr)
 			raise NonconstantArrayAccess(msg)
@@ -717,7 +716,7 @@ class Vercomp:
 			else:
 				# no-op.
 				return symtab
-		except NonconstantExpression, ex:
+		except NonconstantExpression:
 			# If condition is dynamic. Run both branches (in dedicated scopes)
 			# and make resulting storage updates conditional on the
 			# dynamic condition.
@@ -759,6 +758,8 @@ class Vercomp:
 		sanity = -1
 		working_symtab = symtab
 		#self.loop_msg("___start___")
+		cond_state = None
+		cond_val = None
 		while (True):
 			sanity += 1
 			if (sanity > self.loop_sanity_limit):
@@ -832,7 +833,7 @@ class Vercomp:
 				cond_val = self.evaluate(cond_state.expr)
 			except NonconstantExpression:
 				pass
-			except Exception, ex:
+			except Exception:
 				print "expr is %s" % cond_state.expr
 				raise
 			try:
@@ -841,7 +842,7 @@ class Vercomp:
 				traceback.print_exc(unexpected_nce)
 				print "\n---------\n"
 				raise Exception("Unexpected NonconstantExpression; it leaked up from some subexpression evaluation?")
-		except NonconstantExpression, ex:
+		except NonconstantExpression:
 			#print "Condition is dynamic (ex %s):" % repr(ex)
 			#print ":: ",ast_show(cond)
 			#print ":: ",cond_state.expr
@@ -1132,12 +1133,6 @@ def main(argv):
 		vercomp = Vercomp(args.cfile, args, timing)
 	except Exception,ex:
 		print repr(ex)
-		raise
-		print "DFG total count: %s flatbytes: %s" % (total.count, total.flatbytes)
-		flats = total.flats
-		flats.sort()
-		flats = flats[::-1]
-		print("Biggest flat: len %s %s" % (flats[0][0], str(flats[0][1])[0:160]))
 		raise
 
 	if (args.print_exprs):

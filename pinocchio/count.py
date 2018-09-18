@@ -75,7 +75,7 @@ def main():
 
   args = parser.parse_args()
   
-  count = Counter(args.dir)
+  Counter(args.dir)
 
 if (__name__=="__main__"):
   main()

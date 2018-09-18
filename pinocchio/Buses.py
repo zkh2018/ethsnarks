@@ -1,7 +1,8 @@
 from . import types
-from .TraceType import *
-from .ceillg2 import *
-from .FieldOps import *
+from .TraceType import BOOLEAN_TYPE
+from .ceillg2 import ceillg2
+from .FieldOps import FieldInput
+from .Wires import WireList, Wire
 #from ArithmeticFieldOps import *	# TODO plane bus zero depends on this; probably broken
 
 MAJOR_INPUT=0

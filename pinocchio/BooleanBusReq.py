@@ -1,8 +1,7 @@
-from .Buses import *
-from .BooleanBuses import *
-from .TraceType import *
+from .BooleanBuses import BooleanInputBus, BooleanAddBus
+from .TraceType import BOOLEAN_TYPE
 from . import DFG
-from .BusReq import *
+from .BusReq import BusReq, LogicalCastReq, BinaryOpReq
 
 ##############################################################################
 # Boolean-only variants of arithmetic-like operators

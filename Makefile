@@ -108,6 +108,7 @@ lint: python-pyflakes python-pylint cxx-lint
 
 python-pyflakes:
 	$(PYTHON) -mpyflakes $(NAME)
+	$(PYTHON) -mpyflakes pinocchio
 
 python-pylint:
 	$(PYTHON) -mpylint $(NAME) || true

@@ -1,5 +1,5 @@
-from .Wires import *
-from .FieldOps import *
+from .Wires import Wire, WireList
+from .FieldOps import FieldOp
 
 class BinaryFieldOp(FieldOp):
 	def __init__(self, comment, left_wire, right_wire, out_wire, gate):

@@ -1,10 +1,8 @@
 #!/usr/bin/python
 
 import sys
-import re
 import operator
-import argparse
-from .BaseEval import *
+from .BaseEval import BaseEvalOp, BaseEval
 
 sys.setrecursionlimit(60)
 

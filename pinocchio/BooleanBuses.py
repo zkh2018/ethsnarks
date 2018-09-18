@@ -1,5 +1,7 @@
-from .Buses import *
-from .BooleanFieldOps import *
+from .Buses import Bus, BooleanBus, AllOnesBase, BinaryBooleanBus, ConstantBitXorBase, MAJOR_INPUT, MAJOR_LOGIC, MAJOR_OUTPUT
+from .BooleanFieldOps import FieldXor, FieldAnd, FieldOr
+from .FieldOps import FieldInput, FieldOutput
+from .TraceType import BOOLEAN_TYPE
 
 class BooleanInputBus(BooleanBus):
 	def __init__(self, board, input_idx):
@@ -174,10 +176,6 @@ class BitAndBus(BitWiseBus):
 class BitOrBus(BitWiseBus):
 	def __init__(self, board, bus_left, bus_right):
 		BitWiseBus.__init__(self, board, bus_left, bus_right, FieldOr, "bitor")
-
-class BitAndBus(BitWiseBus):
-	def __init__(self, board, bus_left, bus_right):
-		BitWiseBus.__init__(self, board, bus_left, bus_right, FieldAnd, "bitand")
 
 class XorBus(BitWiseBus):
 	def __init__(self, board, bus_left, bus_right):

@@ -1,8 +1,9 @@
+import operator
+
 from . import types
-from .Storage import *
-from .Struct import *
-from .BitWidth import *
-from .DFGOperator import *
+from .Storage import StorageKey
+from .Struct import PtrType
+from .DFGOperator import PyOp, LeftShiftOp, RightShiftOp, LogicalAndOp
 
 class NonconstantArrayAccess(Exception):
 	def __init__(self, s):

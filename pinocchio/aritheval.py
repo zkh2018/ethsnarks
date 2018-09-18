@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import operator
-from .BaseEval import *
+from .BaseEval import BaseEvalGate, BaseEvalOp, BaseEval
 
 class EAConstMul(BaseEvalGate):
 	def __init__(self, const, wire_id):

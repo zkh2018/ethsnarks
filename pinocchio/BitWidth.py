@@ -8,7 +8,7 @@ class BitWidth:
 		else:
 			self.overflow_limit = CircuitParams.ACTIVE_BIT_CONSTRAINT
 
-	def ignoring_overflow():
+	def ignoring_overflow(self):
 		return self.overflow_limit==None
 
 	def get_width(self):

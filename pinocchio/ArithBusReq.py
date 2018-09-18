@@ -1,7 +1,6 @@
-from .ArithBuses import *
-from .TraceType import *
-from . import DFG
-from .BusReq import *
+from .ArithBuses import ArithAddBus, ArithmeticNIZKInputBus, ArithmeticInputBus, ConstantMultiplyBus, SplitBus, JoinBus, ArithMultiplyBus, LeftShiftBus, ArithmeticConditionalBus, ArithmeticZeroPBus, ConstantArithmeticBus
+from .TraceType import ARITHMETIC_TYPE, BOOLEAN_TYPE
+from .BusReq import BusReq, BinaryOpReq, LogicalCastReq
 
 ##############################################################################
 # Arithmetic operators

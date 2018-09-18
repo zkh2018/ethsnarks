@@ -1,5 +1,6 @@
-from .Buses import *
-from .TraceType import *
+from .Buses import LeftShiftBus, ConstBitAndBus, ConstBitOrBus, ConstantBooleanBus
+from .TraceType import BOOLEAN_TYPE, ARITHMETIC_TYPE, TraceType
+from .BusReq import make_bitnot
 from . import DFG
 
 class BaseReq:
