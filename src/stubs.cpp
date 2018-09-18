@@ -30,6 +30,17 @@ bool stub_verify( const char *vk_json, const char *proof_json )
 }
 
 
+std::string stub_prove_from_pb( ProtoboardT& pb, const char *pk_file )
+{
+    auto proving_key = ethsnarks::loadFromFile<ethsnarks::ProvingKeyT>(pk_file);
+    // TODO: verify if proving key was loaded correctly, if not return NULL
+
+    auto primary_input = pb.primary_input();
+    auto proof = libsnark::r1cs_gg_ppzksnark_zok_prover<ethsnarks::ppT>(proving_key, primary_input, pb.auxiliary_input());
+    return ethsnarks::proof_to_json(proof, primary_input);
+}
+
+
 int stub_genkeys_from_pb( ProtoboardT& pb, const char *pk_file, const char *vk_file )
 {
     auto keypair = libsnark::r1cs_gg_ppzksnark_zok_generator<ppT>(pb.get_constraint_system());

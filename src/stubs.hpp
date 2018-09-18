@@ -14,6 +14,8 @@ bool stub_test_proof_verify( const ProtoboardT &in_pb );
 
 int stub_genkeys_from_pb( ProtoboardT& pb, const char *pk_file, const char *vk_file );
 
+std::string stub_prove_from_pb( ProtoboardT& pb, const char *pk_file );
+
 
 template<class GadgetT>
 int stub_genkeys( const char *pk_file, const char *vk_file )

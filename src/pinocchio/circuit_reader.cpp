@@ -60,14 +60,13 @@ static FieldT readFieldElementFromHex(const char* inputStr){
 	mpz_clear(integ);
 	FieldT f = FieldT(constStrDecimal);
 	return f;
-
 }
 
 
 CircuitReader::CircuitReader(
 	ProtoboardT& in_pb,
-	char* arithFilepath,
-	char* inputsFilepath
+	const char* arithFilepath,
+	const char* inputsFilepath
 ) :
 	GadgetT(in_pb, "CircuitReader")
 {
@@ -76,12 +75,93 @@ CircuitReader::CircuitReader(
 	mapValuesToProtoboard();
 }
 
-void CircuitReader::parseAndEval(char* arithFilepath, char* inputsFilepath) {
+/**
+* Parse file containing inputs, one line at a time, each line is two numbers:
+*
+* 	<wire-id> <value>
+*/
+void CircuitReader::parseInputs( const char *inputsFilepath )
+{
+	ifstream inputfs(inputsFilepath, ifstream::in);
+	string line;
 
+	if (!inputfs.good()) {
+		printf("Unable to open input file %s \n", inputsFilepath);
+		exit(-1);
+	}
+	else {
+		char* inputStr;
+		while (getline(inputfs, line)) {
+			if (line.length() == 0) {
+				continue;
+			}
+			Wire wireId;
+			inputStr = new char[line.size()];
+			if (2 == sscanf(line.c_str(), "%u %s", &wireId, inputStr)) {
+				wireValues[wireId] = readFieldElementFromHex(inputStr);
+			}
+			else {
+				printf("Error in Input\n");
+				exit(-1);
+			}
+			delete[] inputStr;
+		}
+		inputfs.close();
+	}
+}
+
+
+void CircuitReader::evalOpcode( short opcode, std::vector<FieldT> &inValues, std::vector<Wire> &outWires, FieldT &constant )
+{
+	if (opcode == ADD_OPCODE) {
+		FieldT sum;
+		for (auto &v : inValues)
+			sum += v;
+		wireValues[outWires[0]] = sum;
+	}
+	else if (opcode == MUL_OPCODE) {
+		wireValues[outWires[0]] = inValues[0] * inValues[1];
+	}
+	else if (opcode == XOR_OPCODE) {
+		wireValues[outWires[0]] =
+				(inValues[0] == inValues[1]) ? FieldT::zero() : FieldT::one();
+	}
+	else if (opcode == OR_OPCODE) {
+		wireValues[outWires[0]] =
+				(inValues[0] == FieldT::zero()
+						&& inValues[1] == FieldT::zero()) ?
+						FieldT::zero() : FieldT::one();
+	}
+	else if (opcode == NONZEROCHECK_OPCODE) {
+		wireValues[outWires[1]] = (inValues[0] == FieldT::zero()) ? FieldT::zero() : FieldT::one();
+	}
+	else if (opcode == PACK_OPCODE) {
+		FieldT sum;
+		FieldT two = FieldT::one();
+		for (auto &v : inValues) {
+			sum += two * v;
+			two += two;
+		}
+		wireValues[outWires[0]] = sum;
+	}
+	else if (opcode == SPLIT_OPCODE) {
+		int size = outWires.size();
+		FieldT& inVal = inValues[0];
+		for (int i = 0; i < size; i++) {
+			wireValues[outWires[i]] = inVal.as_bigint().test_bit(i);
+		}
+	}
+	else if (opcode == MULCONST_OPCODE) {
+		wireValues[outWires[0]] = constant * inValues[0];
+	}
+}
+
+
+void CircuitReader::parseAndEval(const char* arithFilepath, const char* inputsFilepath)
+{
 	enter_block("Parsing and Evaluating the circuit");
 
 	ifstream arithfs(arithFilepath, ifstream::in);
-	ifstream inputfs(inputsFilepath, ifstream::in);
 	string line;
 
 	if (!arithfs.good()) {
@@ -98,42 +178,15 @@ void CircuitReader::parseAndEval(char* arithFilepath, char* inputsFilepath) {
 	}
 
 	wireValues.resize(numWires);
-
-	if (!inputfs.good()) {
-		printf("Unable to open input file %s \n", inputsFilepath);
-		exit(-1);
-	}
-	else {
-		char* inputStr;
-		while (getline(inputfs, line)) {
-			if (line.length() == 0) {
-				continue;
-			}
-			Wire wireId;
-			inputStr = new char[line.size()];
-			if (2 == sscanf(line.c_str(), "%u %s", &wireId, inputStr)) {
-				wireValues[wireId] = readFieldElementFromHex(inputStr);
-			} else {
-				printf("Error in Input\n");
-				exit(-1);
-			}
-			delete[] inputStr;
-		}
-		inputfs.close();
-	}
+	parseInputs(inputsFilepath);
 
 	char type[200];
 	char* inputStr;
 	char* outputStr;
 	unsigned int numGateInputs, numGateOutputs;
 
-	Wire wireId;
-
-	FieldT oneElement = FieldT::one();
-	FieldT zeroElement = FieldT::zero();
 
 	// Parse the circuit: few lines were imported from Pinocchio's code.
-
 	while (getline(arithfs, line)) {
 		if (line.length() == 0) {
 			continue;
@@ -141,6 +194,7 @@ void CircuitReader::parseAndEval(char* arithFilepath, char* inputsFilepath) {
 		inputStr = new char[line.size()];
 		outputStr = new char[line.size()];
 
+		Wire wireId;
 		if (line[0] == '#') {
 			continue;
 		}
@@ -211,49 +265,8 @@ void CircuitReader::parseAndEval(char* arithFilepath, char* inputsFilepath) {
 				printf("Error: unrecognized line: %s\n", line.c_str());
 				exit(-1);
 			}
-
 	
-			if (opcode == ADD_OPCODE) {
-				FieldT sum;
-				for (auto &v : inValues)
-					sum += v;
-				wireValues[outWires[0]] = sum;
-			}
-			else if (opcode == MUL_OPCODE) {
-				wireValues[outWires[0]] = inValues[0] * inValues[1];
-			}
-			else if (opcode == XOR_OPCODE) {
-				wireValues[outWires[0]] =
-						(inValues[0] == inValues[1]) ? zeroElement : oneElement;
-			}
-			else if (opcode == OR_OPCODE) {
-				wireValues[outWires[0]] =
-						(inValues[0] == zeroElement
-								&& inValues[1] == zeroElement) ?
-								zeroElement : oneElement;
-			}
-			else if (opcode == NONZEROCHECK_OPCODE) {
-				wireValues[outWires[1]] = (inValues[0] == zeroElement) ? zeroElement : oneElement;
-			}
-			else if (opcode == PACK_OPCODE) {
-				FieldT sum;
-				FieldT two = oneElement;
-				for (auto &v : inValues) {
-					sum += two * v;
-					two += two;
-				}
-				wireValues[outWires[0]] = sum;
-			}
-			else if (opcode == SPLIT_OPCODE) {
-				int size = outWires.size();
-				FieldT& inVal = inValues[0];
-				for (int i = 0; i < size; i++) {
-					wireValues[outWires[i]] = inVal.as_bigint().test_bit(i);
-				}
-			}
-			else if (opcode == MULCONST_OPCODE) {
-				wireValues[outWires[0]] = constant * inValues[0];
-			}
+			evalOpcode(opcode, inValues, outWires, constant);
 		}
 		else {
 			printf("Error: unrecognized line: %s\n", line.c_str());
@@ -268,7 +281,7 @@ void CircuitReader::parseAndEval(char* arithFilepath, char* inputsFilepath) {
 }
 
 
-void CircuitReader::constructCircuit(char* arithFilepath)
+void CircuitReader::constructCircuit(const char* arithFilepath)
 {
 	char type[200];
 	char* inputStr;
@@ -290,17 +303,15 @@ void CircuitReader::constructCircuit(char* arithFilepath)
 
 	this->pb.set_input_sizes(numInputs);
 
-	int lineCount = 0;
-	while (getline(ifs2, line)) {
-		lineCount++;
-
+	while (getline(ifs2, line))
+	{
 		if (line.length() == 0) {
 			continue;
 		}
 		inputStr = new char[line.size()];
 		outputStr = new char[line.size()];
 
-		if (5 == sscanf(line.c_str(), "%s in %d <%[^>]> out %d <%[^>]>", type,
+		if (5 == sscanf(line.c_str(), "%s in %u <%[^>]> out %u <%[^>]>", type,
 						&numGateInputs, inputStr, &numGateOutputs, outputStr)) {
 
 			std::vector<Wire> inWires;
@@ -463,7 +474,7 @@ void CircuitReader::addXorConstraint(InputWires& inputs, OutputWires& outputs)
 {
 	auto& l1 = wireGet(inputs[0]);
 	auto& l2 = wireGet(inputs[1]);
-	auto& outvar = wireGet(outputs[0]);
+	auto& outvar = varGet(outputs[0]);
 
 	pb.add_r1cs_constraint(ConstraintT(2 * l1, l2, l1 + l2 - outvar));
 }
@@ -473,7 +484,7 @@ void CircuitReader::addOrConstraint(InputWires& inputs, OutputWires& outputs)
 {
 	auto& l1 = wireGet(inputs[0]);
 	auto& l2 = wireGet(inputs[1]);
-	auto& outvar = wireGet(outputs[0]);
+	auto& outvar = varGet(outputs[0]);
 
 	pb.add_r1cs_constraint(ConstraintT(l1, l2, l1 + l2 - outvar));
 }
@@ -483,7 +494,7 @@ void CircuitReader::addAssertionConstraint(InputWires& inputs, OutputWires& outp
 {
 	auto& l1 = wireGet(inputs[0]);
 	auto& l2 = wireGet(inputs[1]);
-	auto& l3 = wireGet(outputs[0]);
+	auto& l3 = varGet(outputs[0]);
 
 	pb.add_r1cs_constraint(ConstraintT(l1, l2, l3));
 }
@@ -497,12 +508,11 @@ void CircuitReader::addSplitConstraint(InputWires& inputs, OutputWires& outputs)
 
 	for( size_t i = 0; i < outputs.size(); i++)
 	{
-		auto &out_bit_var = wireGet(outputs[i]);
+		auto &out_bit_var = varGet(outputs[i]);
 
 		generate_boolean_r1cs_constraint<FieldT>(pb, out_bit_var);
 
-		const auto &x = out_bit_var * two_i;
-		sum.terms.insert(sum.terms.end(), x.terms.begin(), x.terms.end());
+		sum.add_term( out_bit_var * two_i );
 
 		two_i += two_i;
 	}
@@ -527,7 +537,7 @@ void CircuitReader::addPackConstraint(InputWires& inputs, OutputWires& outputs)
 		two_i += two_i;
 	}
 
-	pb.add_r1cs_constraint(ConstraintT(wireGet(outputs[0]), 1, sum));
+	pb.add_r1cs_constraint(ConstraintT(varGet(outputs[0]), 1, sum));
 }
 
 

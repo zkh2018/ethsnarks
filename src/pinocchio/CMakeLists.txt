@@ -3,5 +3,5 @@ add_library(ethsnarks_pinocchio STATIC
 )
 
 
-add_executable(pinocchio run_libsnark.cpp)
+add_executable(pinocchio main.cpp)
 target_link_libraries(pinocchio ethsnarks_common ethsnarks_pinocchio)

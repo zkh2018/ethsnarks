@@ -32,6 +32,11 @@ typedef unsigned int Wire;
 typedef std::vector<Wire> InputWires;
 typedef std::vector<Wire> OutputWires;
 
+typedef std::vector<FieldT> FieldArrayT;
+
+
+typedef std::vector<LinearCombinationT> LinearCombinationsT;
+
 
 #define ADD_OPCODE 1
 #define MUL_OPCODE 2
@@ -48,9 +53,27 @@ struct ZeroEqualityItem {
 	ethsnarks::VariableT aux_var;
 };
 
+
+/*
+class circuit_operation : public GadgetT {
+public:
+	circuit_operation( ProtoboardT& pb );
+	virtual ~circuit_operation();
+
+	virtual size_t inputCount() const;
+	virtual size_t outputCount() const;
+	virtual size_t auxCount() const;
+
+	virtual void witness( const FieldArrayT &inputs, VariableArrayT &outputs, FieldArrayT &aux_vars );
+
+	virtual void constrain( const LinearCombinationsT &inputs, const LinearCombinationsT &outputs, const LinearCombinationsT &aux );
+};
+*/
+
+
 class CircuitReader : public GadgetT {
 public:
-	CircuitReader(ProtoboardT& in_pb, char* arithFilepath, char* inputsFilepath);
+	CircuitReader(ProtoboardT& in_pb, const char* arithFilepath, const char* inputsFilepath);
 
 	int getNumInputs() { return numInputs;}
 	int getNumOutputs() { return numOutputs;}
@@ -59,8 +82,15 @@ public:
 
 	void generate_r1cs_constraints() {}
 	void generate_r1cs_witness() {}
+	void parseInputs( const char *inputsFilepath );
 
 protected:
+	/*
+	typedef void (CircuitReader::*OpertationWitnessT)(InputWires& inputs, OutputWires& outputs, FieldT& const_arg);
+	typedef void (CircuitReader::*OpertationConstrainT)(InputWires& inputs, OutputWires& outputs);
+	std::vector<OpertationConstrainT> m_operations;
+	*/
+
 	std::map<Wire,LinearCombinationT> wireLC;
 	std::map<Wire,VariableT> variableMap;
 
@@ -77,8 +107,9 @@ protected:
 	size_t numNizkInputs {0};
 	size_t numOutputs{0};
 
-	void parseAndEval(char* arithFilepath, char* inputsFilepath);
-	void constructCircuit(char*);  // Second Pass:
+	void evalOpcode( short opcode, std::vector<FieldT> &inValues, std::vector<Wire> &outWires, FieldT &constant );
+	void parseAndEval(const char* arithFilepath, const char* inputsFilepath);
+	void constructCircuit(const char*);  // Second Pass:
 	void mapValuesToProtoboard();
 
 	bool wireExists( Wire wireId );
