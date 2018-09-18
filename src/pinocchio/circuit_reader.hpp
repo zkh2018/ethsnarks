@@ -55,9 +55,10 @@ struct ZeroEqualityItem {
 
 
 /*
+class CircuitReader;
 class circuit_operation : public GadgetT {
 public:
-	circuit_operation( ProtoboardT& pb );
+	circuit_operation( CircuitReader& circuit );
 	virtual ~circuit_operation();
 
 	virtual size_t inputCount() const;
@@ -85,12 +86,6 @@ public:
 	void parseInputs( const char *inputsFilepath );
 
 protected:
-	/*
-	typedef void (CircuitReader::*OpertationWitnessT)(InputWires& inputs, OutputWires& outputs, FieldT& const_arg);
-	typedef void (CircuitReader::*OpertationConstrainT)(InputWires& inputs, OutputWires& outputs);
-	std::vector<OpertationConstrainT> m_operations;
-	*/
-
 	std::map<Wire,LinearCombinationT> wireLC;
 	std::map<Wire,VariableT> variableMap;
 
@@ -110,6 +105,7 @@ protected:
 	void evalOpcode( short opcode, std::vector<FieldT> &inValues, std::vector<Wire> &outWires, FieldT &constant );
 	void parseAndEval(const char* arithFilepath, const char* inputsFilepath);
 	void constructCircuit(const char*);  // Second Pass:
+	void addOperationConstraints( const char *type, const InputWires& inWires, const OutputWires& outWires );
 	void mapValuesToProtoboard();
 
 	bool wireExists( Wire wireId );
@@ -119,19 +115,19 @@ protected:
 	VariableT& varNew( Wire wire_id, const std::string &annotation="");
 	VariableT& varGet( Wire wire_id, const std::string &annotation="");
 
-	void addMulConstraint(InputWires& inputs, OutputWires& outputs);
-	void addXorConstraint(InputWires& inputs, OutputWires& outputs);
+	void addMulConstraint(const InputWires& inputs, const OutputWires& outputs);
+	void addXorConstraint(const InputWires& inputs, const OutputWires& outputs);
 
-	void addOrConstraint(InputWires& inputs, OutputWires& outputs);
-	void addAssertionConstraint(InputWires& inputs, OutputWires& outputs);
+	void addOrConstraint(const InputWires& inputs, const OutputWires& outputs);
+	void addAssertionConstraint(const InputWires& inputs, const OutputWires& outputs);
 
-	void addSplitConstraint(InputWires& inputs, OutputWires& outputs);
-	void addPackConstraint(InputWires& inputs, OutputWires& outputs);
-	void addNonzeroCheckConstraint(InputWires& inputs, OutputWires& outputs);
+	void addSplitConstraint(const InputWires& inputs, const OutputWires& outputs);
+	void addPackConstraint(const InputWires& inputs, const OutputWires& outputs);
+	void addNonzeroCheckConstraint(const InputWires& inputs, const OutputWires& outputs);
 
-	void handleAddition(InputWires& inputs, OutputWires& outputs);
-	void handleMulConst(InputWires& inputs, OutputWires& outputs, const char*);
-	void handleMulNegConst(InputWires& inputs, OutputWires& outputs, const char*);
+	void handleAddition(const InputWires& inputs, const OutputWires& outputs);
+	void handleMulConst(const InputWires& inputs, const OutputWires& outputs, const char*);
+	void handleMulNegConst(const InputWires& inputs, const OutputWires& outputs, const char*);
 
 };
 

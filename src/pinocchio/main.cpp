@@ -43,15 +43,12 @@ static int main_verify( ProtoboardT& pb, const char *arith_file, const char *vk_
 }
 
 
-static int main_test( ProtoboardT& pb, const char *circuit_inputs )
+static int main_test( ProtoboardT& pb, const char *arith_file, const char *circuit_inputs )
 {
-	if( ! pb.is_satisfied() ) {
-		cerr << "Error: not satisfied!" << endl;
-		return 1;
-	}
+	CircuitReader circuit(pb, arith_file, circuit_inputs);
 
 	if( ! ethsnarks::stub_test_proof_verify(pb) ) {
-		cerr << "Error: failed to prove!" << endl;
+		cerr << "Error: failed to test!" << endl;
 		return  2;
 	}
 
@@ -110,7 +107,7 @@ int main(int argc, char **argv)
 		if( sub_argv > 0 ) {
 			circuit_inputs = sub_argv[0];
 		}
-		return main_test(pb, circuit_inputs);
+		return main_test(pb, arith_file, circuit_inputs);
 	}
 
 	cerr << "Error: unknown sub-command " << cmd << "\n";

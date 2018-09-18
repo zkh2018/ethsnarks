@@ -72,7 +72,10 @@ CircuitReader::CircuitReader(
 {
 	parseAndEval(arithFilepath, inputsFilepath);
 	constructCircuit(arithFilepath);
-	mapValuesToProtoboard();
+
+	if( inputsFilepath ) {
+		mapValuesToProtoboard();
+	}
 }
 
 /**
@@ -178,7 +181,9 @@ void CircuitReader::parseAndEval(const char* arithFilepath, const char* inputsFi
 	}
 
 	wireValues.resize(numWires);
-	parseInputs(inputsFilepath);
+	if( inputsFilepath ) {
+		parseInputs(inputsFilepath);
+	}
 
 	char type[200];
 	char* inputStr;
@@ -217,12 +222,7 @@ void CircuitReader::parseAndEval(const char* arithFilepath, const char* inputsFi
 						&numGateInputs, inputStr, &numGateOutputs, outputStr)) {
 
 			istringstream iss_i(inputStr, istringstream::in);
-			std::vector<FieldT> inValues;
-			std::vector<Wire> outWires;
-			Wire inWireId;
-			while (iss_i >> inWireId) {
-				inValues.push_back(wireValues[inWireId]);
-			}
+			std::vector<Wire> outWires;		
 			readIds(outputStr, outWires);
 
 			short opcode;
@@ -266,7 +266,14 @@ void CircuitReader::parseAndEval(const char* arithFilepath, const char* inputsFi
 				exit(-1);
 			}
 	
-			evalOpcode(opcode, inValues, outWires, constant);
+			if( inputsFilepath ) {
+				Wire inWireId;
+				std::vector<FieldT> inValues;
+				while (iss_i >> inWireId) {
+					inValues.push_back(wireValues[inWireId]);
+				}
+				evalOpcode(opcode, inValues, outWires, constant);
+			}
 		}
 		else {
 			printf("Error: unrecognized line: %s\n", line.c_str());
@@ -278,6 +285,51 @@ void CircuitReader::parseAndEval(const char* arithFilepath, const char* inputsFi
 	arithfs.close();
 
 	leave_block("Parsing and Evaluating the circuit");
+}
+
+
+void CircuitReader::addOperationConstraints( const char *type, const InputWires& inWires, const OutputWires& outWires )
+{
+	if (strcmp(type, "add") == 0) {
+		assert(numGateOutputs == 1);
+		handleAddition(inWires, outWires);
+	}
+	else if (strcmp(type, "mul") == 0) {
+		assert(numGateInputs == 2 && numGateOutputs == 1);
+		addMulConstraint(inWires, outWires);
+	}
+	else if (strcmp(type, "xor") == 0) {
+		assert(numGateInputs == 2 && numGateOutputs == 1);
+		addXorConstraint(inWires, outWires);
+	}
+	else if (strcmp(type, "or") == 0) {
+		assert(numGateInputs == 2 && numGateOutputs == 1);
+		addOrConstraint(inWires, outWires);
+	}
+	else if (strcmp(type, "assert") == 0) {
+		assert(numGateInputs == 2 && numGateOutputs == 1);
+		addAssertionConstraint(inWires, outWires);
+	}
+	else if (strstr(type, "const-mul-neg-")) {
+		assert(numGateInputs == 1 && numGateOutputs == 1);
+		handleMulNegConst(inWires, outWires, type);
+	}
+	else if (strstr(type, "const-mul-")) {
+		assert(numGateInputs == 1 && numGateOutputs == 1);
+		handleMulConst(inWires, outWires, type);
+	}
+	else if (strcmp(type, "zerop") == 0) {
+		assert(numGateInputs == 1 && numGateOutputs == 2);
+		addNonzeroCheckConstraint(inWires, outWires);
+	}
+	else if (strstr(type, "split")) {
+		assert(numGateInputs == 1);
+		addSplitConstraint(inWires, outWires);
+	}
+	else if (strstr(type, "pack")) {
+		assert(numGateOutputs == 1);
+		addPackConstraint(inWires, outWires);
+	}
 }
 
 
@@ -303,6 +355,7 @@ void CircuitReader::constructCircuit(const char* arithFilepath)
 
 	this->pb.set_input_sizes(numInputs);
 
+	// By this time, all lines have already been parsed
 	while (getline(ifs2, line))
 	{
 		if (line.length() == 0) {
@@ -330,50 +383,9 @@ void CircuitReader::constructCircuit(const char* arithFilepath)
 				exit(6);
 			}
 
-			if (strcmp(type, "add") == 0) {
-				assert(numGateOutputs == 1);
-				handleAddition(inWires, outWires);
-			}
-			else if (strcmp(type, "mul") == 0) {
-				assert(numGateInputs == 2 && numGateOutputs == 1);
-				addMulConstraint(inWires, outWires);
-			}
-			else if (strcmp(type, "xor") == 0) {
-				assert(numGateInputs == 2 && numGateOutputs == 1);
-				addXorConstraint(inWires, outWires);
-			}
-			else if (strcmp(type, "or") == 0) {
-				assert(numGateInputs == 2 && numGateOutputs == 1);
-				addOrConstraint(inWires, outWires);
-			}
-			else if (strcmp(type, "assert") == 0) {
-				assert(numGateInputs == 2 && numGateOutputs == 1);
-				addAssertionConstraint(inWires, outWires);
-			}
-			else if (strstr(type, "const-mul-neg-")) {
-				assert(numGateInputs == 1 && numGateOutputs == 1);
-				handleMulNegConst(inWires, outWires, type);
-			}
-			else if (strstr(type, "const-mul-")) {
-				assert(numGateInputs == 1 && numGateOutputs == 1);
-				handleMulConst(inWires, outWires, type);
-			}
-			else if (strcmp(type, "zerop") == 0) {
-				assert(numGateInputs == 1 && numGateOutputs == 2);
-				addNonzeroCheckConstraint(inWires, outWires);
-			}
-			else if (strstr(type, "split")) {
-				assert(numGateInputs == 1);
-				addSplitConstraint(inWires, outWires);
-			}
-			else if (strstr(type, "pack")) {
-				assert(numGateOutputs == 1);
-				addPackConstraint(inWires, outWires);
-			}
+			addOperationConstraints(type, inWires, outWires);
 		}
-		else {
-//			assert(0);
-		}
+
 		delete[] inputStr;
 		delete[] outputStr;
 	}
@@ -460,17 +472,17 @@ VariableT& CircuitReader::varGet( Wire wire_id, const std::string &annotation )
 }
 
 
-void CircuitReader::addMulConstraint(InputWires& inputs, OutputWires& outputs)
+void CircuitReader::addMulConstraint(const InputWires& inputs, const OutputWires& outputs)
 {
 	auto& l1 = wireGet(inputs[0]);
 	auto& l2 = wireGet(inputs[1]);
-	auto& outvar = wireGet(outputs[0]);
+	auto& outvar = varGet(outputs[0]);
 
 	pb.add_r1cs_constraint(ConstraintT(l1, l2, outvar));
 }
 
 
-void CircuitReader::addXorConstraint(InputWires& inputs, OutputWires& outputs)
+void CircuitReader::addXorConstraint(const InputWires& inputs, const OutputWires& outputs)
 {
 	auto& l1 = wireGet(inputs[0]);
 	auto& l2 = wireGet(inputs[1]);
@@ -480,7 +492,7 @@ void CircuitReader::addXorConstraint(InputWires& inputs, OutputWires& outputs)
 }
 
 
-void CircuitReader::addOrConstraint(InputWires& inputs, OutputWires& outputs)
+void CircuitReader::addOrConstraint(const InputWires& inputs, const OutputWires& outputs)
 {
 	auto& l1 = wireGet(inputs[0]);
 	auto& l2 = wireGet(inputs[1]);
@@ -490,7 +502,7 @@ void CircuitReader::addOrConstraint(InputWires& inputs, OutputWires& outputs)
 }
 
 
-void CircuitReader::addAssertionConstraint(InputWires& inputs, OutputWires& outputs)
+void CircuitReader::addAssertionConstraint(const InputWires& inputs, const OutputWires& outputs)
 {
 	auto& l1 = wireGet(inputs[0]);
 	auto& l2 = wireGet(inputs[1]);
@@ -500,7 +512,7 @@ void CircuitReader::addAssertionConstraint(InputWires& inputs, OutputWires& outp
 }
 
 
-void CircuitReader::addSplitConstraint(InputWires& inputs, OutputWires& outputs)
+void CircuitReader::addSplitConstraint(const InputWires& inputs, const OutputWires& outputs)
 {
 	LinearCombinationT sum;
 
@@ -521,7 +533,7 @@ void CircuitReader::addSplitConstraint(InputWires& inputs, OutputWires& outputs)
 }
 
 
-void CircuitReader::addPackConstraint(InputWires& inputs, OutputWires& outputs)
+void CircuitReader::addPackConstraint(const InputWires& inputs, const OutputWires& outputs)
 {
 	LinearCombinationT sum;
 
@@ -559,7 +571,7 @@ void CircuitReader::addPackConstraint(InputWires& inputs, OutputWires& outputs)
 *
 * For some value M, where M should be (1.0/X), or the modulo inverse of X.
 */
-void CircuitReader::addNonzeroCheckConstraint(InputWires& inputs, OutputWires& outputs)
+void CircuitReader::addNonzeroCheckConstraint(const InputWires& inputs, const OutputWires& outputs)
 {
 	auto& X = wireGet(inputs[0]);
 
@@ -576,7 +588,7 @@ void CircuitReader::addNonzeroCheckConstraint(InputWires& inputs, OutputWires& o
 }
 
 
-void CircuitReader::handleAddition(InputWires& inputs, OutputWires& outputs)
+void CircuitReader::handleAddition(const InputWires& inputs, const OutputWires& outputs)
 {
 	auto& outwire = wireGet(outputs[0]);
 
@@ -590,7 +602,7 @@ void CircuitReader::handleAddition(InputWires& inputs, OutputWires& outputs)
 }
 
 
-void CircuitReader::handleMulConst(InputWires& inputs, OutputWires& outputs, const char* type) {
+void CircuitReader::handleMulConst(const InputWires& inputs, const OutputWires& outputs, const char* type) {
 
 	const char* constStr = type + sizeof("const-mul-") - 1;
 
@@ -607,7 +619,7 @@ void CircuitReader::handleMulConst(InputWires& inputs, OutputWires& outputs, con
 }
 
 
-void CircuitReader::handleMulNegConst(InputWires& inputs, OutputWires& outputs, const char* type)
+void CircuitReader::handleMulNegConst(const InputWires& inputs, const OutputWires& outputs, const char* type)
 {
 	const char* constStr = type + sizeof("const-mul-neg-") - 1;
 
