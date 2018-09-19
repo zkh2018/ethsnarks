@@ -4,11 +4,32 @@ import traceback
 
 from .Collapser import Collapser
 from .Board import Board
-from .Report import Report
 from .Wires import Wire, WireList
 from .DFG import BitAnd, BitOr, BitNot, LogicalNot, LeftShift, RightShift, Xor
 from .FieldOps import FieldOutput
 from .BusReq import XorReq, LeftShiftReq, RightShiftReq, BitAndReq, BitOrReq, BitNotReq, LogicalNotReq
+
+
+class Report:
+	def __init__(self):
+		self.table = {}
+
+	def add(self, key, qty):
+		if (key not in self.table):
+			self.table[key] = 0
+		self.table[key] += qty
+
+	def __len__(self):
+		return len(self.table)
+
+	def __repr__(self):
+		keys = self.table.keys()
+		keys.sort()
+		s = ""
+		for key in keys:
+			s += "%-20s: %s\n" % (key, self.table[key])
+		return s
+
 
 class ReqFactory(Collapser):
 	def __init__(self, output_filename, circuit_inputs, circuit_nizk_inputs, circuit_outputs, bit_width):

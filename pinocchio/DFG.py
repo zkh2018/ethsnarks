@@ -3,7 +3,6 @@ import operator
 from . import types
 from .Storage import StorageKey
 from .Struct import PtrType
-from .DFGOperator import PyOp, LeftShiftOp, RightShiftOp, LogicalAndOp
 
 class NonconstantArrayAccess(Exception):
 	def __init__(self, s):
@@ -14,10 +13,40 @@ class NonconstantExpression(Exception): pass
 class UndefinedExpression(Exception): pass
 
 class Total: pass
+
 total = Total()
 total.count = 0
 total.flatbytes = 0
 total.flats = []
+
+
+class DFGOperator: pass
+
+class PyOp(DFGOperator):
+	def __init__(self, pyop):
+		self.pyop = pyop
+
+	def __call__(self, *args):
+		return self.pyop(*args)
+
+class LeftShiftOp(DFGOperator):
+	def __init__(self, bw):
+		self.bw = bw
+
+	def __call__(self, a, b):
+		return self.bw.leftshift(a, b)
+
+class RightShiftOp(DFGOperator):
+	def __init__(self, bw):
+		self.bw = bw
+
+	def __call__(self, a, b):
+		return self.bw.rightshift(a, b)
+
+class LogicalAndOp(DFGOperator):
+	def __call__(self, a, b):
+		return a and b
+
 
 class DFGFactory:
 	def __init__(self):

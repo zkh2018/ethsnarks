@@ -1,5 +1,5 @@
-from . import types
 from .Wires import Wire, WireList
+from .Struct import IntType, LongType
 
 class FieldOp:
 	def __init__(self, comment):
@@ -15,7 +15,7 @@ class FieldOp:
 		return "%-40s # %s" % (self.field_command(), self._comment)
 
 	def assert_int(self, value):
-		assert(type(value)==types.IntType or type(value)==types.LongType)
+		assert type(value)==IntType or type(value)==LongType
 		
 class FieldInputBase(FieldOp):
 	def __init__(self, command, comment, out_wire):
