@@ -2,10 +2,11 @@ from .ReqFactory import ReqFactory
 from .TraceType import BOOLEAN_TYPE
 from .DFG import (CmpLT, CmpLEQ, Constant, Add, Subtract, Multiply, Negate,
 				  Input, Conditional)
-from .BusReq import (NegateReq, ConstantReq)
-from .BooleanBusReq import (BooleanZero, BooleanOutputBus, ConstantBitXorBus,
-							AllOnesBus, BitAndBus, BitOrBus, XorBus, BooleanInputReq,
-							AddReq, CmpReq, ConditionalReq, MultiplyReq)
+from .BusReq import ConstantReq
+from .ArithBusReq import NegateReq
+from .BooleanBuses import BooleanZero, BooleanOutputBus, ConstantBitXorBus, AllOnesBus, BitAndBus, BitOrBus, XorBus
+from .BooleanBusReq import BooleanInputReq, AddReq, CmpReq, ConditionalReq, MultiplyReq
+
 
 class BooleanFactory(ReqFactory):
 	def __init__(self, output_filename, circuit_inputs, circuit_outputs, bit_width):

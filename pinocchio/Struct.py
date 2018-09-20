@@ -29,6 +29,12 @@ class IntType(Type):
 	def is_ptr_type(self):
 		return False
 
+class LongType(IntType):
+	pass
+
+class BooleanType(IntType):
+	pass
+
 class UnsignedType(IntType):
 	pass
 

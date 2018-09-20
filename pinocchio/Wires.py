@@ -1,4 +1,4 @@
-from .Struct import IntType, ListType
+from .Struct import IntType, ArrayType
 
 # This file defines the set of core field objects (Wires) and
 # operations (FieldOps) available in the underlying encoding.
@@ -21,7 +21,7 @@ class Wire:
 
 class WireList:
 	def __init__(self, wires):
-		assert(type(wires)==ListType)
+		assert(type(wires)==ArrayType)
 		self.wires = wires
 
 	def __repr__(self):

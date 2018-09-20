@@ -21,11 +21,11 @@ from pycparser import c_ast
 import StringIO
 
 from .Symtab import Symtab, UndefinedSymbol
-from .DFG import Undefined, Input, NIZKInput, Constant, DFGFactory, CmpEQ, CmpLT, CmpLEQ, Conditional, Add, Multiply, Negate, Subtract, LeftShift, RightShift, BitOr, BitNot, BitAnd, Xor, LogicalAnd, LogicalNot, Divide, Modulo, UndefinedExpression, NonconstantExpression, NonconstantArrayAccess
+from .DFG import Undefined, Input, NIZKInput, Constant, DFGFactory, CmpEQ, CmpLT, CmpLEQ, Conditional, Add, Multiply, Negate, Subtract, LeftShift, RightShift, BitOr, BitNot, BitAnd, Xor, LogicalAnd, LogicalNot, Divide, Modulo, UndefinedExpression, NonconstantExpression, NonconstantArrayAccess, StorageRef
 from .Struct import StructType, ArrayType, PtrType, IntType, UnsignedType, Field
 from . import BitWidth
 from .Collapser import Collapser
-from .Storage import StorageKey, Storage, StorageRef, Symbol, PseudoSymbol, Null
+from .Storage import StorageKey, Storage, Symbol, PseudoSymbol, Null
 
 sys.setrecursionlimit(10000)
 
@@ -135,18 +135,15 @@ class Vercomp:
 
 	def gcc_preprocess(self, filename, cpp_arg):
 		# returns filename of preprocessed file
-		dir = os.path.dirname(filename)
-		if (dir==""):
-			dir = "."
-		tmpname = dir+"/build/"+os.path.basename(filename)+".p"
-		def under_to_dash(s):
-			if (s[0]=="_"):
-				s = "-"+s[1:]
-			return s
-		if (cpp_arg!=None):
-			cpp_args = map(under_to_dash, cpp_arg)
-		else:
-			cpp_args = []
+		out_dir = os.path.dirname(filename)
+		if out_dir=="":
+			out_dir = "."
+		tmpname = out_dir+"/build/"+os.path.basename(filename)+".p"
+
+		cpp_args = []
+		if cpp_arg != None:
+			cpp_args = [_.replace('_', '-') for _ in cpp_arg]
+
 		# I used to call gcc-4; I'm not sure what machine had two versions
 		# or what the issue was, but I leave this comment here as a possible
 		# solution to the next sucker who runs into that problem.
