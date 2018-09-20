@@ -1,6 +1,9 @@
-class TraceType:
-	def __init__(self, name): self.name = name
-	def __repr__(self): return self.name
+class TraceType(object):
+	def __init__(self, name):
+		self.name = name
+
+	def __repr__(self):
+		return self.name
 
 #	def opposite(self):
 #		if (self==ARITHMETIC_TYPE):

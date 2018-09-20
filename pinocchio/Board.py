@@ -1,7 +1,7 @@
 from .BitWidth import BitWidth
 from .Buses import OneBus
 
-class Board:
+class Board(object):
 	# :: board layer: abstracts into values that travel on busses made
 	# of traces.
 	# 	a computation produces a bus-of-traces, but may internally generate some

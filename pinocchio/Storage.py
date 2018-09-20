@@ -5,7 +5,7 @@
 # with a new x, the new x 'allocates' new Storage, so that refs to
 # x can point to it, without it aliasing the previous x.
 
-class Storage:
+class Storage(object):
 	def __init__(self, label, size):
 		self.label = label
 		self.size = size
@@ -30,7 +30,8 @@ class Null(Storage):
 
 ##############################################################################
 
-class Key: pass
+class Key(object):
+	pass
 
 class Symbol(Key):
 	def __init__(self, name):

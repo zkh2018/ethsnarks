@@ -35,8 +35,8 @@ class ArithFactory(ReqFactory):
 			result = CmpLTReq(self, expr, type)
 		elif (isinstance(expr, CmpLEQ)):
 			result = CmpLEQReq(self, expr, type)
-                elif (isinstance(expr, CmpEQ)):
-                        result = CmpEQReqArith(self, expr, type)
+		elif (isinstance(expr, CmpEQ)):
+			result = CmpEQReqArith(self, expr, type)
 		elif (isinstance(expr, Constant)):
 			result = ConstantReq(self, expr, type)
 		elif (isinstance(expr, Add)):
@@ -79,7 +79,7 @@ class ArithFactory(ReqFactory):
 	def get_ConstantArithmeticBus_class(self): return ConstantArithmeticBus
 	def get_ConstantBitXorBus_class(self): return ConstantBitXorBus
 	def get_AllOnesBus_class(self): return AllOnesBus
-        def get_EqlBus_class(self): return EqlBusArith
+	def get_EqlBus_class(self): return EqlBusArith
 
 	# truncation cache
 	def truncate(self, expr, bus):

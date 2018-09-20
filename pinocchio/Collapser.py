@@ -1,6 +1,6 @@
 from .Timing import Timing
 
-class Collapser:
+class Collapser(object):
 	def __init__(self):
 		self.table = {}
 		self.dbg_last_calc = None
@@ -16,11 +16,11 @@ class Collapser:
 		timing = Timing("collapse_tree", enabled=False)
 		stack = [key]
 		loop_count = 0
-		while (len(stack)>0):
+		while len(stack) > 0:
 			timing.phase("collapser loop # %s setup" % loop_count)
 			loop_count += 1
 			key = stack[-1]
-			if (key in self.table):
+			if key in self.table:
 				# oh. handy. we already did this dude: he was just
 				# wanted multiple times.
 				stack.pop()

@@ -4,9 +4,10 @@ class NoSuchStructField(Exception):
 	def __str__(self): return "NoSuchStructField(%s)" % self.s
 	def __repr__(self): return "NoSuchStructField(%s)" % self.s
 
-class PointersCannotBeValues(Exception): pass
+class PointersCannotBeValues(Exception):
+	pass
 
-class Field:
+class Field(object):
 	def __init__(self, name, type):
 		self.name = name
 		self.type = type
@@ -14,7 +15,8 @@ class Field:
 	def __repr__(self):
 		return "%s %s" % (self.type, self.name)
 
-class Type: pass
+class Type(object):
+	pass
 
 class IntType(Type):
 	def sizeof(self):
@@ -83,10 +85,8 @@ class StructType(Type):
 	def __repr__(self):
 		return "struct %s" % self.label
 
-	def __cmp__(self, other):
-		i = cmp(self.__class__, other.__class__)
-		if (i!=0): return i
-		return cmp(self.label, other.label)
+	def __eq__(self, other):
+		return self.__class__ == other.__class and self.label == other.label
 
 	def is_ptr_type(self):
 		return False
@@ -101,10 +101,8 @@ class PtrType(Type):
 	def __repr__(self):
 		return "*%s" % self.type
 
-	def __cmp__(self, other):
-		i = cmp(self.__class__, other.__class__)
-		if (i!=0): return i
-		return cmp(self.type, other.type)
+	def __eq__(self, other):
+		return isinstance(other, type(self)) and other.type == self.type
 
 	def is_ptr_type(self):
 		return True

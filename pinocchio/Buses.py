@@ -11,7 +11,7 @@ MAJOR_INPUT_NIZK=2
 MAJOR_LOGIC=3
 MAJOR_OUTPUT=4
 
-class Bus:
+class Bus(object):
 	def __init__(self, board, major):
 		assert(board.is_board())
 		self.board = board

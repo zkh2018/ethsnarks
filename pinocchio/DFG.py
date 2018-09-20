@@ -12,7 +12,8 @@ class NonconstantExpression(Exception): pass
 
 class UndefinedExpression(Exception): pass
 
-class Total: pass
+class Total(object):
+	pass
 
 total = Total()
 total.count = 0
@@ -20,7 +21,8 @@ total.flatbytes = 0
 total.flats = []
 
 
-class DFGOperator: pass
+class DFGOperator(object):
+	pass
 
 class PyOp(DFGOperator):
 	def __init__(self, pyop):
@@ -48,13 +50,13 @@ class LogicalAndOp(DFGOperator):
 		return a and b
 
 
-class DFGFactory:
+class DFGFactory(object):
 	def __init__(self):
 		self.intern = {}
 
 	def create(self, dclass, *args):
 		def uid(obj):
-			if type(obj) in [types.InstanceType, types.ClassType]:
+			if isinstance(obj, object) or isinstance(obj, type): #type(obj) in [types.InstanceType, types.ClassType]:
 				return id(obj)
 			if type(obj) in [types.IntType, types.LongType, types.BooleanType]:
 				return obj
@@ -80,15 +82,10 @@ class DFGFactory:
 		# factory.
 		pass
 
-class DFGExpr:
+class DFGExpr(object):
 	def __init__(self, factory):
 		factory.verify()
 		self.factory = factory
-
-	def __cmp__(self, other):
-		i=cmp(type(self), type(other))
-		if (i!=0): return i
-		return cmp(id(self), id(other))
 
 	def __hash__(self):
 		return id(self)
@@ -112,14 +109,6 @@ class InputBase(DFGExpr):
 
 	def __hash__(self):
 		return hash(self.storage_key)
-
-	def equal(self, other):
-		i = cmp(id(self), id(other))
-		if (i==0): return i
-		i = cmp(self.__class__, other.__class__)
-		if (i!=0): return i
-		i = cmp(self.storage_key, other.storage_key)
-		return i
 
 class Input(InputBase):
 	def __init__(self, factory, storage_key):
@@ -165,12 +154,6 @@ class Constant(DFGExpr):
 	def __hash__(self):
 		return hash(self.value)
 
-	def equal(self, other):
-		i = cmp(self.__class__, other.__class__)
-		if (i!=0): return i
-		i = cmp(self.value, other.value)
-		return i
-
 class Op(DFGExpr):
 	pass
 
@@ -191,18 +174,6 @@ class BinaryOp(Op):
 #			self.memo_repr = "(%s %s %s)" % (self.op, self.left, self.right)
 #		return self.memo_repr
 		return "(%s %s %s)" % (self.op, self.left, self.right)
-
-	def equal(self, other):
-		i = cmp(id(self), id(other))
-		if (i==0): return i
-		i = cmp(self.__class__, other.__class__)
-		if (i!=0): return i
-		i = cmp(self.op, other.op)
-		if (i!=0): return i
-		i = cmp(self.left, other.left)
-		if (i!=0): return i
-		i = cmp(self.right, other.right)
-		return i
 
 	def extra_create_args(self):
 		return []
@@ -330,16 +301,6 @@ class UnaryOp(Op):
 	def __repr__(self):
 		return "(%s %s)" % (self.op, self.expr)
 
-	def equal(self, other):
-		i = cmp(id(self), id(other))
-		if (i==0): return i
-		i = cmp(self.__class__, other.__class__)
-		if (i!=0): return i
-		i = cmp(self.op, other.op)
-		if (i!=0): return i
-		i = cmp(self.expr, other.expr)
-		return i
-
 	def extra_create_args(self):
 		return []
 
@@ -393,18 +354,6 @@ class Conditional(Op):
 	def __repr__(self):
 		return "(? %s %s %s)" % (self.cond, self.valtrue, self.valfalse)
 
-	def equal(self, other):
-		i = cmp(id(self), id(other))
-		if (i==0): return i
-		i = cmp(self.__class__, other.__class__)
-		if (i!=0): return i
-		i = cmp(self.cond, other.cond)
-		if (i!=0): return i
-		i = cmp(self.valtrue, other.valtrue)
-		if (i!=0): return i
-		i = cmp(self.valfalse, other.valfalse)
-		return i
-
 	def evaluate(self, collapser):
 		cond = collapser.lookup(self.cond)
 		if (cond):
@@ -453,7 +402,7 @@ class StorageRef(ArrayOp):
 		return StorageKey(self.storage, self.idx+off)
 
 	def key(self):
-		if (self.is_ptr()):
+		if self.is_ptr():
 			# don't try to write right in if I'm a ptr.
 			raise Exception("Trying to eagerly look up ptr %s" % self)
 		return StorageKey(self.storage, self.idx)

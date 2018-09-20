@@ -1,5 +1,5 @@
 #!/usr/bin/python
-
+from __future__ import print_function
 import pickle
 import json
 import argparse
@@ -7,18 +7,18 @@ import sys
 import subprocess
 import os
 import traceback
-#from ArithBackend import ArithBackend
+
 from .ArithFactory import ArithFactory
 from .BooleanFactory import BooleanFactory
 from .Timing import Timing
 
-mypath = os.path.dirname(__file__)
-sys.path.append("%s/../external-code/ply-3.4" % mypath)
-sys.path.append("%s/../external-code/pycparser-2.08" % mypath)
 import pycparser
-#from pycparser.c_ast import *
 from pycparser import c_ast
-import StringIO
+
+try:
+	from StringIO import StringIO
+except ImportError:
+	from io import StringIO
 
 from .Symtab import Symtab, UndefinedSymbol
 from .DFG import Undefined, Input, NIZKInput, Constant, DFGFactory, CmpEQ, CmpLT, CmpLEQ, Conditional, Add, Multiply, Negate, Subtract, LeftShift, RightShift, BitOr, BitNot, BitAnd, Xor, LogicalAnd, LogicalNot, Divide, Modulo, UndefinedExpression, NonconstantExpression, NonconstantArrayAccess, StorageRef
@@ -29,13 +29,14 @@ from .Storage import StorageKey, Storage, Symbol, PseudoSymbol, Null
 
 sys.setrecursionlimit(10000)
 
-class Void(): pass
+class Void(object):
+	pass
 
 def ast_show(ast, oneline=False):
-	sio = StringIO.StringIO()
+	sio = StringIO()
 	ast.show(buf = sio)
 	v = sio.getvalue()
-	if (oneline):
+	if oneline:
 		v = v.replace('\n',' ')
 	return v
 
@@ -44,7 +45,8 @@ class StaticallyInfiniteLoop(Exception):
 	def __repr__(self): "Loop exceeded %s iters; insane?" % self.sanity_limit
 	def __str__(self): return repr(self)
 	
-class VoidFuncUsedAsExpression(Exception): pass
+class VoidFuncUsedAsExpression(Exception):
+	pass
 
 class ConstantArrayIndexOutOfRange(Exception):
 	def __init__(self, s): self.s = s
@@ -70,7 +72,7 @@ class MalformedOutsourceParameters(Exception): pass
 class NoInputSpecDefined(Exception): pass
 
 
-class State:
+class State(object):
 	def __init__(self, expr, symtab):
 		self.expr = expr
 		self.symtab = symtab
@@ -78,7 +80,7 @@ class State:
 	def __repr__(self):
 		return "State[%s,%s]" % (self.expr, self.symtab)
 
-class TypeState:
+class TypeState(object):
 	def __init__(self, type, symtab):
 		self.type = type
 		self.symtab = symtab
@@ -91,20 +93,20 @@ class TypeState:
 #	def run(self):
 #		self.result = self.collapser.collapse_tree(self.out_expr)
 
-class Vercomp:
-	def __init__(self, filename, args, timing):
+class Vercomp(object):
+	def __init__(self, filename, args, timing, verbose=False):
 		self.cpp_arg = args.cpp_arg
 		self.timing = timing
 		self.loop_sanity_limit = int(args.loop_sanity_limit)
 		ignore_overflow = (args.ignore_overflow=="True")
-		print "ignore_overflow=%s" % ignore_overflow
+		print("ignore_overflow=%s" % ignore_overflow)
 		self.bit_width = BitWidth.BitWidth(int(args.bit_width), ignore_overflow)
 		self.progress = args.progress
 
 		# memoizer for collapsing exprs to scalar constants
 		self.expr_evaluator = ExprEvaluator()
 
-		self.verbose = False
+		self.verbose = verbose
 		self.loops = 0
 
 		self.factory = DFGFactory()
@@ -148,7 +150,7 @@ class Vercomp:
 		# or what the issue was, but I leave this comment here as a possible
 		# solution to the next sucker who runs into that problem.
 		cmd_list = ["gcc"]+cpp_args+[ '-nostdinc', "-E", filename, "-o", tmpname]
-		print "cmd_list %s" % (" ".join(cmd_list))
+		print("cmd_list %s" % (" ".join(cmd_list)))
 		sp = subprocess.Popen(cmd_list)
 		sp.wait()
 		return tmpname
@@ -204,15 +206,15 @@ class Vercomp:
 			result = TypeState(PtrType(type_state.type), symtab)
 		elif isinstance(node, c_ast.TypeDecl):
 			if self.verbose:
-				print node.__class__
-				print node.__dict__
-				print ast_show(node)
+				print(node.__class__)
+				print(node.__dict__)
+				print(ast_show(node))
 			assert(skip_type_decls)
 			result = self.decode_type(node.type, symtab)
 		else:
-			print node.__class__
-			print node.__dict__
-			print ast_show(node)
+			print(node.__class__)
+			print(node.__dict__)
+			print(ast_show(node))
 			assert(False)
 		assert(result.type is not None)
 		return result
@@ -223,7 +225,7 @@ class Vercomp:
 		if initial_values is not None:
 			#print "iv %s st %s" % (len(initial_value), store_type.sizeof())
 			if len(initial_values) != store_type.sizeof():
-				print "iv %s st %s" % (len(initial_values), store_type.sizeof())
+				print("iv %s st %s" % (len(initial_values), store_type.sizeof()))
 				assert(False)
 			for idx in range(store_type.sizeof()):
 				iv = initial_values[idx]
@@ -276,11 +278,10 @@ class Vercomp:
 					symtab = state.symtab
 					initial_value = state.expr
 				else:
-					print
-					print "type %s" % store_type
-					print ast_show(decl)
-					print decl.init.__class__
-					print decl.init.__dict__
+					print("type %s" % store_type)
+					print(ast_show(decl))
+					print(decl.init.__class__)
+					print(decl.init.__dict__)
 					assert(False)
 			elif initial_value:
 				if isinstance(initial_value, StorageRef) and not isinstance(store_type, PtrType):
@@ -312,12 +313,12 @@ class Vercomp:
 				# But that doesn't exactly work, because there may be a
 				# pointer involved.
 				if (self.verbose):
-					print "Second declaration of %s" % sym
+					print("Second declaration of %s" % sym)
 				value = symtab.lookup(sym)
 				if (value.type != symbol_value.type):
-					print ast_show(decl)
-					print "sym %s value type %s symbol_value type %s" % (
-						sym, value.type, symbol_value.type)
+					print(ast_show(decl))
+					print("sym %s value type %s symbol_value type %s" % (
+						sym, value.type, symbol_value.type))
 					assert(False)
 				# rewrite the assignment to point at a new storage
 				symtab.assign(sym, symbol_value)
@@ -335,25 +336,25 @@ class Vercomp:
 #				print ast_show(obj)
 				if isinstance(obj.type, c_ast.FuncDecl):
 					if self.verbose:
-						print "Ignoring funcdecl %s for now" % (obj.name)
+						print("Ignoring funcdecl %s for now" % (obj.name))
 					pass
 				else:
 					if self.verbose:
-						print
-						print ast_show(obj)
+						print()
+						print(ast_show(obj))
 					symtab = self.declare_variable(obj, symtab)
 			elif isinstance(obj, c_ast.FuncDef):
 				if self.verbose:
-					print "Ignoring funcdef %s for now" % (obj.decl.name)
+					print("Ignoring funcdef %s for now" % (obj.decl.name))
 				pass
 			else:
-				print obj.__class__
+				print(obj.__class__)
 				assert(False)
 		symtab.declare(PseudoSymbol("_unroll"), self.dfg(Undefined))
 		return symtab
 
 	def declare_scalar(self, name, value, symtab):
-		print "decl scalar: %s" % (name,)
+		print("decl scalar: %s" % (name,))
 		storage = Storage(name, 1)
 		symtab.declare(StorageKey(storage, 0), value)
 		symtab.declare(Symbol(name), ArrayVal(storage, 0))
@@ -393,13 +394,13 @@ class Vercomp:
 		elif isinstance(node, c_ast.UnaryOp):
 			result = self.decode_expression(node, symtab)
 		else:
-			print
-			print ast_show(node)
-			print node.__class__
-			print node.__dict__
+			print()
+			print(ast_show(node))
+			print(node.__class__)
+			print(node.__dict__)
 			assert(False)
 		if self.verbose:
-			print "decode_ref %s %s giving %s" % (node.__class__, ast_show(node), result.expr)
+			print("decode_ref %s %s giving %s" % (node.__class__, ast_show(node), result.expr))
 		return result
 
 	def decode_struct_ref(self, structref, symtab):
@@ -410,16 +411,16 @@ class Vercomp:
 		if structref.type == "->":
 			prior_storageref = storageref
 			storageref = prior_storageref.deref()
-			if (self.verbose):
-				print "decode_struct_ref %s turns %s into %s" % (
-					ast_show(structref), prior_storageref, storageref)
-		elif (structref.type=="."):
+			if self.verbose:
+				print("decode_struct_ref %s turns %s into %s" % (
+					ast_show(structref), prior_storageref, storageref))
+		elif structref.type==".":
 			pass
 		else:
-			assert(False)
+			raise RuntimeError("Unknown structref type!")
 		struct = storageref.type
-		assert(isinstance(struct, StructType))
-		assert(isinstance(structref.field, c_ast.ID))
+		assert isinstance(struct, StructType)
+		assert isinstance(structref.field, c_ast.ID)
 		field = struct.get_field(structref.field.name)
 		fieldstorage = self.dfg(StorageRef,
 			field.type,
@@ -440,30 +441,30 @@ class Vercomp:
 		#print "subscript_val expr %s == %s" % (subscript_state.expr, subscript_val)
 		state = self.decode_ref(arrayref.name, symtab)
 		if self.verbose:
-			print "array_ref got %s" % state.expr
+			print("array_ref got %s" % state.expr)
 		name_storageref = state.expr
 		if not isinstance(name_storageref, StorageRef):
-			print ast_show(arrayref)
-			print "name: %s" % arrayref.name.name
-			print "storageref: %s" % name_storageref
+			print(ast_show(arrayref))
+			print("name: %s" % arrayref.name.name)
+			print("storageref: %s" % name_storageref)
 			assert(False)
 		symtab = state.symtab
 		if self.verbose:
-			print ast_show(arrayref)
-			print "name_storageref: %s %s" % (name_storageref.type, name_storageref.type.__class__)
+			print(ast_show(arrayref))
+			print("name_storageref: %s %s" % (name_storageref.type, name_storageref.type.__class__))
 		if isinstance(name_storageref.type, ArrayType):
 			element_type = name_storageref.type.type
 		elif isinstance(name_storageref.type, PtrType):
 			element_type = name_storageref.type.type
 		else:
-			print "name_storageref is %s" % name_storageref
+			print("name_storageref is %s" % name_storageref)
 			assert(False)
 		array_storageref = self.dfg(StorageRef,
 			element_type,
 			name_storageref.storage,
 			name_storageref.idx + subscript_val*element_type.sizeof())
 		if self.verbose:
-			print "arrayref --> %s" % array_storageref
+			print("arrayref --> %s" % array_storageref)
 		return State(array_storageref, symtab)
 
 	def eager_lookup(self, key, symtab):
@@ -499,106 +500,105 @@ class Vercomp:
 
 	def decode_expression(self, expr, symtab, void=False):
 		# returns State
-		if (isinstance(expr, c_ast.UnaryOp)):
+		if isinstance(expr, c_ast.UnaryOp):
 			if (expr.op=="*"):
 				state = self.decode_ref(expr.expr, symtab)
 				return State(state.expr.deref(), state.symtab)
 			else:
-				if (expr.op=="-"):
+				if expr.op=="-":
 					state = self.decode_expression_val(expr.expr, symtab)
 					return State(self.dfg(Negate, state.expr), state.symtab)
-				elif (expr.op=="~"):
+				elif expr.op=="~":
 					state = self.decode_expression_val(expr.expr, symtab)
 					return State(self.dfg(BitNot, state.expr, self.bit_width), state.symtab)
-				elif (expr.op=="!"):
+				elif expr.op=="!":
 					state = self.decode_expression_val(expr.expr, symtab)
 					return State(self.dfg(LogicalNot, state.expr), state.symtab)
-				elif (expr.op=="&"):
+				elif expr.op=="&":
 					sub_state = self.decode_ref(expr.expr, symtab)
 					symtab = sub_state.symtab
-					if (self.verbose):
-						print "for %s got expr %s %s" % (expr.expr, sub_state.expr, type(sub_state.expr))
+					if self.verbose:
+						print("for %s got expr %s %s" % (expr.expr, sub_state.expr, type(sub_state.expr)))
 					ref = sub_state.expr.ref()
-					if (self.verbose):
-						print "&-op decodes to %s" % ref
+					if self.verbose:
+						print("&-op decodes to %s" % ref)
 					return State(ref, symtab)
-			print "expr.op == %s" % expr.op
+			print("expr.op == %s" % expr.op)
 			assert(False)
-		elif (isinstance(expr, c_ast.BinaryOp)):
+		elif isinstance(expr, c_ast.BinaryOp):
 			left_state = self.decode_expression_val(expr.left, symtab)
 			right_state = self.decode_expression_val(expr.right, left_state.symtab)
 			#print "right_state  is %s" % right_state.expr
-			if (expr.op=="+"):
+			if expr.op=="+":
 				expr = self.dfg(Add, left_state.expr, right_state.expr)
-			elif (expr.op=="-"):
+			elif expr.op=="-":
 				# Hmm. Have to start thinking about representations vs. overflows...
 				expr = self.dfg(Subtract, left_state.expr, right_state.expr)
-			elif (expr.op=="*"):
+			elif expr.op=="*":
 				expr = self.dfg(Multiply, left_state.expr, right_state.expr)
-			elif (expr.op=="<"):
+			elif expr.op=="<":
 				expr = self.dfg(CmpLT, left_state.expr, right_state.expr)
-			elif (expr.op=="<="):
+			elif expr.op=="<=":
 				expr = self.dfg(CmpLEQ, left_state.expr, right_state.expr)
-			elif (expr.op=="=="):
+			elif expr.op=="==":
 				expr = self.dfg(CmpEQ, left_state.expr, right_state.expr)
-			elif (expr.op==">"):
+			elif expr.op==">":
 				# NB the argument order is swapped.
 				expr = self.dfg(CmpLT, right_state.expr, left_state.expr)
-			elif (expr.op==">="):
+			elif expr.op==">=":
 				# NB the argument order is swapped.
 				expr = self.dfg(CmpLEQ, right_state.expr, left_state.expr)
-			elif (expr.op=="/"):
+			elif expr.op=="/":
 				expr = self.dfg(Divide, left_state.expr, right_state.expr)
-			elif (expr.op=="%"):
+			elif expr.op=="%":
 				expr = self.dfg(Modulo, left_state.expr, right_state.expr)
-			elif (expr.op=="^"):
+			elif expr.op=="^":
 				expr = self.dfg(Xor, left_state.expr, right_state.expr)
-			elif (expr.op=="<<"):
+			elif expr.op=="<<":
 				expr = self.dfg(LeftShift, left_state.expr, right_state.expr, self.bit_width)
-			elif (expr.op==">>"):
+			elif expr.op==">>":
 				expr = self.dfg(RightShift, left_state.expr, right_state.expr, self.bit_width)
-			elif (expr.op=="|"):
+			elif expr.op=="|":
 				expr = self.dfg(BitOr, left_state.expr, right_state.expr)
-			elif (expr.op=="&"):
+			elif expr.op=="&":
 				expr = self.dfg(BitAnd, left_state.expr, right_state.expr)
-			elif (expr.op=="&&"):
+			elif expr.op=="&&":
 				expr = self.dfg(LogicalAnd, left_state.expr, right_state.expr)
 			else:
-				print
-				print ast_show(expr)
-				print expr.__class__
-				print expr.__dict__
+				print()
+				print(ast_show(expr))
+				print(expr.__class__)
+				print(expr.__dict__)
 				assert(False)	# unimpl
 			return State(expr, right_state.symtab)
-		elif (isinstance(expr, c_ast.Constant)):
-			assert(expr.type=="int")
-			if (expr.value.startswith("0x")):
+		elif isinstance(expr, c_ast.Constant):
+			assert expr.type=="int"
+			if expr.value.startswith("0x"):
 				literal = int(expr.value, 16)
 				#print "parsed %s as 0x %x" % (expr.value, literal)
 			else:
 				literal = int(expr.value, 10)
 			return State(self.dfg(Constant, literal), symtab)
-		elif (isinstance(expr, c_ast.ArrayRef)
-			or isinstance(expr, c_ast.StructRef)):
+		elif isinstance(expr, c_ast.ArrayRef) or isinstance(expr, c_ast.StructRef):
 			ref_val_state = self.decode_ref(expr, symtab)
 			ref_val = ref_val_state.expr
 			assert(isinstance(ref_val, StorageRef))
 			# And now it's okay to return StorageRefs; the caller
 			# must coerce to a value if that's what he needs.
 			return State(ref_val, ref_val_state.symtab)
-		elif (isinstance(expr, c_ast.ID)):
+		elif isinstance(expr, c_ast.ID):
 			return State(symtab.lookup(Symbol(expr.name)), symtab)
-		elif (isinstance(expr, c_ast.FuncCall)):
+		elif isinstance(expr, c_ast.FuncCall):
 			state = self.decode_funccall(expr, symtab)
-			if (not void and isinstance(state.expr, Void)):
-				print ast_show(expr)
+			if not void and isinstance(state.expr, Void):
+				print(ast_show(expr))
 				raise VoidFuncUsedAsExpression()
 			return state
 		else:
 			pass
-		print Constant
-		print expr.__class__
-		print expr.__dict__
+		print(Constant)
+		print(expr.__class__)
+		print(expr.__dict__)
 		assert(False)
 
 	def decode_funccall(self, expr, symtab):
@@ -614,7 +614,7 @@ class Vercomp:
 			# as we'll be writing them back into a symtab like an assignment.
 			#print "state %s type %s" % (state, type(state))
 			if (self.verbose):
-				print "arg %s expands to %s" % (ast_show(arg_expr), state.expr)
+				print("arg %s expands to %s" % (ast_show(arg_expr), state.expr))
 			func_arg_exprs.append(state.expr)
 			prev_symtab = state.symtab
 		func_def = self.find_func(expr.name.name)
@@ -648,8 +648,8 @@ class Vercomp:
 			right_state = self.decode_expression_val(stmt.rvalue, left_state.symtab)
 			if stmt.op == "+=":
 				if self.verbose:
-					print "stmt.rvalue %s" % ast_show(stmt.rvalue)
-					print "left_state %s right_state %s" % (left_state, right_state)
+					print("stmt.rvalue %s" % ast_show(stmt.rvalue))
+					print("left_state %s right_state %s" % (left_state, right_state))
 				expr = self.dfg(Add, left_state.expr, right_state.expr)
 			elif stmt.op == "-=":
 				expr = self.dfg(Subtract, left_state.expr, right_state.expr)
@@ -747,7 +747,7 @@ class Vercomp:
 
 	def loop_msg(self, m):
 		if ((self.progress or self.verbose) and self.loops<2):
-			print "%s%s" % ("  "*self.loops, m)
+			print("%s%s" % ("  "*self.loops, m))
 
 	def unroll_static_loop(self, cond, body_compound, symtab):
 		self.loops += 1
@@ -759,9 +759,9 @@ class Vercomp:
 		while True:
 			sanity += 1
 			if sanity > self.loop_sanity_limit:
-				print cond_val
-				print cond_state.expr
-				print ast_show(cond)
+				print(cond_val)
+				print(cond_state.expr)
+				print(ast_show(cond))
 				raise StaticallyInfiniteLoop(self.loop_sanity_limit)
 			cond_state = self.decode_expression_val(cond, working_symtab)
 			# once a condition is statically evaluable, we assume it
@@ -770,8 +770,8 @@ class Vercomp:
 			if not cond_val:
 				break
 			if self.verbose:
-				print "loop body is:"
-				print ast_show(body_compound)
+				print("loop body is:")
+				print(ast_show(body_compound))
 			if sanity>0 and (sanity & 0x3f)==0:
 				self.loop_msg("static iter %d" % sanity)
 			working_symtab = self.transform_statement(
@@ -785,7 +785,7 @@ class Vercomp:
 		try:
 			_unroll_val = self.evaluate(symtab.lookup(PseudoSymbol("_unroll")))
 		except UndefinedExpression:
-			print "At line %s:" % cond.coord.line
+			print("At line %s:" % cond.coord.line)
 			raise
 		# build up nested conditional scopes
 		working_symtab = symtab
@@ -810,10 +810,10 @@ class Vercomp:
 			applied_symtab = working_symtab
 			for ref in modified_idents:
 				if (self.verbose):
-					print
-					print "cond: %s" % cond
-					print "iftrue: %s" % working_symtab.lookup(ref)
-					print "iffalse: %s" % scope.parent.lookup(ref)
+					print()
+					print("cond: %s" % cond)
+					print("iftrue: %s" % working_symtab.lookup(ref))
+					print("iffalse: %s" % scope.parent.lookup(ref))
 				applied_symtab.assign(ref,
 					self.dfg(Conditional, cond, working_symtab.lookup(ref), scope.parent.lookup(ref)))
 			working_symtab = applied_symtab
@@ -830,13 +830,13 @@ class Vercomp:
 			except NonconstantExpression:
 				pass
 			except Exception:
-				print "expr is %s" % cond_state.expr
+				print("expr is %s" % cond_state.expr)
 				raise
 			try:
 				return self.unroll_static_loop(cond, body_compound, symtab)
-			except NonconstantExpression, unexpected_nce:
+			except NonconstantExpression as unexpected_nce:
 				traceback.print_exc(unexpected_nce)
-				print "\n---------\n"
+				print("\n---------\n")
 				raise Exception("Unexpected NonconstantExpression; it leaked up from some subexpression evaluation?")
 		except NonconstantExpression:
 			#print "Condition is dynamic (ex %s):" % repr(ex)
@@ -898,13 +898,13 @@ class Vercomp:
 		elif isinstance(statement, c_ast.Compound):
 			working_symtab = self.transform_compound(statement, working_symtab)
 		else:
-			print "class: ",statement.__class__
-			print "dict: ",statement.__dict__
-			print "ast: ",ast_show(statement)
+			print("class: ",statement.__class__)
+			print("dict: ",statement.__dict__)
+			print("ast: ",ast_show(statement))
 			assert(False)	# unimpl statement type
 		if self.verbose:
-			print "after statement %s, symtab:" % ast_show(statement, oneline=True)
-			print "  %s"%working_symtab
+			print("after statement %s, symtab:" % ast_show(statement, oneline=True))
+			print("  %s"%working_symtab)
 		return working_symtab
 
 #DEAD
@@ -918,9 +918,9 @@ class Vercomp:
 #		return iv.ids
 
 	def print_expression(self):
-		print "Final expr assignments:"
+		print("Final expr assignments:")
 		for (name, value) in self.output:
-			print "%s => %s" % (name, value)
+			print("%s => %s" % (name, value))
 
 	def make_global_storage(self, node, symtab):
 		# returns State
@@ -1011,7 +1011,7 @@ class Vercomp:
 #				global_symtab.assign(sk, Input(sk))
 		outsource_func = self.find_func("outsource")
 		if (self.verbose):
-			print "global_symtab: %s" % global_symtab
+			print("global_symtab: %s" % global_symtab)
 		self.timing.phase("root_funccall")
 		out_state = self.root_funccall(global_symtab)
 		output_storage_ref = out_state.expr
@@ -1022,7 +1022,7 @@ class Vercomp:
 
 		self.timing.phase("collapse_output")
 		if self.progress:
-			print "collapsing output"
+			print("collapsing output")
 		output = []
 		for idx in range(output_storage_ref.type.sizeof()):
 			#print "working on output %d" % idx
@@ -1101,34 +1101,36 @@ def main(argv):
 	parser = argparse.ArgumentParser(description='Compile C to QSP/QAP')
 	parser.add_argument('cfile', metavar='<cfile>',
 		help='a C file to compile')
-	parser.add_argument('--print', dest='print_exprs',
+	parser.add_argument('--print', dest='print_exprs', action='store_true', default=False,
 		help="print output expressions on stdout")
+	parser.add_argument('--verbose', dest='verbose', action='store_true', default=False,
+		help="enable extra verbose output")
 	parser.add_argument('--il', dest='il_file',
 		help='intermediate circuit output file')
 	parser.add_argument('--json', dest='json_file',
 		help='json version of intermediate circuit output file')
 	parser.add_argument('--arith', dest='arith_file',
 		help='arithmetic circuit output file')
-	parser.add_argument('--bit-width', dest='bit_width',
+	parser.add_argument('--bit-width', dest='bit_width', type=int,
 		help='bit width -- affects bitwise operator semantics and arithmetic circuit output', default=32)
 	parser.add_argument('--bool', dest='bool_file',
 		help='boolean circuit output file')
-	parser.add_argument('--ignore-overflow', dest='ignore_overflow',
+	parser.add_argument('--ignore-overflow', dest='ignore_overflow', action='store_true',
 		help='ignore field-P overflows; never truncate', default=False)
 	parser.add_argument('--cpparg', dest='cpp_arg', nargs="*",
 		help='extra arguments to C preprocessor')
-	parser.add_argument('--loop-sanity-limit', dest='loop_sanity_limit',
+	parser.add_argument('--loop-sanity-limit', dest='loop_sanity_limit', type=int,
 		help='limit on statically-measured loop unrolling', default=1000000)
-	parser.add_argument('--progress', dest='progress',
+	parser.add_argument('--progress', dest='progress', action='store_true', default=False,
 		help='print progress messages during compilation')
 
 	args = parser.parse_args(argv)
 
 	timing = Timing(args.cfile, enabled=False)
 	try:
-		vercomp = Vercomp(args.cfile, args, timing)
-	except Exception,ex:
-		print repr(ex)
+		vercomp = Vercomp(args.cfile, args, timing, args.verbose)
+	except Exception as ex:
+		print(repr(ex))
 		raise
 
 	if args.print_exprs:
@@ -1155,14 +1157,14 @@ def main(argv):
 
 	if args.arith_file is not None:
 		timing.phase("emit_arith")
-		if (vercomp.progress):
-			print "Compilation complete; emitting arith."
+		if vercomp.progress:
+			print("Compilation complete; emitting arith.")
 		ArithFactory(args.arith_file, vercomp.inputs, vercomp.nizk_inputs, vercomp.output, vercomp.bit_width)
 
 	if args.bool_file is not None:
 		timing.phase("emit_bool")
-		if (vercomp.progress):
-			print "Compilation complete; emitting bool."
+		if vercomp.progress:
+			print("Compilation complete; emitting bool.")
 		BooleanFactory(args.bool_file, vercomp.inputs, vercomp.nizk_inputs, vercomp.output, vercomp.bit_width)
 
 	timing.phase("done")

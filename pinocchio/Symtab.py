@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 from .Storage import Key, StorageKey
 from .DFG import StorageRef
 
@@ -15,14 +17,14 @@ class DuplicateDeclaration(Exception):
 
 max_depth = 0
 
-class Symtab:
+class Symtab(object):
 	def __init__(self, parent=None, scope=None):
 		self.parent = parent
 		if (parent!=None):
 			self.depth = self.parent.depth + 1
 			#print "depth %s" % self.depth
 			global max_depth
-			if (self.depth > max_depth):
+			if self.depth > max_depth:
 				#print "symtabs %d deep" % self.depth
 				max_depth += 1
 				if (max_depth > 100):
@@ -64,14 +66,14 @@ class Symtab:
 		try:
 			self.note_assignment(key)
 		except:
-			print "me: %s max: %s" % (self.depth, max_depth)
+			print("me: %s max: %s" % (self.depth, max_depth))
 			raise
 		
 	def dbg_dump_path(self):
 		p = self
 		i = 0
 		while (p!=None):
-			print "  "*i+repr(p)
+			print("  "*i+repr(p))
 			i += 2
 			p = p.parent
 

@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import sys
 import traceback
@@ -10,7 +11,7 @@ from .FieldOps import FieldOutput
 from .BusReq import XorReq, LeftShiftReq, RightShiftReq, BitAndReq, BitOrReq, BitNotReq, LogicalNotReq
 
 
-class Report:
+class Report(object):
 	def __init__(self):
 		self.table = {}
 
@@ -79,7 +80,7 @@ class ReqFactory(Collapser):
 		elif (isinstance(expr, RightShift)):
 			result = RightShiftReq(self, expr, type)
 		else:
-			print expr.__class__
+			print(expr.__class__)
 			assert(False)
 		return result
 
@@ -112,8 +113,8 @@ class ReqFactory(Collapser):
 		self.process_inputs_core(circuit_nizk_inputs, self.make_nizk_input_req)
 		
 	def debug_investigate_buses(self, bus):
-		print "--------------------------------------------------"
-		print "add_extra_bus(%s)" % bus.__class__.__name__
+		print("--------------------------------------------------")
+		print("add_extra_bus(%s)" % bus.__class__.__name__)
 		try:
 			raise Exception()
 		except:
@@ -123,7 +124,7 @@ class ReqFactory(Collapser):
 			sys.stdout.flush()
 			sys.stderr.flush()
 		self.debug_print_buses()
-		print
+		print()
 
 	def add_extra_bus(self, bus):
 		self.buses.add(bus)
@@ -149,8 +150,8 @@ class ReqFactory(Collapser):
 		bus_list = list(self.buses)
 		bus_list.sort()
 		for bus_i in range(len(bus_list)):
-			print "  bus[%d] %s" % (
-				bus_i, bus_list[bus_i].__class__.__name__)
+			print("  bus[%d] %s" % (
+				bus_i, bus_list[bus_i].__class__.__name__))
 
 	# layout phase, after the wiring diagram has been collected.
 	def layout_buses(self):
@@ -189,7 +190,7 @@ class ReqFactory(Collapser):
 			field_ops = bus.get_field_ops()
 			for op in field_ops:
 				op.report(r)
-		print r
+		print(r)
 
 	def lint(self):
 		wire_to_field_op = {}	# maps wires to the field_op that output it
@@ -204,8 +205,8 @@ class ReqFactory(Collapser):
 #				print "  %s" % output_wires
 				for output in output_wires:
 					if (output in specified_outputs):
-						print "LINT: bus %s re-specifies wire %s, already set by bus %s" % (
-							bus, output, specified_outputs[output])
+						print("LINT: bus %s re-specifies wire %s, already set by bus %s" % (
+							bus, output, specified_outputs[output]))
 					else:
 						specified_outputs[output] = bus
 					wire_to_field_op[output] = field_op
@@ -214,7 +215,7 @@ class ReqFactory(Collapser):
 		for idx in range(self.total_wire_count):
 			wire = Wire(idx)
 			if (wire not in specified_outputs):
-				print "LINT: no bus specifies output %s" % wire
+				print("LINT: no bus specifies output %s" % wire)
 
 		# check that each field_op computes a value that eventually reaches
 		# an output.
@@ -232,7 +233,7 @@ class ReqFactory(Collapser):
 			#print "Considering %s required_wires" % len(required_wires)
 			useful_field_ops = set()
 			for wire in required_wires:
-                                print wire
+				print(wire)
 				field_op = wire_to_field_op[wire]
 				if (field_op not in done_field_ops):
 					useful_field_ops.add(field_op)
@@ -243,11 +244,11 @@ class ReqFactory(Collapser):
 		for field_op in unused_field_ops:
 			field_op.report(r)
 		if (len(r)>0):
-			print "LINT: %d unused field ops; cost:\n%s" % (len(unused_field_ops), r)
+			print("LINT: %d unused field ops; cost:\n%s" % (len(unused_field_ops), r))
 			# print "LINT: %s" % unused_field_ops
 
-		print "(info) Linted %s field ops from %s buses" % (
-			len(field_ops), len(self.bus_list))
+		print("(info) Linted %s field ops from %s buses" % (
+			len(field_ops), len(self.bus_list)))
 
 	def is_req_factory(self): return True	# just a pseudostatic type assertion
 

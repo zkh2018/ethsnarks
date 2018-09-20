@@ -1,6 +1,6 @@
 from . import CircuitParams
 
-class BitWidth:
+class BitWidth(object):
 	def __init__(self, width, ignore_overflow):
 		self.width = width
 		if (ignore_overflow):

@@ -1,8 +1,10 @@
+from __future__ import print_function
+
 from .Buses import LeftShiftBus, ConstBitAndBus, ConstBitOrBus, ConstantBooleanBus
 from .TraceType import BOOLEAN_TYPE, ARITHMETIC_TYPE, TraceType
 from . import DFG
 
-class BaseReq:
+class BaseReq(object):
 	def __init__(self, reqfactory, expr, type):
 		assert(reqfactory.is_req_factory())
 #		assert(isinstance(expr, DFGExpr))
@@ -22,8 +24,8 @@ class BaseReq:
 	def __hash__(self):
 		return hash(self._tuple())
 
-	def __cmp__(self, other):
-		return cmp(self._tuple(), other._tuple())
+	def __eq__(self, other):
+		return self._tuple() == other._tuple()
 
 	def __repr__(self):
 		return "%s:%s" % (self.__class__, self.type)
@@ -178,7 +180,7 @@ class NotFamily(BusReq):
 	def make_logical_cast(self, bus):
 		logical_not = self.make_logical_not(bus)
 		self.reqfactory.add_extra_bus(logical_not)
-		return make_bitnot(logical_not)
+		return self.make_bitnot(logical_not)
 
 class BitNotReq(NotFamily):
 	def __init__(self, reqfactory, expr, type):
@@ -227,10 +229,10 @@ class LogicalCastReq(NotFamily):
 	def natural_impl(self):
 		wide_bus = self.get_bus_from_req(self._req())
 		if (wide_bus.get_active_bits()==1):
-			print "LogicalCastReq was cheap"
+			print("LogicalCastReq was cheap")
 			return BooleanCastBus(wide_bus)
 		else:
-			print "LogicalCastReq was expensive, from %s" % wide_bus.get_active_bits()
+			print("LogicalCastReq was expensive, from %s" % wide_bus.get_active_bits())
 			return self.make_logical_cast(wide_bus)
 
 class ShiftReq(BusReq):

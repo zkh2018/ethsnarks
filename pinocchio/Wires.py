@@ -5,7 +5,7 @@ import types
 # We build higher-level functions up by creating bus objects that
 # apply one or more FieldOps to groups of wires.
 
-class Wire:
+class Wire(object):
 	def __init__(self, idx):
 		assert(type(idx)==types.IntType)
 		self.idx = idx
@@ -16,12 +16,13 @@ class Wire:
 	def __hash__(self):
 		return self.idx
 
-	def __cmp__(self, other):
-		return cmp(self.idx, other.idx)
+	def __eq__(self, other):
+		return isinstance(other, Wire) and self.idx == other.idx
 
-class WireList:
+
+class WireList(object):
 	def __init__(self, wires):
-		assert(type(wires)==types.ListType)
+		assert isinstance(wires, (list, tuple))
 		self.wires = wires
 
 	def __repr__(self):

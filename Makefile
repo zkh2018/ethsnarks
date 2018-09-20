@@ -30,9 +30,8 @@ COVERAGE = $(PYTHON) -mcoverage run --source=$(NAME) -p
 
 all: build/src/libmiximus.$(DLL_EXT) truffle-compile
 
-clean: coverage-clean
+clean: coverage-clean python-clean
 	rm -rf build
-	find . -name '__pycache__' -exec rm -rf '{}' ';'
 
 
 #######################################################################
@@ -112,6 +111,10 @@ python-pyflakes:
 
 python-pylint:
 	$(PYTHON) -mpylint $(NAME) || true
+
+python-clean:
+	find . -name '*.pyc' -exec rm -f '{}' ';'
+	find . -name '__pycache__' -exec rm -rf '{}' ';'
 
 cxx-lint:
 	cppcheck -I depends/libsnark/ -I depends/libsnark/depends/libff/ -I depends/libsnark/depends/libfqfft/ -I src/ --enable=all src/ || true

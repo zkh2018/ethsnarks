@@ -1,7 +1,7 @@
 from .Wires import Wire, WireList
 import types
 
-class FieldOp:
+class FieldOp(object):
 	def __init__(self, comment):
 		self._comment = comment
 
