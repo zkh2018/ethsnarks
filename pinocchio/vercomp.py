@@ -141,7 +141,7 @@ class Vercomp:
 		tmpname = out_dir+"/build/"+os.path.basename(filename)+".p"
 
 		cpp_args = []
-		if cpp_arg != None:
+		if cpp_arg is not None:
 			cpp_args = [_.replace('_', '-') for _ in cpp_arg]
 
 		# I used to call gcc-4; I'm not sure what machine had two versions
@@ -174,11 +174,11 @@ class Vercomp:
 
 	def decode_type(self, node, symtab, skip_type_decls=False):
 		# this can also declare a new type; returns TypeState
-		if (isinstance(node, c_ast.IdentifierType)):
+		if isinstance(node, c_ast.IdentifierType):
 			result = TypeState(self.decode_scalar_type(node.names), symtab)
-		elif (isinstance(node, c_ast.Struct)):
+		elif isinstance(node, c_ast.Struct):
 			fields = []
-			if (node.decls!=None):
+			if node.decls is not None:
 				# A struct is being declared here.
 				for field_decl in node.decls:
 					type_state = self.decode_type(field_decl.type, symtab, skip_type_decls=True)
@@ -190,7 +190,7 @@ class Vercomp:
 				# look up the struct
 				struct_type = symtab.lookup(Symbol(node.name))
 			result = TypeState(struct_type, symtab)
-		elif (isinstance(node, c_ast.ArrayDecl)):
+		elif isinstance(node, c_ast.ArrayDecl):
 			dim_state = self.decode_expression_val(node.dim, symtab)
 			symtab = dim_state.symtab
 			dimension = self.evaluate(dim_state.expr)
@@ -198,12 +198,12 @@ class Vercomp:
 			symtab = type_state.symtab
 			array_type = ArrayType(type_state.type, dimension)
 			result = TypeState(array_type, symtab)
-		elif (isinstance(node, c_ast.PtrDecl)):
+		elif isinstance(node, c_ast.PtrDecl):
 			type_state = self.decode_type(node.type, symtab, skip_type_decls=True)
 			symtab = type_state.symtab
 			result = TypeState(PtrType(type_state.type), symtab)
-		elif (isinstance(node, c_ast.TypeDecl)):
-			if (self.verbose):
+		elif isinstance(node, c_ast.TypeDecl):
+			if self.verbose:
 				print node.__class__
 				print node.__dict__
 				print ast_show(node)
@@ -214,15 +214,15 @@ class Vercomp:
 			print node.__dict__
 			print ast_show(node)
 			assert(False)
-		assert(result.type!=None)
+		assert(result.type is not None)
 		return result
 
 	def create_storage(self, name, store_type, initial_values, symtab):
 		# returns State
 		storage = Storage(name, store_type.sizeof())
-		if (initial_values!=None):
+		if initial_values is not None:
 			#print "iv %s st %s" % (len(initial_value), store_type.sizeof())
-			if (not (len(initial_values)==store_type.sizeof())):
+			if len(initial_values) != store_type.sizeof():
 				print "iv %s st %s" % (len(initial_values), store_type.sizeof())
 				assert(False)
 			for idx in range(store_type.sizeof()):
@@ -236,7 +236,7 @@ class Vercomp:
 	def declare_variable(self, decl, symtab, initial_value=None):
 		# returns Symtab
 
-		if (isinstance(decl.type, c_ast.TypeDecl)):
+		if isinstance(decl.type, c_ast.TypeDecl):
 			decl_type = decl.type.type
 		else:
 			decl_type = decl.type
@@ -244,12 +244,12 @@ class Vercomp:
 		type_state = self.decode_type(decl_type, symtab)
 		symtab = type_state.symtab
 
-		if (decl.name!=None):
+		if decl.name is not None:
 			# a variable is being declared;
 
 			store_type = type_state.type
 
-			if (isinstance(store_type, ArrayType)):
+			if isinstance(store_type, ArrayType):
 				# int w[10] acts like int *w when you access it.
 				var_type = PtrType(store_type.type)
 			else:
@@ -258,20 +258,20 @@ class Vercomp:
 			# decode an initializer
 			initial_values = None
 
-			if (decl.init!=None):
+			if decl.init is not None:
 				assert(initial_value==None)	# Two sources of initialization?
-				if (isinstance(store_type, ArrayType)):
+				if isinstance(store_type, ArrayType):
 					initial_values = []
 					for expr in decl.init.exprs:
 						state = self.decode_expression_val(expr, symtab)
 						symtab = state.symtab
 						initial_values.append(state.expr)
-				elif (isinstance(store_type, IntType)):
+				elif isinstance(store_type, IntType):
 					initial_values = []
 					state = self.decode_expression_val(decl.init, symtab)
 					symtab = state.symtab
 					initial_values.append(state.expr)
-				elif (isinstance(store_type, PtrType)):
+				elif isinstance(store_type, PtrType):
 					state = self.decode_ref(decl.init, symtab)
 					symtab = state.symtab
 					initial_value = state.expr
@@ -282,9 +282,8 @@ class Vercomp:
 					print decl.init.__class__
 					print decl.init.__dict__
 					assert(False)
-			elif (initial_value):
-				if (isinstance(initial_value, StorageRef)
-					and not isinstance(store_type, PtrType)):
+			elif initial_value:
+				if isinstance(initial_value, StorageRef) and not isinstance(store_type, PtrType):
 					def offset(k,i):
 						return StorageKey(k.storage, k.idx+i)
 					initial_values = map(
@@ -294,21 +293,21 @@ class Vercomp:
 					initial_values = [initial_value]
 
 			# allocate storage for the new object
-			if (not isinstance(store_type, PtrType)):
+			if not isinstance(store_type, PtrType):
 				#print "initial_values for %s is %s" % (decl.name, initial_values)
 				state = self.create_storage(
 					decl.name, store_type, initial_values, symtab)
 				symbol_value = self.dfg(StorageRef, var_type, state.expr.storage, state.expr.idx)
 				symtab = state.symtab
 			else:
-				if (initial_value != None):
+				if initial_value is not None:
 					symbol_value = initial_value
 				else:
 					symbol_value = self.dfg(StorageRef, store_type, Null(), 0);
 
 			# point the name at it, with appropriate referenciness.
 			sym = Symbol(decl.name)
-			if (symtab.is_declared(sym)):
+			if symtab.is_declared(sym):
 				# A duplicate declaration should match in type.
 				# But that doesn't exactly work, because there may be a
 				# pointer involved.
@@ -329,22 +328,22 @@ class Vercomp:
 
 	def create_global_symtab(self):
 		symtab = Symtab()
-		for (iname,obj) in self.root_ast.children():
-			if (isinstance(obj, c_ast.Decl)):
+		for (iname, obj) in self.root_ast.children():
+			if isinstance(obj, c_ast.Decl):
 #				print
 #				print obj.__dict__
 #				print ast_show(obj)
-				if (isinstance(obj.type, c_ast.FuncDecl)):
-					if (self.verbose):
+				if isinstance(obj.type, c_ast.FuncDecl):
+					if self.verbose:
 						print "Ignoring funcdecl %s for now" % (obj.name)
 					pass
 				else:
-					if (self.verbose):
+					if self.verbose:
 						print
 						print ast_show(obj)
 					symtab = self.declare_variable(obj, symtab)
-			elif (isinstance(obj, c_ast.FuncDef)):
-				if (self.verbose):
+			elif isinstance(obj, c_ast.FuncDef):
+				if self.verbose:
 					print "Ignoring funcdef %s for now" % (obj.decl.name)
 				pass
 			else:
@@ -361,7 +360,7 @@ class Vercomp:
 
 	def create_scope(self, param_decls, param_exprs, symtab):
 		scope_symtab = Symtab(symtab, scope=set())
-		if (not (len(param_decls)==len(param_exprs))):
+		if len(param_decls) != len(param_exprs):
 			raise ParameterListMismatchesDeclaration(
 				"declared with %d parameters; called with %d parameters" %
 				(len(param_decls), len(param_exprs)))
@@ -370,7 +369,7 @@ class Vercomp:
 			#print "create_scope declares %s as %s" % (ast_show(param_decl, oneline=True), param_exprs[parami])
 			scope_symtab = self.declare_variable(
 				param_decl, scope_symtab, initial_value=param_exprs[parami])
-		if (self.verbose):
+		if self.verbose:
 			print("scope symtab is: %s" % scope_symtab)
 		return scope_symtab
 
@@ -378,20 +377,20 @@ class Vercomp:
 		# when assigning to a pointer, you must be assigning to a raw
 		# symbol; runtime Storage() can't hold pointers in our language.
 		# returns Key
-		if (isinstance(node, c_ast.ID)):
+		if isinstance(node, c_ast.ID):
 			return Symbol(node.name)
 		else:
 			assert(False)
 
 	def decode_ref(self, node, symtab):
 		# returns State
-		if (isinstance(node, c_ast.ID)):
+		if isinstance(node, c_ast.ID):
 			result = State(symtab.lookup(Symbol(node.name)), symtab)
-		elif (isinstance(node, c_ast.StructRef)):
+		elif isinstance(node, c_ast.StructRef):
 			result = self.decode_struct_ref(node, symtab)
-		elif (isinstance(node, c_ast.ArrayRef)):
+		elif isinstance(node, c_ast.ArrayRef):
 			result = self.decode_array_ref(node, symtab)
-		elif (isinstance(node, c_ast.UnaryOp)):
+		elif isinstance(node, c_ast.UnaryOp):
 			result = self.decode_expression(node, symtab)
 		else:
 			print
@@ -399,7 +398,7 @@ class Vercomp:
 			print node.__class__
 			print node.__dict__
 			assert(False)
-		if (self.verbose):
+		if self.verbose:
 			print "decode_ref %s %s giving %s" % (node.__class__, ast_show(node), result.expr)
 		return result
 
@@ -408,7 +407,7 @@ class Vercomp:
 		sref_state = self.decode_ref(structref.name, symtab)
 		storageref = sref_state.expr
 		symtab = sref_state.symtab
-		if (structref.type=="->"):
+		if structref.type == "->":
 			prior_storageref = storageref
 			storageref = prior_storageref.deref()
 			if (self.verbose):
@@ -440,21 +439,21 @@ class Vercomp:
 			raise NonconstantArrayAccess(msg)
 		#print "subscript_val expr %s == %s" % (subscript_state.expr, subscript_val)
 		state = self.decode_ref(arrayref.name, symtab)
-		if (self.verbose):
+		if self.verbose:
 			print "array_ref got %s" % state.expr
 		name_storageref = state.expr
-		if (not isinstance(name_storageref, StorageRef)):
+		if not isinstance(name_storageref, StorageRef):
 			print ast_show(arrayref)
 			print "name: %s" % arrayref.name.name
 			print "storageref: %s" % name_storageref
 			assert(False)
 		symtab = state.symtab
-		if (self.verbose):
+		if self.verbose:
 			print ast_show(arrayref)
 			print "name_storageref: %s %s" % (name_storageref.type, name_storageref.type.__class__)
-		if (isinstance(name_storageref.type, ArrayType)):
+		if isinstance(name_storageref.type, ArrayType):
 			element_type = name_storageref.type.type
-		elif (isinstance(name_storageref.type, PtrType)):
+		elif isinstance(name_storageref.type, PtrType):
 			element_type = name_storageref.type.type
 		else:
 			print "name_storageref is %s" % name_storageref
@@ -463,13 +462,13 @@ class Vercomp:
 			element_type,
 			name_storageref.storage,
 			name_storageref.idx + subscript_val*element_type.sizeof())
-		if (self.verbose):
+		if self.verbose:
 			print "arrayref --> %s" % array_storageref
 		return State(array_storageref, symtab)
 
 	def eager_lookup(self, key, symtab):
 		val = symtab.lookup(key)
-		if (isinstance(val, StorageRef)):
+		if isinstance(val, StorageRef):
 			newval = symtab.lookup(val.key())
 			#print "eager_lookup converts %s to %s" % (val, newval)
 			val = newval
@@ -484,7 +483,7 @@ class Vercomp:
 		# which symtab the expr should be evaluated against to coerce
 		# it down to a value. Probably should have bundled that into a
 		# wrapper object. Ugh.
-		if (isinstance(expr, StorageRef)):
+		if isinstance(expr, StorageRef):
 			key = expr.key()
 			expr = symtab.lookup(key)
 		return expr
@@ -638,25 +637,25 @@ class Vercomp:
 
 	def transform_assignment(self, stmt, symtab):
 		# returns symtab
-		if (stmt.op=="="):
+		if stmt.op == "=":
 			right_state = self.decode_expression(stmt.rvalue, symtab)
 			symtab = right_state.symtab
 			expr = right_state.expr
 			#print "ta: %s decodes to %s" % (ast_show(stmt.rvalue, 1), expr)
-		elif (len(stmt.op)==2 and stmt.op[1]=='='):
+		elif len(stmt.op) == 2 and stmt.op[1] == '=':
 			# These tricksy assignments won't work for pointer values just yet.
 			left_state = self.decode_expression_val(stmt.lvalue, symtab)
 			right_state = self.decode_expression_val(stmt.rvalue, left_state.symtab)
-			if (stmt.op=="+="):
-				if (self.verbose):
+			if stmt.op == "+=":
+				if self.verbose:
 					print "stmt.rvalue %s" % ast_show(stmt.rvalue)
 					print "left_state %s right_state %s" % (left_state, right_state)
 				expr = self.dfg(Add, left_state.expr, right_state.expr)
-			elif (stmt.op=="-="):
+			elif stmt.op == "-=":
 				expr = self.dfg(Subtract, left_state.expr, right_state.expr)
-			elif (stmt.op=="*="):
+			elif stmt.op == "*=":
 				expr = self.dfg(Multiply, left_state.expr, right_state.expr)
-			elif (stmt.op=="|="):
+			elif stmt.op == "|=":
 				expr = self.dfg(BitOr, left_state.expr, right_state.expr)
 			else:
 				assert(False)
@@ -666,7 +665,7 @@ class Vercomp:
 
 		#print "transform_assignment symtab is %s" % symtab
 		lvalue = stmt.lvalue
-		if (isinstance(lvalue, c_ast.ID) and lvalue.name == "_unroll"):
+		if isinstance(lvalue, c_ast.ID) and lvalue.name == "_unroll":
 			sym = PseudoSymbol(lvalue.name)
 			symtab.assign(sym, expr)
 		else:
@@ -675,14 +674,14 @@ class Vercomp:
 			#print "node is %s expr is %s" % (ast_show(lvalue), lvalue_state.expr)
 			#print "type is %s" % lvalue_state.expr.type
 			#print "transform_assignment lvalue %s type %s" % (lvalue_state.expr, lvalue_state.expr.type)
-			if (lvalue_state.expr.is_ptr()):
+			if lvalue_state.expr.is_ptr():
 				#print "lvalue was a ptr, it now points elsewhere"
 				sym = self.decode_ptr_key(lvalue)
 				symtab.assign(sym, expr)
 			else:
 				sym = lvalue_state.expr.key()
 				sizeof = lvalue_state.expr.type.sizeof()
-				if (sizeof > 1):
+				if sizeof > 1:
 					#print "Transferring %d values to %s" % (sizeof, lvalue_state.expr)
 					lkey = lvalue_state.expr
 					rkey = expr
@@ -706,9 +705,9 @@ class Vercomp:
 		try:
 			# If condition is statically evaluable. Just run one branch.
 			cond_val = self.evaluate(cond_state.expr)
-			if (cond_val):
+			if cond_val:
 				return self.transform_statement(statement.iftrue, symtab)
-			elif (statement.iffalse!=None):
+			elif statement.iffalse is not None:
 				return self.transform_statement(statement.iffalse, symtab)
 			else:
 				# no-op.
@@ -722,7 +721,7 @@ class Vercomp:
 			then_symtab = self.transform_statement(
 				statement.iftrue, then_scope)
 			else_scope = Symtab(symtab, scope=set())
-			if (statement.iffalse!=None):
+			if statement.iffalse is not None:
 				else_symtab = self.transform_statement(
 					statement.iffalse, else_scope)
 			else:
@@ -751,15 +750,15 @@ class Vercomp:
 			print "%s%s" % ("  "*self.loops, m)
 
 	def unroll_static_loop(self, cond, body_compound, symtab):
-		self.loops+=1
+		self.loops += 1
 		sanity = -1
 		working_symtab = symtab
 		#self.loop_msg("___start___")
 		cond_state = None
 		cond_val = None
-		while (True):
+		while True:
 			sanity += 1
-			if (sanity > self.loop_sanity_limit):
+			if sanity > self.loop_sanity_limit:
 				print cond_val
 				print cond_state.expr
 				print ast_show(cond)
@@ -768,12 +767,12 @@ class Vercomp:
 			# once a condition is statically evaluable, we assume it
 			# always is.
 			cond_val = self.evaluate(cond_state.expr)
-			if (not cond_val):
+			if not cond_val:
 				break
-			if (self.verbose):
+			if self.verbose:
 				print "loop body is:"
 				print ast_show(body_compound)
-			if (sanity>0 and (sanity & 0x3f)==0):
+			if sanity>0 and (sanity & 0x3f)==0:
 				self.loop_msg("static iter %d" % sanity)
 			working_symtab = self.transform_statement(
 				body_compound, cond_state.symtab)
@@ -801,9 +800,9 @@ class Vercomp:
 			#print "rep %d; k is: %s" % (i, self.eager_lookup(Symbol("k"), scope))
 			working_symtab = self.transform_statement(body_compound, scope)
 
-		assert(_unroll_val == len(cond_stack))
+		assert _unroll_val == len(cond_stack)
 
-		while (len(cond_stack)>0):
+		while len(cond_stack) > 0:
 			cond = cond_stack.pop()
 			scope = scope_stack.pop()
 			modified_idents = scope.scope
@@ -860,7 +859,7 @@ class Vercomp:
 		# returns Symtab
 		working_symtab = outer_symtab
 		#print "compound %s is %s" % (body.__class__, ast_show(body))
-		assert(isinstance(body, c_ast.Compound))
+		assert isinstance(body, c_ast.Compound)
 		children = body.children()
 		for stmt_idx in range(len(children)):
 			(name, statement) = children[stmt_idx]
@@ -869,41 +868,41 @@ class Vercomp:
 		return working_symtab
 
 	def transform_statement(self, statement, working_symtab, return_allowed=False):
-		if (isinstance(statement, c_ast.Assignment)):
+		if isinstance(statement, c_ast.Assignment):
 			working_symtab = self.transform_assignment(
 				statement, working_symtab)
-		elif (isinstance(statement, c_ast.If)):
+		elif isinstance(statement, c_ast.If):
 			working_symtab = self.transform_if(statement, working_symtab)
-		elif (isinstance(statement, c_ast.Return)):
-			if (not return_allowed):
+		elif isinstance(statement, c_ast.Return):
+			if not return_allowed:
 				raise EarlyReturn()
 			return_state = self.decode_expression_val(
 				statement.expr, working_symtab)
 			#working_symtab = Symtab(return_state.symtab)	# DEAD
 			working_symtab = return_state.symtab
 			working_symtab.declare(PseudoSymbol("return"), return_state.expr)
-		elif (isinstance(statement, c_ast.Decl)):
+		elif isinstance(statement, c_ast.Decl):
 			# NB modify in place. I think that's actually okay,
 			# when we're not forking them. Which I guess we never
 			# do, since we use them and discard them.
 			working_symtab = self.declare_variable(statement, working_symtab)
-		elif (isinstance(statement, c_ast.FuncCall)):
+		elif isinstance(statement, c_ast.FuncCall):
 			# an expression whose result is discarded; only side-effects
 			# matter.
 			state = self.decode_expression_val(statement, working_symtab, void=True)
 			working_symtab = state.symtab
-		elif (isinstance(statement, c_ast.For)):
+		elif isinstance(statement, c_ast.For):
 			working_symtab = self.transform_for(statement, working_symtab)
-		elif (isinstance(statement, c_ast.While)):
+		elif isinstance(statement, c_ast.While):
 			working_symtab = self.transform_while(statement, working_symtab)
-		elif (isinstance(statement, c_ast.Compound)):
+		elif isinstance(statement, c_ast.Compound):
 			working_symtab = self.transform_compound(statement, working_symtab)
 		else:
 			print "class: ",statement.__class__
 			print "dict: ",statement.__dict__
 			print "ast: ",ast_show(statement)
 			assert(False)	# unimpl statement type
-		if (self.verbose):
+		if self.verbose:
 			print "after statement %s, symtab:" % ast_show(statement, oneline=True)
 			print "  %s"%working_symtab
 		return working_symtab
@@ -925,10 +924,10 @@ class Vercomp:
 
 	def make_global_storage(self, node, symtab):
 		# returns State
-		assert(isinstance(node, c_ast.Decl))
+		assert isinstance(node, c_ast.Decl)
 		type_state = self.decode_type(node.type, symtab)
 		ptr_type = type_state.type
-		assert(isinstance(ptr_type, PtrType))
+		assert isinstance(ptr_type, PtrType)
 		store_type = ptr_type.type
 		state = self.create_storage(node.name, store_type, None, symtab)
 		symtab = state.symtab
@@ -940,9 +939,9 @@ class Vercomp:
 		func_def = self.find_func("outsource")
 		param_decls = func_def.decl.type.args.params
 
-		if (len(param_decls)==3):
+		if len(param_decls) == 3:
 			has_nizk = True
-		elif (len(param_decls)==2):
+		elif len(param_decls) == 2:
 			has_nizk = False
 		else:
 			raise MalformedOutsourceParameters()
@@ -954,7 +953,7 @@ class Vercomp:
 		input_state = self.make_global_storage(param_decls[INPUT_ARG_IDX], symtab)
 		state = input_state
 		arg_exprs.append(input_state.expr)
-		if (has_nizk):
+		if has_nizk:
 			nizk_state = self.make_global_storage(param_decls[NIZK_ARG_IDX], state.symtab)
 			state = nizk_state
 			arg_exprs.append(nizk_state.expr)
@@ -984,7 +983,7 @@ class Vercomp:
 		
 		self.inputs = create_input_keys(INPUT_ARG_IDX, Input)
 		self.nizk_inputs = []
-		if (has_nizk):
+		if has_nizk:
 			self.nizk_inputs = create_input_keys(NIZK_ARG_IDX, NIZKInput)
 
 		#print "root_funccall symtab: %s" % symtab
@@ -1022,7 +1021,7 @@ class Vercomp:
 		collapser = ExprCollapser(self.expr_evaluator)
 
 		self.timing.phase("collapse_output")
-		if (self.progress):
+		if self.progress:
 			print "collapsing output"
 		output = []
 		for idx in range(output_storage_ref.type.sizeof()):
@@ -1054,9 +1053,9 @@ class Vercomp:
 			except:
 				return False
 		matches = filter(is_match, self.root_ast.children())
-		if (len(matches)==0):
+		if len(matches) == 0:
 			raise FuncNotDefined(goal_name)
-		elif (len(matches)>1):
+		elif len(matches) > 1:
 			raise FuncMultiplyDefined(goal_name)
 		return matches[0][1]
 
@@ -1132,11 +1131,11 @@ def main(argv):
 		print repr(ex)
 		raise
 
-	if (args.print_exprs):
+	if args.print_exprs:
 		timing.phase("print_expression")
 		vercomp.print_expression()
 
-	if (args.il_file!=None):
+	if args.il_file is not None:
 		timing.phase("emit_il")
 		fp = open(args.il_file, "w")
 #		print "\n  ".join(types.__dict__.keys())
@@ -1148,19 +1147,19 @@ def main(argv):
 		pickle.dump(vercomp.output, fp)
 		fp.close()
 
-	if (args.json_file!=None):
+	if args.json_file is not None:
 		timing.phase("emit_json")
 		fp = open(args.json_file, "w")
 		json.dump(vercomp.output, fp)
 		fp.close()
 
-	if (args.arith_file!=None):
+	if args.arith_file is not None:
 		timing.phase("emit_arith")
 		if (vercomp.progress):
 			print "Compilation complete; emitting arith."
 		ArithFactory(args.arith_file, vercomp.inputs, vercomp.nizk_inputs, vercomp.output, vercomp.bit_width)
 
-	if (args.bool_file!=None):
+	if args.bool_file is not None:
 		timing.phase("emit_bool")
 		if (vercomp.progress):
 			print "Compilation complete; emitting bool."

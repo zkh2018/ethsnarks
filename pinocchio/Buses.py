@@ -1,8 +1,8 @@
+import types
 from .TraceType import BOOLEAN_TYPE
 from .ceillg2 import ceillg2
 from .FieldOps import FieldInput
 from .Wires import WireList, Wire
-from .Struct import IntType, LongType
 #from ArithmeticFieldOps import *	# TODO plane bus zero depends on this; probably broken
 
 MAJOR_INPUT=0
@@ -58,7 +58,7 @@ class Bus:
 			return self.board.zero_wire()
 
 	def assert_int(self, value):
-		assert(type(value)==IntType or type(value)==LongType)
+		assert type(value) in [types.IntType, types.LongType]
 
 class OneBus(Bus):
 	# This bus is only here as a placeholder to allocate the one wire,

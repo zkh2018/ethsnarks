@@ -1,7 +1,8 @@
 import operator
 
+import types
 from .Storage import StorageKey
-from .Struct import PtrType, IntType, LongType, BooleanType
+from .Struct import PtrType
 
 class NonconstantArrayAccess(Exception):
 	def __init__(self, s):
@@ -53,11 +54,13 @@ class DFGFactory:
 
 	def create(self, dclass, *args):
 		def uid(obj):
-			#if type(obj) in [InstanceType]:
-			#	return id(obj)
-			if type(obj) in [IntType, LongType, BooleanType]:
+			if type(obj) in [types.InstanceType, types.ClassType]:
+				return id(obj)
+			if type(obj) in [types.IntType, types.LongType, types.BooleanType]:
 				return obj
 			else:
+				print(obj)
+				print(dclass, args)
 				raise Exception("unhandled arg type %s" % type(obj))
 		internid = tuple(map(uid, (dclass,)+args))
 		if (internid in self.intern):
