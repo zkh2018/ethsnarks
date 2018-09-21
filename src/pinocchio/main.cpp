@@ -8,6 +8,7 @@ using ethsnarks::stub_prove_from_pb;
 using ethsnarks::stub_genkeys_from_pb;
 
 using std::ofstream;
+using std::cout;
 using std::cerr;
 using std::endl;
 using std::string;
@@ -56,6 +57,19 @@ static int main_test( ProtoboardT& pb, const char *arith_file, const char *circu
 }
 
 
+static int main_eval( ProtoboardT& pb, const char *arith_file, const char *circuit_inputs )
+{
+	CircuitReader circuit(pb, arith_file, circuit_inputs);
+
+	for( auto& wire : circuit.getOutputWireIds() )
+	{
+		cout << wire << " " << circuit.wireValue(wire) << endl;
+	}
+
+	return 0;
+}
+
+
 int main(int argc, char **argv)
 {
 	ProtoboardT pb;
@@ -64,7 +78,7 @@ int main(int argc, char **argv)
 	const string progname(argv[0]);
 	const string usage_prefix(string("Usage: ") + progname + " <circuit.arith> ");
 	if( argc < 3 ) {
-		cerr << usage_prefix << "<genkeys|prove|verify|test>" << endl;
+		cerr << usage_prefix << "<genkeys|prove|verify|eval|test>" << endl;
 		return 1;
 	}
 
@@ -104,10 +118,18 @@ int main(int argc, char **argv)
 	}
 	else if( cmd == "test" ) {
 		const char *circuit_inputs = nullptr;
-		if( sub_argv > 0 ) {
+		if( sub_argc > 0 ) {
 			circuit_inputs = sub_argv[0];
 		}
 		return main_test(pb, arith_file, circuit_inputs);
+	}
+	else if( cmd == "eval" ) {
+		if( sub_argc == 0 ) {
+			cerr << usage_prefix << "eval <circuit.inputs>" << endl;
+			return 5;
+		}
+		const char *circuit_inputs = sub_argv[0];
+		return main_eval(pb, arith_file, circuit_inputs);
 	}
 
 	cerr << "Error: unknown sub-command " << cmd << "\n";

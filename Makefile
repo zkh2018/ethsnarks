@@ -19,6 +19,7 @@ PIP_ARGS ?= --user
 PYTHON ?= python3
 NAME ?= ethsnarks
 NPM ?= npm
+PINOCCHIO ?= python -mpinocchio
 GANACHE ?= $(ROOT_DIR)/node_modules/.bin/ganache-cli
 TRUFFLE ?= $(ROOT_DIR)/node_modules/.bin/truffle
 
@@ -98,6 +99,13 @@ coverage-report:
 
 coverage-html:
 	$(PYTHON) -m coverage html
+
+
+#######################################################################
+
+examples/pinocchio/build/%.arith: examples/pinocchio/%.c
+	$(PINOCCHIO) --arith $@ $<
+	./bin/pinocchio $@
 
 
 #######################################################################

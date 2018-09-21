@@ -20,14 +20,14 @@ max_depth = 0
 class Symtab(object):
 	def __init__(self, parent=None, scope=None):
 		self.parent = parent
-		if (parent!=None):
+		if parent is not None:
 			self.depth = self.parent.depth + 1
 			#print "depth %s" % self.depth
 			global max_depth
 			if self.depth > max_depth:
 				#print "symtabs %d deep" % self.depth
 				max_depth += 1
-				if (max_depth > 100):
+				if max_depth > 100:
 					# too-deep symtabs are inefficient, as we walk up
 					# the tree doing note_assignment()s.
 					raise Exception("why!?")
@@ -48,18 +48,18 @@ class Symtab(object):
 
 	def declare(self, key, value):
 		self._kvcheck(key, value)
-		if (key in self.decl_table):
+		if key in self.decl_table:
 			raise DuplicateDeclaration(key)
 		self.decl_table.add(key)
-		assert(value!=None)
+		assert value is not None
 		self.assign_table[key] = value
 
 	def _kvcheck(self, key, value):
-		if (isinstance(key, StorageKey)):
-			assert(not isinstance(value, StorageRef))
+		if isinstance(key, StorageKey):
+			assert not isinstance(value, StorageRef)
 
 	def assign(self, key, value):
-		assert(isinstance(key, Key))
+		assert isinstance(key, Key)
 		self._kvcheck(key, value)
 		self._propagate(key)
 		self.assign_table[key] = value
@@ -72,29 +72,29 @@ class Symtab(object):
 	def dbg_dump_path(self):
 		p = self
 		i = 0
-		while (p!=None):
+		while p is not None:
 			print("  "*i+repr(p))
 			i += 2
 			p = p.parent
 
 	def note_assignment(self, key):
-		if (key in self.decl_table):
+		if key in self.decl_table:
 			# declared here
 			pass
 		else:
-			if (self.scope!=None):
+			if self.scope is not None:
 				self.scope.add(key)
-			if (self.parent!=None):
+			if self.parent is not None:
 				self.parent.note_assignment(key)
 
 	def lookup(self, key):
-		assert(isinstance(key, Key))
+		assert isinstance(key, Key)
 		return self._propagate(key)
 
 	def _fetch(self, key):
-		if (key in self.assign_table):
+		if key in self.assign_table:
 			return self.assign_table[key]
-		if (self.parent==None):
+		if self.parent is None:
 			raise UndefinedSymbol(key)
 		return self.parent._fetch(key)
 
@@ -105,7 +105,7 @@ class Symtab(object):
 
 	def __repr__(self):
 		ding = ""
-		if (self.scope!=None):
+		if self.scope is not None:
 			ding = "(SCOPE)"
 		return "%s%s" % (self.assign_table, ding)
 

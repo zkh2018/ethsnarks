@@ -24,7 +24,6 @@ SOFTWARE.
 
 #include "ethsnarks.hpp"
 
-#include "libsnark/gadgetlib1/pb_variable.hpp"
 
 namespace ethsnarks {
 
@@ -76,14 +75,33 @@ class CircuitReader : public GadgetT {
 public:
 	CircuitReader(ProtoboardT& in_pb, const char* arithFilepath, const char* inputsFilepath);
 
-	int getNumInputs() { return numInputs;}
-	int getNumOutputs() { return numOutputs;}
-	std::vector<Wire> getInputWireIds() const { return inputWireIds; }
-	std::vector<Wire> getOutputWireIds() const { return outputWireIds; }
+	int getNumInputs() const {
+		return numInputs;
+	}
+
+	int getNumOutputs() const {
+		return numOutputs;
+	}
+
+	const InputWires& getInputWireIds() const {
+		return inputWireIds;
+	}
+
+	const OutputWires& getOutputWireIds() const {
+		return outputWireIds;
+	}
 
 	void generate_r1cs_constraints() {}
 	void generate_r1cs_witness() {}
 	void parseInputs( const char *inputsFilepath );
+
+	bool wireExists( Wire wireId );
+	LinearCombinationT& wireGet( Wire wire_id, const std::string &annotation="" );
+	FieldT wireValue( Wire wire_id );
+
+	bool varExists( Wire wire_id );
+	VariableT& varNew( Wire wire_id, const std::string &annotation="");
+	VariableT& varGet( Wire wire_id, const std::string &annotation="");
 
 protected:
 	std::map<Wire,LinearCombinationT> wireLC;
@@ -108,12 +126,6 @@ protected:
 	void addOperationConstraints( const char *type, const InputWires& inWires, const OutputWires& outWires );
 	void mapValuesToProtoboard();
 
-	bool wireExists( Wire wireId );
-	LinearCombinationT& wireGet( Wire wire_id );
-
-	bool varExists( Wire wire_id );
-	VariableT& varNew( Wire wire_id, const std::string &annotation="");
-	VariableT& varGet( Wire wire_id, const std::string &annotation="");
 
 	void addMulConstraint(const InputWires& inputs, const OutputWires& outputs);
 	void addXorConstraint(const InputWires& inputs, const OutputWires& outputs);

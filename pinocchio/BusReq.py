@@ -6,9 +6,9 @@ from . import DFG
 
 class BaseReq(object):
 	def __init__(self, reqfactory, expr, type):
-		assert(reqfactory.is_req_factory())
+		assert reqfactory.is_req_factory()
 #		assert(isinstance(expr, DFGExpr))
-		assert(isinstance(type, TraceType))
+		assert isinstance(type, TraceType)
 		self.reqfactory = reqfactory
 		self.expr = expr
 		self.type = type
@@ -49,23 +49,22 @@ class BusReq(BaseReq):
 	# subclass defines what happens when request is for the type
 	# that the operator generates naturally.
 	def natural_type(self):
-		raise Exception("abstract method")
+		raise NotImplementedError()
 
 	def natural_dependencies(self):
-		raise Exception("abstract method in %s" % self.__class__)
+		raise NotImplementedError()
 
 	def natural_impl(self):
-		raise Exception("abstract method")
+		raise NotImplementedError()
 
 	# we define what happens when the request is for the opposite type
 	def _natural_req(self):
 		return self.__class__(self.reqfactory, self.expr, self.natural_type())
 
 	def get_dependencies(self):
-		if (self.natural_type() != self.type):
+		if self.natural_type() != self.type:
 			return [self._natural_req()]
-		else:
-			return self.natural_dependencies()
+		return self.natural_dependencies()
 
 	def collapse_impl(self):
 		return self.reqfactory.collapse_req(self)
@@ -78,11 +77,11 @@ class BinaryOpReq(BusReq):
 	def __init__(self, reqfactory, expr, type):
 		BusReq.__init__(self, reqfactory, expr, type)
 
-		if (self.has_const_opt() and isinstance(expr.left, DFG.Constant)):
+		if self.has_const_opt() and isinstance(expr.left, DFG.Constant):
 			self.is_const_opn = True
 			self._const_expr = expr.left
 			self.variable_expr = expr.right
-		elif (self.has_const_opt() and isinstance(expr.right, DFG.Constant)):
+		elif self.has_const_opt() and isinstance(expr.right, DFG.Constant):
 			self.is_const_opn = True
 			self._const_expr = expr.right
 			self.variable_expr = expr.left
@@ -98,42 +97,42 @@ class BinaryOpReq(BusReq):
 
 	# return true if subclass implements const_impl
 	def has_constant_opt(self):
-		raise Exception("abstract method")
+		raise NotImplementedError()
 
 	# return appropriate bus for the constant optimization case
 	# NB this assumes the operation is commutative, since subclass
 	# impl receives no argument order information in this case.
 	def const_impl(self, const_expr, var_bus):
-		raise Exception("abstract method")
+		raise NotImplementedError()
 
 	# return appropriate bus for the case where both args are variable
 	def var_impl(self, var_bus):
-		raise Exception("abstract method")
+		raise NotImplementedError()
 
 	def _variable_req(self):
 		return self.make_req(self.variable_expr, self.natural_type())
 
 	def natural_dependencies(self):
-		if (self.is_const_opn):
+		if self.is_const_opn:
 			return [ self._variable_req() ]
-		else:
-			return [
-				self.make_req(self.expr.left, self.natural_type()),
-				self.make_req(self.expr.right, self.natural_type())
-				];
+
+		return [
+			self.make_req(self.expr.left, self.natural_type()),
+			self.make_req(self.expr.right, self.natural_type())
+			];
 
 	def _core_impl(self, transform):
-		if (self.is_const_opn):
+		if self.is_const_opn:
 			var_bus = self.get_bus_from_req(self._variable_req())
 			return self.const_impl(self._const_expr, transform(var_bus))
-		else:
-			busses = [
-				transform(self.get_bus(self.expr.left, self.natural_type())),
-				transform(self.get_bus(self.expr.right, self.natural_type()))
-				]
-			for bus in busses:
-				self.reqfactory.add_extra_bus(bus)
-			return self.var_impl(*busses)
+
+		busses = [
+			transform(self.get_bus(self.expr.left, self.natural_type())),
+			transform(self.get_bus(self.expr.right, self.natural_type()))
+			]
+		for bus in busses:
+			self.reqfactory.add_extra_bus(bus)
+		return self.var_impl(*busses)
 
 	def natural_impl(self):
 		def identity(bus):
@@ -148,8 +147,7 @@ class BinaryOpReq(BusReq):
 		bus = self._core_impl(identity)
 
 		overflow_limit = self.board().bit_width.overflow_limit
-		if (overflow_limit!=None
-			and bus.get_active_bits() > overflow_limit):
+		if overflow_limit is not None and bus.get_active_bits() > overflow_limit:
 			# NB in this case we end up discarding the bus object
 			# we made, but that's okay, because we'll recreate it later.
 			# And it doesn't even get added into the bus set.
@@ -228,17 +226,17 @@ class LogicalCastReq(NotFamily):
 
 	def natural_impl(self):
 		wide_bus = self.get_bus_from_req(self._req())
-		if (wide_bus.get_active_bits()==1):
+		if wide_bus.get_active_bits() == 1:
 			print("LogicalCastReq was cheap")
 			return BooleanCastBus(wide_bus)
-		else:
-			print("LogicalCastReq was expensive, from %s" % wide_bus.get_active_bits())
-			return self.make_logical_cast(wide_bus)
+
+		print("LogicalCastReq was expensive, from %s" % wide_bus.get_active_bits())
+		return self.make_logical_cast(wide_bus)
 
 class ShiftReq(BusReq):
 	def __init__(self, reqfactory, expr, type):
 		BusReq.__init__(self, reqfactory, expr, type)
-		assert(isinstance(self.expr.right, DFG.Constant))
+		assert isinstance(self.expr.right, DFG.Constant)
 
 	def natural_type(self): return BOOLEAN_TYPE
 
@@ -327,12 +325,12 @@ class ConstantReq(BaseReq):
 		# a const-mul-1(one_wire), but that doesn't actually cost anything
 		# other than bloat in the arith file; it disappears in the
 		# polynomial representation. So meh.
-		if (self.type==BOOLEAN_TYPE):
+		if self.type==BOOLEAN_TYPE:
 			# a single wire, which can be added into other wires.
 			# (muls should be clever enough to skip this step.)
 			return ConstantBooleanBus(self.board(), self.expr.value)
-		elif (self.type==ARITHMETIC_TYPE):
+		elif self.type==ARITHMETIC_TYPE:
 			# ones and zeros
-			return (self.reqfactory.get_ConstantArithmeticBus_class()
-				(self.board(), self.expr.value))
-		else: assert(False)
+			return (self.reqfactory.get_ConstantArithmeticBus_class()(self.board(), self.expr.value))
+		else:
+			raise RuntimeError("Unknown type!")

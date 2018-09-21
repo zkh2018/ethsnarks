@@ -291,43 +291,43 @@ void CircuitReader::parseAndEval(const char* arithFilepath, const char* inputsFi
 void CircuitReader::addOperationConstraints( const char *type, const InputWires& inWires, const OutputWires& outWires )
 {
 	if (strcmp(type, "add") == 0) {
-		assert(numGateOutputs == 1);
+		assert(inWires.size() > 1);
 		handleAddition(inWires, outWires);
 	}
 	else if (strcmp(type, "mul") == 0) {
-		assert(numGateInputs == 2 && numGateOutputs == 1);
+		assert(inWires.size() == 2 && outWires.size() == 1);
 		addMulConstraint(inWires, outWires);
 	}
 	else if (strcmp(type, "xor") == 0) {
-		assert(numGateInputs == 2 && numGateOutputs == 1);
+		assert(inWires.size() == 2 && outWires.size() == 1);
 		addXorConstraint(inWires, outWires);
 	}
 	else if (strcmp(type, "or") == 0) {
-		assert(numGateInputs == 2 && numGateOutputs == 1);
+		assert(inWires.size() == 2 && outWires.size() == 1);
 		addOrConstraint(inWires, outWires);
 	}
 	else if (strcmp(type, "assert") == 0) {
-		assert(numGateInputs == 2 && numGateOutputs == 1);
+		assert(inWires.size() == 2 && outWires.size() == 1);
 		addAssertionConstraint(inWires, outWires);
 	}
 	else if (strstr(type, "const-mul-neg-")) {
-		assert(numGateInputs == 1 && numGateOutputs == 1);
+		assert(inWires.size() == 1 && outWires.size() == 1);
 		handleMulNegConst(inWires, outWires, type);
 	}
 	else if (strstr(type, "const-mul-")) {
-		assert(numGateInputs == 1 && numGateOutputs == 1);
+		assert(inWires.size() == 1 && outWires.size() == 1);
 		handleMulConst(inWires, outWires, type);
 	}
 	else if (strcmp(type, "zerop") == 0) {
-		assert(numGateInputs == 1 && numGateOutputs == 2);
+		assert(inWires.size() == 1 && outWires.size() == 2);
 		addNonzeroCheckConstraint(inWires, outWires);
 	}
 	else if (strstr(type, "split")) {
-		assert(numGateInputs == 1);
+		assert(inWires.size() == 1);
 		addSplitConstraint(inWires, outWires);
 	}
 	else if (strstr(type, "pack")) {
-		assert(numGateOutputs == 1);
+		assert(outWires.size() == 1);
 		addPackConstraint(inWires, outWires);
 	}
 }
@@ -435,11 +435,19 @@ bool CircuitReader::wireExists( Wire wire_id )
 }
 
 
-LinearCombinationT& CircuitReader::wireGet( Wire wire_id )
+FieldT CircuitReader::wireValue( Wire wire_id )
+{
+	auto& wire = wireGet(wire_id);
+
+	return this->pb.lc_val(wire);
+}
+
+
+LinearCombinationT& CircuitReader::wireGet( Wire wire_id, const std::string &annotation )
 {
 	if( ! wireExists(wire_id) )
 	{
-		auto& v = varGet(wire_id);
+		auto& v = varGet(wire_id, annotation);
 
 		wireLC.emplace(wire_id, LinearCombinationT(v));
 	}
@@ -474,41 +482,41 @@ VariableT& CircuitReader::varGet( Wire wire_id, const std::string &annotation )
 
 void CircuitReader::addMulConstraint(const InputWires& inputs, const OutputWires& outputs)
 {
-	auto& l1 = wireGet(inputs[0]);
-	auto& l2 = wireGet(inputs[1]);
-	auto& outvar = varGet(outputs[0]);
+	auto& l1 = wireGet(inputs[0], "mul A");
+	auto& l2 = wireGet(inputs[1], "mul C");
+	auto& outvar = varGet(outputs[0], "mul result");
 
-	pb.add_r1cs_constraint(ConstraintT(l1, l2, outvar));
+	pb.add_r1cs_constraint(ConstraintT(l1, l2, outvar), "mul, result = A * B");
 }
 
 
 void CircuitReader::addXorConstraint(const InputWires& inputs, const OutputWires& outputs)
 {
-	auto& l1 = wireGet(inputs[0]);
-	auto& l2 = wireGet(inputs[1]);
-	auto& outvar = varGet(outputs[0]);
+	auto& l1 = wireGet(inputs[0], "xor A");
+	auto& l2 = wireGet(inputs[1], "xor B");
+	auto& outvar = varGet(outputs[0], "xor result");
 
-	pb.add_r1cs_constraint(ConstraintT(2 * l1, l2, l1 + l2 - outvar));
+	pb.add_r1cs_constraint(ConstraintT(2 * l1, l2, l1 + l2 - outvar), "xor");
 }
 
 
 void CircuitReader::addOrConstraint(const InputWires& inputs, const OutputWires& outputs)
 {
-	auto& l1 = wireGet(inputs[0]);
-	auto& l2 = wireGet(inputs[1]);
-	auto& outvar = varGet(outputs[0]);
+	auto& l1 = wireGet(inputs[0], "or A");
+	auto& l2 = wireGet(inputs[1], "or B");
+	auto& outvar = varGet(outputs[0], "or result");
 
-	pb.add_r1cs_constraint(ConstraintT(l1, l2, l1 + l2 - outvar));
+	pb.add_r1cs_constraint(ConstraintT(l1, l2, l1 + l2 - outvar), "or");
 }
 
 
 void CircuitReader::addAssertionConstraint(const InputWires& inputs, const OutputWires& outputs)
 {
-	auto& l1 = wireGet(inputs[0]);
-	auto& l2 = wireGet(inputs[1]);
-	auto& l3 = varGet(outputs[0]);
+	auto& l1 = wireGet(inputs[0], "assert A");
+	auto& l2 = wireGet(inputs[1], "assert B");
+	auto& l3 = varGet(outputs[0], "assert C");
 
-	pb.add_r1cs_constraint(ConstraintT(l1, l2, l3));
+	pb.add_r1cs_constraint(ConstraintT(l1, l2, l3), "A * B = C");
 }
 
 
@@ -520,7 +528,7 @@ void CircuitReader::addSplitConstraint(const InputWires& inputs, const OutputWir
 
 	for( size_t i = 0; i < outputs.size(); i++)
 	{
-		auto &out_bit_var = varGet(outputs[i]);
+		auto &out_bit_var = varGet(outputs[i], FMT("bit_", "%zu", i));
 
 		generate_boolean_r1cs_constraint<FieldT>(pb, out_bit_var);
 
@@ -529,7 +537,7 @@ void CircuitReader::addSplitConstraint(const InputWires& inputs, const OutputWir
 		two_i += two_i;
 	}
 
-	pb.add_r1cs_constraint(ConstraintT(wireGet(inputs[0]), 1, sum));
+	pb.add_r1cs_constraint(ConstraintT(wireGet(inputs[0]), 1, sum), "split result");
 }
 
 
@@ -549,7 +557,7 @@ void CircuitReader::addPackConstraint(const InputWires& inputs, const OutputWire
 		two_i += two_i;
 	}
 
-	pb.add_r1cs_constraint(ConstraintT(varGet(outputs[0]), 1, sum));
+	pb.add_r1cs_constraint(ConstraintT(varGet(outputs[0]), 1, sum), "pack");
 }
 
 
@@ -573,16 +581,16 @@ void CircuitReader::addPackConstraint(const InputWires& inputs, const OutputWire
 */
 void CircuitReader::addNonzeroCheckConstraint(const InputWires& inputs, const OutputWires& outputs)
 {
-	auto& X = wireGet(inputs[0]);
+	auto& X = wireGet(inputs[0], "zerop input");
 
 	auto& Y = varGet(outputs[0], "zerop out");
 
 	VariableT M;
 	M.allocate(this->pb, "zerop aux");
 
-	pb.add_r1cs_constraint(ConstraintT(X, 1 - Y, 0));
+	pb.add_r1cs_constraint(ConstraintT(X, 1 - Y, 0), "Y is bitty");
 
-	pb.add_r1cs_constraint(ConstraintT(X, M, Y));
+	pb.add_r1cs_constraint(ConstraintT(X, M, Y), "X * (1/X) = Y");
 
 	zerop_items.push_back({inputs[0], M});
 }
@@ -590,7 +598,7 @@ void CircuitReader::addNonzeroCheckConstraint(const InputWires& inputs, const Ou
 
 void CircuitReader::handleAddition(const InputWires& inputs, const OutputWires& outputs)
 {
-	auto& outwire = wireGet(outputs[0]);
+	auto& outwire = wireGet(outputs[0], "add output");
 
 	for( auto& input_id : inputs )
 	{
@@ -606,9 +614,9 @@ void CircuitReader::handleMulConst(const InputWires& inputs, const OutputWires& 
 
 	const char* constStr = type + sizeof("const-mul-") - 1;
 
-	auto& l = wireGet(inputs[0]);
+	auto& l = wireGet(inputs[0], "mul const input");
 
-	auto& outwire = wireGet(outputs[0]);
+	auto& outwire = wireGet(outputs[0], "mul const output");
 
 	auto v = l * readFieldElementFromHex(constStr);
 
@@ -623,9 +631,9 @@ void CircuitReader::handleMulNegConst(const InputWires& inputs, const OutputWire
 {
 	const char* constStr = type + sizeof("const-mul-neg-") - 1;
 
-	auto& l = wireGet(inputs[0]);
+	auto& l = wireGet(inputs[0], "const-mul-neg input");
 
-	auto& outwire = wireGet(outputs[0]);
+	auto& outwire = wireGet(outputs[0], "const-mul-neg output");
 
 	auto v = l * (readFieldElementFromHex(constStr) * FieldT(-1));
 

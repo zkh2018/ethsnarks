@@ -1,7 +1,6 @@
 from .ReqFactory import ReqFactory
 from .TraceType import BOOLEAN_TYPE
-from .DFG import (CmpLT, CmpLEQ, Constant, Add, Subtract, Multiply, Negate,
-				  Input, Conditional)
+from .DFG import CmpLT, CmpLEQ, Constant, Add, Subtract, Multiply, Negate,Input, Conditional
 from .BusReq import ConstantReq
 from .ArithBusReq import NegateReq
 from .BooleanBuses import BooleanZero, BooleanOutputBus, ConstantBitXorBus, AllOnesBus, BitAndBus, BitOrBus, XorBus
@@ -25,34 +24,42 @@ class BooleanFactory(ReqFactory):
 		return BooleanOutputBus(self.get_board(), expr_bus, idx)
 
 	def make_req(self, expr, type):
-		assert(type==BOOLEAN_TYPE)
-		if (isinstance(expr, Input)):
-			result = BooleanInputReq(self, expr, type)
-		elif (isinstance(expr, Conditional)):
-			result = ConditionalReq(self, expr, type)
-		elif (isinstance(expr, CmpLT)):
-			result = CmpReq(self, expr, type)
-		elif (isinstance(expr, CmpLEQ)):
-			result = CmpReq(self, expr, type)
-		elif (isinstance(expr, Constant)):
-			result = ConstantReq(self, expr, type)
-		elif (isinstance(expr, Add)):
-			result = AddReq(self, expr, type)
-		elif (isinstance(expr, Subtract)):
-			result = SubtractReq(self, expr, type)
-		elif (isinstance(expr, Multiply)):
-			result = MultiplyReq(self, expr, type)
-		elif (isinstance(expr, Negate)):
-			result = NegateReq(self, expr, type)
+		assert type==BOOLEAN_TYPE
+		if isinstance(expr, Input):
+			return BooleanInputReq(self, expr, type)
+		elif isinstance(expr, Conditional):
+			return ConditionalReq(self, expr, type)
+		elif isinstance(expr, CmpLT):
+			return CmpReq(self, expr, type)
+		elif isinstance(expr, CmpLEQ):
+			return CmpReq(self, expr, type)
+		elif isinstance(expr, Constant):
+			return ConstantReq(self, expr, type)
+		elif isinstance(expr, Add):
+			return AddReq(self, expr, type)
+		elif isinstance(expr, Subtract):
+			return SubtractReq(self, expr, type)
+		elif isinstance(expr, Multiply):
+			return MultiplyReq(self, expr, type)
+		elif isinstance(expr, Negate):
+			return NegateReq(self, expr, type)
 		else:
-			result = ReqFactory.make_req(self, expr, type)
-		return result
+			return ReqFactory.make_req(self, expr, type)
 
 	def collapse_req(self, req):
 		return req.natural_impl()
 
-	def get_BitAndBus_class(self): return BitAndBus
-	def get_BitOrBus_class(self): return BitOrBus
-	def get_XorBus_class(self): return XorBus
-	def get_ConstantBitXorBus_class(self): return ConstantBitXorBus
-	def get_AllOnesBus_class(self): return AllOnesBus
+	def get_BitAndBus_class(self):
+		return BitAndBus
+
+	def get_BitOrBus_class(self):
+		return BitOrBus
+
+	def get_XorBus_class(self):
+		return XorBus
+
+	def get_ConstantBitXorBus_class(self):
+		return ConstantBitXorBus
+
+	def get_AllOnesBus_class(self):
+		return AllOnesBus
