@@ -63,7 +63,12 @@ static int main_eval( ProtoboardT& pb, const char *arith_file, const char *circu
 
 	for( auto& wire : circuit.getOutputWireIds() )
 	{
-		cout << wire << " " << circuit.wireValue(wire) << endl;
+		const auto& value = circuit.varValue(wire);
+		cout << wire << "=" << value.as_ulong() << endl;
+	}
+
+	if( ! pb.is_satisfied() ) {
+		cerr << "Error: not satisfied!" << endl;
 	}
 
 	return 0;

@@ -7,6 +7,8 @@ struct Input {
 
 struct Output {
 	int x;
+	int y;
+	int z;
 };
 
 void outsource(struct Input *input, struct Output *output);

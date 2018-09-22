@@ -58,11 +58,15 @@ struct ZeroEqualityItem {
 };
 
 
-struct CircuitInstruction {
+class CircuitInstruction {
+public:
 	Opcode opcode;
 	FieldT constant;
 	InputWires inputs;
 	OutputWires outputs;
+
+	const char *name() const;
+	void print() const;
 };
 
 
@@ -106,21 +110,18 @@ public:
 
 	void parseInputs( const char *inputsFilepath );
 
-	bool wireExists( Wire wireId );
-	LinearCombinationT& wireGet( Wire wire_id, const std::string &annotation="" );
-	FieldT wireValue( Wire wire_id );
-
+	void varSet( Wire wire_id, const FieldT& value, const std::string &annotation="" );
+	FieldT varValue( Wire wire_id );
 	bool varExists( Wire wire_id );
-	VariableT& varNew( Wire wire_id, const std::string &annotation="");
-	VariableT& varGet( Wire wire_id, const std::string &annotation="");
+	const VariableT& varNew( Wire wire_id, const std::string &annotation="");
+	const VariableT& varGet( Wire wire_id, const std::string &annotation="");
 
 protected:
 	std::map<Wire,LinearCombinationT> wireLC;
 	std::map<Wire,VariableT> variableMap;
+	std::map<Wire,FieldT> m_varValues;
 
 	std::vector<ZeroEqualityItem> zerop_items;
-
-	std::vector<FieldT> wireValues;
 
 	std::vector<CircuitInstruction> instructions;
 
