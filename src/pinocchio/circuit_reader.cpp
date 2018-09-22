@@ -2,6 +2,7 @@
 MIT License
 
 Copyright (c) 2015 Ahmed Kosba
+Copyright (c) 2018 HarryR
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -70,10 +71,11 @@ CircuitReader::CircuitReader(
 ) :
 	GadgetT(in_pb, "CircuitReader")
 {
-	parseAndEval(arithFilepath, inputsFilepath);
-	constructCircuit(arithFilepath);
+	parseCircuit(arithFilepath);
+	makeAllConstraints();
 
 	if( inputsFilepath ) {
+		parseInputs(inputsFilepath);
 		mapValuesToProtoboard();
 	}
 }
@@ -114,8 +116,17 @@ void CircuitReader::parseInputs( const char *inputsFilepath )
 }
 
 
-void CircuitReader::evalOpcode( short opcode, std::vector<FieldT> &inValues, std::vector<Wire> &outWires, FieldT &constant )
+void CircuitReader::evalInstruction( const CircuitInstruction &inst )
 {
+	const auto opcode = inst.opcode;
+	const auto& outWires = inst.outputs;
+	const auto& constant = inst.constant;
+
+	std::vector<FieldT> inValues;
+	for( auto& wire : inst.inputs ) {
+		inValues.push_back(wireValue(wire));
+	}
+
 	if (opcode == ADD_OPCODE) {
 		FieldT sum;
 		for (auto &v : inValues)
@@ -135,7 +146,7 @@ void CircuitReader::evalOpcode( short opcode, std::vector<FieldT> &inValues, std
 						&& inValues[1] == FieldT::zero()) ?
 						FieldT::zero() : FieldT::one();
 	}
-	else if (opcode == NONZEROCHECK_OPCODE) {
+	else if (opcode == ZEROP_OPCODE) {
 		wireValues[outWires[1]] = (inValues[0] == FieldT::zero()) ? FieldT::zero() : FieldT::one();
 	}
 	else if (opcode == PACK_OPCODE) {
@@ -154,15 +165,15 @@ void CircuitReader::evalOpcode( short opcode, std::vector<FieldT> &inValues, std
 			wireValues[outWires[i]] = inVal.as_bigint().test_bit(i);
 		}
 	}
-	else if (opcode == MULCONST_OPCODE) {
+	else if (opcode == CONST_MUL_NEG_OPCODE || opcode == CONST_MUL_OPCODE) {
 		wireValues[outWires[0]] = constant * inValues[0];
 	}
 }
 
 
-void CircuitReader::parseAndEval(const char* arithFilepath, const char* inputsFilepath)
+void CircuitReader::parseCircuit(const char* arithFilepath)
 {
-	enter_block("Parsing and Evaluating the circuit");
+	enter_block("Parsing Circuit");
 
 	ifstream arithfs(arithFilepath, ifstream::in);
 	string line;
@@ -181,9 +192,6 @@ void CircuitReader::parseAndEval(const char* arithFilepath, const char* inputsFi
 	}
 
 	wireValues.resize(numWires);
-	if( inputsFilepath ) {
-		parseInputs(inputsFilepath);
-	}
 
 	char type[200];
 	char* inputStr;
@@ -205,27 +213,40 @@ void CircuitReader::parseAndEval(const char* arithFilepath, const char* inputsFi
 		}
 		else if (1 == sscanf(line.c_str(), "input %u", &wireId)) {
 			numInputs++;
-			varNew(wireId, "input");
+			varNew(wireId, FMT("input_", "%zu", wireId));
 			inputWireIds.push_back(wireId);
 		}
 		else if (1 == sscanf(line.c_str(), "nizkinput %u", &wireId)) {
 			numNizkInputs++;
-			varNew(wireId, "nizkinput");
+			varNew(wireId, FMT("nizkinput_", "%zu", wireId));
 			nizkWireIds.push_back(wireId);
 		}
 		else if (1 == sscanf(line.c_str(), "output %u", &wireId)) {
 			numOutputs++;
-			varNew(wireId, "output");
+			varNew(wireId, FMT("output_", "%zu", wireId));
 			outputWireIds.push_back(wireId);
 		}
 		else if (5 == sscanf(line.c_str(), "%s in %u <%[^>]> out %u <%[^>]>", type,
 						&numGateInputs, inputStr, &numGateOutputs, outputStr)) {
 
-			istringstream iss_i(inputStr, istringstream::in);
-			std::vector<Wire> outWires;		
+			OutputWires outWires;
+			InputWires inWires;
+			readIds(inputStr, inWires);
 			readIds(outputStr, outWires);
 
-			short opcode;
+			if( numGateInputs != inWires.size() ) {
+				std::cerr << "Error parsing line: " << line << std::endl;
+				std::cerr << " input gate mismatch, expected " << numGateInputs << " got " << inWires.size() << std::endl;
+				exit(6);
+			}
+
+			if( numGateOutputs != outWires.size() ) {
+				std::cerr << "Error parsing line: " << line << std::endl;
+				std::cerr << " output gate mismatch, expected " << numGateOutputs << " got " << outWires.size() << std::endl;
+				exit(6);
+			}
+
+			Opcode opcode;
 			FieldT constant;
 			if (strcmp(type, "add") == 0) {
 				opcode = ADD_OPCODE;
@@ -240,24 +261,24 @@ void CircuitReader::parseAndEval(const char* arithFilepath, const char* inputsFi
 				opcode = OR_OPCODE;
 			}
 			else if (strcmp(type, "assert") == 0) {
-				opcode = CONSTRAINT_OPCODE;
+				opcode = ASSERT_OPCODE;
 			}
 			else if (strcmp(type, "pack") == 0) {
 				opcode = PACK_OPCODE;
 			}
 			else if (strcmp(type, "zerop") == 0) {
-				opcode = NONZEROCHECK_OPCODE;
+				opcode = ZEROP_OPCODE;
 			}
 			else if (strcmp(type, "split") == 0) {
 				opcode = SPLIT_OPCODE;
 			}
 			else if (strstr(type, "const-mul-neg-")) {
-				opcode = MULCONST_OPCODE;
+				opcode = CONST_MUL_NEG_OPCODE;
 				char* constStr = type + sizeof("const-mul-neg-") - 1;
 				constant = readFieldElementFromHex(constStr) * FieldT(-1);
 			}
 			else if (strstr(type, "const-mul-")) {
-				opcode = MULCONST_OPCODE;
+				opcode = CONST_MUL_OPCODE;
 				char* constStr = type + sizeof("const-mul-") - 1;
 				constant = readFieldElementFromHex(constStr);
 			}
@@ -265,15 +286,8 @@ void CircuitReader::parseAndEval(const char* arithFilepath, const char* inputsFi
 				printf("Error: unrecognized line: %s\n", line.c_str());
 				exit(-1);
 			}
-	
-			if( inputsFilepath ) {
-				Wire inWireId;
-				std::vector<FieldT> inValues;
-				while (iss_i >> inWireId) {
-					inValues.push_back(wireValues[inWireId]);
-				}
-				evalOpcode(opcode, inValues, outWires, constant);
-			}
+
+			instructions.push_back({opcode, constant, inWires, outWires});
 		}
 		else {
 			printf("Error: unrecognized line: %s\n", line.c_str());
@@ -284,116 +298,69 @@ void CircuitReader::parseAndEval(const char* arithFilepath, const char* inputsFi
 	}
 	arithfs.close();
 
-	leave_block("Parsing and Evaluating the circuit");
+	this->pb.set_input_sizes(numInputs);
+
+	leave_block("Parsing Circuit");
 }
 
 
-void CircuitReader::addOperationConstraints( const char *type, const InputWires& inWires, const OutputWires& outWires )
+void CircuitReader::makeAllConstraints( )
 {
-	if (strcmp(type, "add") == 0) {
+	for( const auto& inst : instructions )
+	{
+		makeConstraints( inst );
+	}
+}
+
+
+void CircuitReader::makeConstraints( const CircuitInstruction& inst )
+{
+	const auto opcode = inst.opcode;
+	const auto& inWires = inst.inputs;
+	const auto& outWires = inst.outputs;
+
+	if ( opcode == ADD_OPCODE ) {
 		assert(inWires.size() > 1);
 		handleAddition(inWires, outWires);
 	}
-	else if (strcmp(type, "mul") == 0) {
+	else if ( opcode == MUL_OPCODE ) {
 		assert(inWires.size() == 2 && outWires.size() == 1);
 		addMulConstraint(inWires, outWires);
 	}
-	else if (strcmp(type, "xor") == 0) {
+	else if ( opcode == XOR_OPCODE ) {
 		assert(inWires.size() == 2 && outWires.size() == 1);
 		addXorConstraint(inWires, outWires);
 	}
-	else if (strcmp(type, "or") == 0) {
+	else if ( opcode == OR_OPCODE ) {
 		assert(inWires.size() == 2 && outWires.size() == 1);
 		addOrConstraint(inWires, outWires);
 	}
-	else if (strcmp(type, "assert") == 0) {
+	else if ( opcode == ASSERT_OPCODE ) {
 		assert(inWires.size() == 2 && outWires.size() == 1);
 		addAssertionConstraint(inWires, outWires);
 	}
-	else if (strstr(type, "const-mul-neg-")) {
+	else if ( opcode == CONST_MUL_NEG_OPCODE ) {
 		assert(inWires.size() == 1 && outWires.size() == 1);
-		handleMulNegConst(inWires, outWires, type);
+		handleMulNegConst(inWires, outWires, inst.constant);
 	}
-	else if (strstr(type, "const-mul-")) {
+	else if ( opcode == CONST_MUL_OPCODE ) {
 		assert(inWires.size() == 1 && outWires.size() == 1);
-		handleMulConst(inWires, outWires, type);
+		handleMulConst(inWires, outWires, inst.constant);
 	}
-	else if (strcmp(type, "zerop") == 0) {
+	else if ( opcode == ZEROP_OPCODE ) {
 		assert(inWires.size() == 1 && outWires.size() == 2);
 		addNonzeroCheckConstraint(inWires, outWires);
 	}
-	else if (strstr(type, "split")) {
+	else if ( opcode == SPLIT_OPCODE ) {
 		assert(inWires.size() == 1);
 		addSplitConstraint(inWires, outWires);
 	}
-	else if (strstr(type, "pack")) {
+	else if ( opcode == PACK_OPCODE ) {
 		assert(outWires.size() == 1);
 		addPackConstraint(inWires, outWires);
 	}
 }
 
-
-void CircuitReader::constructCircuit(const char* arithFilepath)
-{
-	char type[200];
-	char* inputStr;
-	char* outputStr;
-	string line;
-	unsigned int numGateInputs, numGateOutputs;
-
-	ifstream ifs2(arithFilepath, ifstream::in);
-
-	if (!ifs2.good()) {
-		printf("Unable to open circuit file:\n");
-		exit(5);
-	}
-
-	enter_block("Translating constraints");
-
-	getline(ifs2, line);
-	sscanf(line.c_str(), "total %zu", &numWires);
-
-	this->pb.set_input_sizes(numInputs);
-
-	// By this time, all lines have already been parsed
-	while (getline(ifs2, line))
-	{
-		if (line.length() == 0) {
-			continue;
-		}
-		inputStr = new char[line.size()];
-		outputStr = new char[line.size()];
-
-		if (5 == sscanf(line.c_str(), "%s in %u <%[^>]> out %u <%[^>]>", type,
-						&numGateInputs, inputStr, &numGateOutputs, outputStr)) {
-
-			std::vector<Wire> inWires;
-			readIds(inputStr, inWires);
-			if( numGateInputs != inWires.size() ) {
-				std::cerr << "Error parsing line: " << line << std::endl;
-				std::cerr << " input gate mismatch, expected " << numGateInputs << " got " << inWires.size() << std::endl;
-				exit(6);
-			}
-
-			std::vector<Wire> outWires;
-			readIds(outputStr, outWires);
-			if( numGateOutputs != outWires.size() ) {
-				std::cerr << "Error parsing line: " << line << std::endl;
-				std::cerr << " output gate mismatch, expected " << numGateOutputs << " got " << outWires.size() << std::endl;
-				exit(6);
-			}
-
-			addOperationConstraints(type, inWires, outWires);
-		}
-
-		delete[] inputStr;
-		delete[] outputStr;
-	}
-
-	ifs2.close();
-
-	leave_block("Translating constraints");
-}
 
 void CircuitReader::mapValuesToProtoboard()
 {
@@ -407,12 +374,15 @@ void CircuitReader::mapValuesToProtoboard()
 	for( auto& item : zerop_items )
 	{
 		auto& X = wireGet(item.in_wire_id);
+		X.evaluate(this->pb);
+
 		// X * M = Y
 		// Y == 0 || Y == 1
 
-		if( pb.lc_val(X) != 0 ) {
+		auto val = pb.lc_val(X);
+		if( val != FieldT::zero() ) {
 			// M = 1/X
-			pb.val(item.aux_var) = FieldT::one() * pb.lc_val(X).inverse();
+			pb.val(item.aux_var) = FieldT::one() * val.inverse();
 		}
 		else {
 			// M = 0
@@ -421,8 +391,8 @@ void CircuitReader::mapValuesToProtoboard()
 	}
 
 	if (!pb.is_satisfied()) {
-		printf("Protoboard Not Satisfied");
-		assert(0);
+		std::cerr << "Protoboard Not Satisfied" << std::endl;
+		//assert(0);
 	}
 
 	leave_block("Assigning values");
@@ -482,9 +452,9 @@ VariableT& CircuitReader::varGet( Wire wire_id, const std::string &annotation )
 
 void CircuitReader::addMulConstraint(const InputWires& inputs, const OutputWires& outputs)
 {
-	auto& l1 = wireGet(inputs[0], "mul A");
-	auto& l2 = wireGet(inputs[1], "mul C");
-	auto& outvar = varGet(outputs[0], "mul result");
+	auto& l1 = wireGet(inputs[0], FMT("mul A ", "(%zu)", inputs[0]));
+	auto& l2 = wireGet(inputs[1], FMT("mul B ", "(%zu)", inputs[1]));
+	auto& outvar = varGet(outputs[0], FMT("mul out", "%zu", outputs[0]));
 
 	pb.add_r1cs_constraint(ConstraintT(l1, l2, outvar), "mul, result = A * B");
 }
@@ -571,24 +541,25 @@ void CircuitReader::addPackConstraint(const InputWires& inputs, const OutputWire
 *
 * This is equivalent to satisfying the following two constraints:
 *
-*	X * (M - Y) = 0
+*	X * M - Y = 0
 *
 * and
 *
-*	(1 - Y) * X = 0
+*	X * (1 - Y) = 0
 *
 * For some value M, where M should be (1.0/X), or the modulo inverse of X.
 */
 void CircuitReader::addNonzeroCheckConstraint(const InputWires& inputs, const OutputWires& outputs)
 {
-	auto& X = wireGet(inputs[0], "zerop input");
+	auto& X = wireGet(inputs[0], FMT("zerop input", " (%zu)", inputs[0]));
 
-	auto& Y = varGet(outputs[0], "zerop out");
+	auto& Y = varGet(outputs[0], FMT("zerop output", " (%zu)", outputs[0]));
 
 	VariableT M;
-	M.allocate(this->pb, "zerop aux");
+	M.allocate(this->pb, FMT("zerop aux", " (%zu,%zu)", inputs[0], outputs[0]));
 
-	pb.add_r1cs_constraint(ConstraintT(X, 1 - Y, 0), "Y is bitty");
+	pb.add_r1cs_constraint(ConstraintT(X, 1 + -Y, 0), "X is 0, or Y is 1");
+	//generate_boolean_r1cs_constraint<FieldT>(pb, Y);
 
 	pb.add_r1cs_constraint(ConstraintT(X, M, Y), "X * (1/X) = Y");
 
@@ -610,15 +581,13 @@ void CircuitReader::handleAddition(const InputWires& inputs, const OutputWires& 
 }
 
 
-void CircuitReader::handleMulConst(const InputWires& inputs, const OutputWires& outputs, const char* type) {
-
-	const char* constStr = type + sizeof("const-mul-") - 1;
-
+void CircuitReader::handleMulConst(const InputWires& inputs, const OutputWires& outputs, const FieldT& constant)
+{
 	auto& l = wireGet(inputs[0], "mul const input");
 
 	auto& outwire = wireGet(outputs[0], "mul const output");
 
-	auto v = l * readFieldElementFromHex(constStr);
+	auto v = l * constant;
 
 	for( auto& term : v )
 	{
@@ -627,15 +596,13 @@ void CircuitReader::handleMulConst(const InputWires& inputs, const OutputWires& 
 }
 
 
-void CircuitReader::handleMulNegConst(const InputWires& inputs, const OutputWires& outputs, const char* type)
+void CircuitReader::handleMulNegConst(const InputWires& inputs, const OutputWires& outputs, const FieldT &constant)
 {
-	const char* constStr = type + sizeof("const-mul-neg-") - 1;
-
 	auto& l = wireGet(inputs[0], "const-mul-neg input");
 
 	auto& outwire = wireGet(outputs[0], "const-mul-neg output");
 
-	auto v = l * (readFieldElementFromHex(constStr) * FieldT(-1));
+	auto v = l * (constant * FieldT(-1));
 
 	for( auto& term : v )
 	{

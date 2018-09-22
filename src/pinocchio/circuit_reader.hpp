@@ -2,6 +2,7 @@
 MIT License
 
 Copyright (c) 2015 Ahmed Kosba
+Copyright (c) 2018 HarryR
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -37,15 +38,19 @@ typedef std::vector<FieldT> FieldArrayT;
 typedef std::vector<LinearCombinationT> LinearCombinationsT;
 
 
-#define ADD_OPCODE 1
-#define MUL_OPCODE 2
-#define SPLIT_OPCODE 3
-#define NONZEROCHECK_OPCODE 4
-#define PACK_OPCODE 5
-#define MULCONST_OPCODE 6
-#define XOR_OPCODE 7
-#define OR_OPCODE 8
-#define CONSTRAINT_OPCODE 9
+enum Opcode {
+	ADD_OPCODE,
+	MUL_OPCODE,
+	XOR_OPCODE,
+	OR_OPCODE,
+	ASSERT_OPCODE,
+	ZEROP_OPCODE,
+	SPLIT_OPCODE,
+	PACK_OPCODE,
+	CONST_MUL_NEG_OPCODE,
+	CONST_MUL_OPCODE
+};
+
 
 struct ZeroEqualityItem {
 	Wire in_wire_id;
@@ -53,8 +58,15 @@ struct ZeroEqualityItem {
 };
 
 
+struct CircuitInstruction {
+	Opcode opcode;
+	FieldT constant;
+	InputWires inputs;
+	OutputWires outputs;
+};
+
+
 /*
-class CircuitReader;
 class circuit_operation : public GadgetT {
 public:
 	circuit_operation( CircuitReader& circuit );
@@ -69,6 +81,7 @@ public:
 	virtual void constrain( const LinearCombinationsT &inputs, const LinearCombinationsT &outputs, const LinearCombinationsT &aux );
 };
 */
+
 
 
 class CircuitReader : public GadgetT {
@@ -91,8 +104,6 @@ public:
 		return outputWireIds;
 	}
 
-	void generate_r1cs_constraints() {}
-	void generate_r1cs_witness() {}
 	void parseInputs( const char *inputsFilepath );
 
 	bool wireExists( Wire wireId );
@@ -111,6 +122,8 @@ protected:
 
 	std::vector<FieldT> wireValues;
 
+	std::vector<CircuitInstruction> instructions;
+
 	std::vector<Wire> inputWireIds;
 	std::vector<Wire> nizkWireIds;
 	std::vector<Wire> outputWireIds;
@@ -120,9 +133,10 @@ protected:
 	size_t numNizkInputs {0};
 	size_t numOutputs{0};
 
-	void evalOpcode( short opcode, std::vector<FieldT> &inValues, std::vector<Wire> &outWires, FieldT &constant );
-	void parseAndEval(const char* arithFilepath, const char* inputsFilepath);
-	void constructCircuit(const char*);  // Second Pass:
+	void parseCircuit(const char* arithFilepath);
+	void evalInstruction( const CircuitInstruction &inst );
+	void makeAllConstraints( );
+	void makeConstraints( const CircuitInstruction& inst );
 	void addOperationConstraints( const char *type, const InputWires& inWires, const OutputWires& outWires );
 	void mapValuesToProtoboard();
 
@@ -138,8 +152,8 @@ protected:
 	void addNonzeroCheckConstraint(const InputWires& inputs, const OutputWires& outputs);
 
 	void handleAddition(const InputWires& inputs, const OutputWires& outputs);
-	void handleMulConst(const InputWires& inputs, const OutputWires& outputs, const char*);
-	void handleMulNegConst(const InputWires& inputs, const OutputWires& outputs, const char*);
+	void handleMulConst(const InputWires& inputs, const OutputWires& outputs, const FieldT& constant);
+	void handleMulNegConst(const InputWires& inputs, const OutputWires& outputs, const FieldT& constant);
 
 };
 
