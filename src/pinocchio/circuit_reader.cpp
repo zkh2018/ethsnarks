@@ -171,7 +171,7 @@ void CircuitReader::evalInstruction( const CircuitInstruction &inst )
 		}
 	}
 	else if (opcode == CONST_MUL_NEG_OPCODE ) {
-		varSet(outWires[0], (constant * FieldT(-1)) * inValues[0], "const-mul-neg, A * -constant = C");
+		varSet(outWires[0], constant * inValues[0], "const-mul-neg, A * -constant = C");
 	}
 	else if( opcode == CONST_MUL_OPCODE) {
 		varSet(outWires[0], constant * inValues[0], "const-mul, A * constant = C");
@@ -359,7 +359,12 @@ void CircuitInstruction::print() const {
 		}
 		cout << wire_id;	
 	}
-	cout << ">" << endl;
+
+	mpz_t t;
+	mpz_init(t);
+	constant.as_bigint().to_mpz(t);
+	cout << ">" << " constant (" << t << ")" << endl;
+	mpz_clear(t);
 }
 
 
@@ -587,7 +592,9 @@ void CircuitReader::addNonzeroCheckConstraint(const InputWires& inputs, const Ou
 	VariableT M;
 	M.allocate(this->pb, FMT("zerop aux", " (%zu,%zu)", inputs[0], outputs[0]));
 
-	pb.add_r1cs_constraint(ConstraintT(X, 1 + -Y, 0), "X is 0, or Y is 1");
+	//generate_boolean_r1cs_constraint<FieldT>(pb, Y);
+
+	pb.add_r1cs_constraint(ConstraintT(X, 1 - LinearCombinationT(Y), 0), "X is 0, or Y is 1");
 
 	pb.add_r1cs_constraint(ConstraintT(X, M, Y), "X * (1/X) = Y");
 
@@ -626,9 +633,7 @@ void CircuitReader::handleMulNegConst(const InputWires& inputs, const OutputWire
 
 	auto& C = varGet(outputs[0], "const-mul-neg output");
 
-	auto B = (constant * FieldT(-1));
-
-	pb.add_r1cs_constraint(ConstraintT(A, B, C), "mulnegconst, A * -constant = C");
+	pb.add_r1cs_constraint(ConstraintT(A, constant, C), "mulnegconst, A * -constant = C");
 }
 
 // namespace ethsnarks
