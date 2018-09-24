@@ -66,20 +66,29 @@ static const FieldT readFieldElementFromHex(const char* inputStr){
 CircuitReader::CircuitReader(
 	ProtoboardT& in_pb,
 	const char* arithFilepath,
-	const char* inputsFilepath
+	const char* inputsFilepath,
+	bool in_traceEnabled
 ) :
-	GadgetT(in_pb, "CircuitReader")
+	GadgetT(in_pb, "CircuitReader"),
+	traceEnabled(in_traceEnabled)
 {
 	parseCircuit(arithFilepath);
 	//mapValuesToProtoboard();
 
 	if( inputsFilepath ) {
 		parseInputs(inputsFilepath);
-		enter_block("Evaluating instructions");
+
+		if( traceEnabled ) {
+			enter_block("Evaluating instructions");
+		}
+
 		for( const auto& inst : instructions ) {
 			evalInstruction(inst);
 		}
-		leave_block("Evaluating instructions");
+
+		if( traceEnabled ) {
+			leave_block("Evaluating instructions");
+		}
 	}
 
 	makeAllConstraints();
@@ -96,12 +105,13 @@ void CircuitReader::parseInputs( const char *inputsFilepath )
 	string line;
 
 	if (!inputfs.good()) {
-		printf("Unable to open input file %s \n", inputsFilepath);
+		std::cerr << "Unable to open input file" << inputsFilepath << std::endl;
 		exit(-1);
 	}
 	else {
 		char* inputStr;
-		while (getline(inputfs, line)) {
+		while (getline(inputfs, line))
+		{
 			if (line.length() == 0) {
 				continue;
 			}
@@ -111,7 +121,7 @@ void CircuitReader::parseInputs( const char *inputsFilepath )
 				varSet(wireId, readFieldElementFromHex(inputStr));
 			}
 			else {
-				printf("Error in Input\n");
+				std::cerr << "Error in Input" << endl;
 				exit(-1);
 			}
 			delete[] inputStr;
@@ -126,8 +136,6 @@ void CircuitReader::evalInstruction( const CircuitInstruction &inst )
 	const auto opcode = inst.opcode;
 	const auto& outWires = inst.outputs;
 	const auto& constant = inst.constant;
-
-	inst.print();
 
 	std::vector<FieldT> inValues;
 	for( auto& wire : inst.inputs ) {
@@ -181,13 +189,15 @@ void CircuitReader::evalInstruction( const CircuitInstruction &inst )
 
 void CircuitReader::parseCircuit(const char* arithFilepath)
 {
-	enter_block("Parsing Circuit");
+	if( traceEnabled ) {
+		enter_block("Parsing Circuit");
+	}
 
 	ifstream arithfs(arithFilepath, ifstream::in);
 	string line;
 
 	if (!arithfs.good()) {
-		printf("Unable to open circuit file %s \n", arithFilepath);
+		std::cerr << "Unable to open circuit file" << arithFilepath << std::endl;
 		exit(-1);
 	}
 
@@ -195,7 +205,7 @@ void CircuitReader::parseCircuit(const char* arithFilepath)
 	int ret = sscanf(line.c_str(), "total %zu", &numWires);
 
 	if (ret != 1) {
-		printf("File Format Does not Match\n");
+		std::cerr << "File Format Does not Match" << endl;;
 		exit(-1);
 	}
 
@@ -306,7 +316,9 @@ void CircuitReader::parseCircuit(const char* arithFilepath)
 
 	this->pb.set_input_sizes(numInputs);
 
-	leave_block("Parsing Circuit");
+	if( traceEnabled ) {
+		leave_block("Parsing Circuit");
+	}
 }
 
 
@@ -319,7 +331,8 @@ void CircuitReader::makeAllConstraints( )
 }
 
 
-const char* CircuitInstruction::name( ) const {
+const char* CircuitInstruction::name( ) const
+{
 	switch( opcode ) {
 		case ADD_OPCODE: return "add";
 		case MUL_OPCODE: return "mul";
@@ -336,7 +349,9 @@ const char* CircuitInstruction::name( ) const {
 }
 
 
-void CircuitInstruction::print() const {
+void CircuitInstruction::print() const
+{
+	// Display input wires
 	bool first = true;
 	cout << this->name() << " in " << inputs.size() << " <";
 	for( auto& wire_id : inputs ) {
@@ -348,6 +363,8 @@ void CircuitInstruction::print() const {
 		}
 		cout << wire_id;	
 	}
+
+	// Display output wires
 	cout << "> out " << outputs.size() << " <";
 	first = true;
 	for( auto& wire_id : outputs ) {
@@ -360,11 +377,14 @@ void CircuitInstruction::print() const {
 		cout << wire_id;	
 	}
 
-	mpz_t t;
-	mpz_init(t);
-	constant.as_bigint().to_mpz(t);
-	cout << ">" << " constant (" << t << ")" << endl;
-	mpz_clear(t);
+	// Display constant value, when necessary
+	if( opcode == CONST_MUL_NEG_OPCODE || opcode == CONST_MUL_OPCODE ) {
+		cout << ">" << " constant=";
+		constant.print();
+	}
+	else {
+		cout << ">" << endl;
+	}
 }
 
 
@@ -374,7 +394,9 @@ void CircuitReader::makeConstraints( const CircuitInstruction& inst )
 	const auto& inWires = inst.inputs;
 	const auto& outWires = inst.outputs;
 
-	inst.print();
+	if( traceEnabled ) {
+		inst.print();
+	}
 
 	if ( opcode == ADD_OPCODE ) {
 		assert(inWires.size() > 1);
@@ -417,20 +439,29 @@ void CircuitReader::makeConstraints( const CircuitInstruction& inst )
 		addPackConstraint(inWires, outWires);
 	}
 
-	for( auto& input : inst.inputs ) {
-		cout << "\tin " << input << "=" << varValue(input).as_ulong() << endl;
-	}
+	if( traceEnabled )
+	{
+		// Show input values
+		for( auto& input : inst.inputs ) {
+			cout << "\tin " << input << " = ";
+			varValue(input).print();
+		}
 
-	for( auto& output : inst.outputs ) {
-		cout << "\tout " << output << "=" << varValue(output).as_ulong() << endl;
+		// Show output values
+		for( auto& output : inst.outputs ) {
+			cout << "\tout " << output << " = ";
+			varValue(output).print();
+		}
+		cout << endl;
 	}
-	cout << endl;
 }
 
 
 void CircuitReader::mapValuesToProtoboard()
 {
-	enter_block("Assigning values");
+	if( traceEnabled ) {
+		enter_block("Assigning values");
+	}
 
 	for( auto& item : zerop_items )
 	{
@@ -445,7 +476,9 @@ void CircuitReader::mapValuesToProtoboard()
 		}
 	}
 
-	leave_block("Assigning values");
+	if( traceEnabled ) {
+		leave_block("Assigning values");
+	}
 }
 
 
@@ -459,7 +492,6 @@ FieldT CircuitReader::varValue( Wire wire_id )
 
 void CircuitReader::varSet( Wire wire_id, const FieldT& value, const std::string& annotation )
 {
-	std::cout << "Setting wire (" << wire_id << ") to " << value.as_ulong() << "\n";
 	this->pb.val(varGet(wire_id, annotation)) = value;
 }
 

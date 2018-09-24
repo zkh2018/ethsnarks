@@ -32,11 +32,6 @@ typedef unsigned int Wire;
 typedef std::vector<Wire> InputWires;
 typedef std::vector<Wire> OutputWires;
 
-typedef std::vector<FieldT> FieldArrayT;
-
-
-typedef std::vector<LinearCombinationT> LinearCombinationsT;
-
 
 enum Opcode {
 	ADD_OPCODE,
@@ -70,27 +65,9 @@ public:
 };
 
 
-/*
-class circuit_operation : public GadgetT {
-public:
-	circuit_operation( CircuitReader& circuit );
-	virtual ~circuit_operation();
-
-	virtual size_t inputCount() const;
-	virtual size_t outputCount() const;
-	virtual size_t auxCount() const;
-
-	virtual void witness( const FieldArrayT &inputs, VariableArrayT &outputs, FieldArrayT &aux_vars );
-
-	virtual void constrain( const LinearCombinationsT &inputs, const LinearCombinationsT &outputs, const LinearCombinationsT &aux );
-};
-*/
-
-
-
 class CircuitReader : public GadgetT {
 public:
-	CircuitReader(ProtoboardT& in_pb, const char* arithFilepath, const char* inputsFilepath);
+	CircuitReader(ProtoboardT& in_pb, const char* arithFilepath, const char* inputsFilepath, bool in_traceEnabled=false);
 
 	int getNumInputs() const {
 		return numInputs;
@@ -116,10 +93,11 @@ public:
 	const VariableT& varNew( Wire wire_id, const std::string &annotation="");
 	const VariableT& varGet( Wire wire_id, const std::string &annotation="");
 
+	bool traceEnabled;
+
 protected:
 	std::map<Wire,LinearCombinationT> wireLC;
 	std::map<Wire,VariableT> variableMap;
-	std::map<Wire,FieldT> m_varValues;
 
 	std::vector<ZeroEqualityItem> zerop_items;
 

@@ -113,16 +113,16 @@ class CircuitParser():
     return (in_a, out_a)
 
   def sub_parse(self, verb, in_a, out_a):
-    if (verb=='split'):
+    if verb=='split':
       self.add_gate(Gate("split", in_a, out_a))
-    elif (verb=="add"):
+    elif verb=="add":
       self.add_gate(Gate("add", in_a, out_a))
-    elif (verb=="mul"):
+    elif verb=="mul":
       self.add_gate(Gate("mul", in_a, out_a))
-    elif (verb=="zerop"):
+    elif verb=="zerop":
       self.add_gate(Gate("zerop", in_a, out_a))
-    elif (verb.startswith("const-mul-")):
-      if (verb[10:14]=="neg-"):
+    elif verb.startswith("const-mul-"):
+      if verb[10:14] == "neg-":
         sign = -1
         value = verb[14:]
       else:
@@ -132,7 +132,6 @@ class CircuitParser():
       self.add_gate(ConstMulGate("const-mul", in_a, out_a, const))
     else:
       raise RuntimeError("Invalid opcode: " + str((verb, in_a, out_a)))
-      assert(False)
 
   def parse_line(self, line):
     verbsplit = filter(lambda t: t != '', line.split(' ', 1))
@@ -141,12 +140,12 @@ class CircuitParser():
       return
     (verb,rest) = verbsplit
     #print "words: %s" % words
-    if (verb=='total'):
+    if verb == 'total':
       self.total_wires = int(rest)
-    elif (verb=='input'):
+    elif verb == 'input':
       wire_id = int(rest)
       self.add_iowire(IoWire(inputP=True, myid = wire_id))
-    elif (verb=='output'):
+    elif verb == 'output':
       wire_id = int(rest)
       self.add_iowire(IoWire(inputP=False, myid = wire_id))
     else:
@@ -224,7 +223,7 @@ class CircuitRenderer():
 
       for dest in wire.dests:
         label = "#%d" % wire.myid
-        if (not wire.val == None):
+        if wire.val is not None:
           label += " = %d" % wire.val
         edge = pydot.Edge(src, dest, label=label)
         graph.add_edge(edge)
@@ -234,7 +233,7 @@ class CircuitRenderer():
         dest = pydot.Node(invisibleNodeCount, style="invisible")
         invisibleNodeCount += 1
         label = str(wire.myid)
-        if (not wire.val == None):
+        if wire.val is not None:
           label += " = %d" % wire.val
         edge = pydot.Edge(src, dest, label=label)
         graph.add_node(dest)

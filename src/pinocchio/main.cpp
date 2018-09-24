@@ -18,13 +18,21 @@ static int main_genkeys( ProtoboardT& pb, const char *arith_file, const char *pk
 {
 	CircuitReader circuit(pb, arith_file, nullptr);
 
+	if( ! pb.is_satisfied() ) {
+		cerr << "Error: not satisfied!" << endl;
+	}
+
 	return stub_genkeys_from_pb(pb, pk_raw, vk_json);
 }
 
 
-static int main_prove( ProtoboardT& pb, const char* pk_raw, const char *arith_file, const char *circuit_inputs, const char *proof_json )
+static int main_prove( ProtoboardT& pb, const char *arith_file, const char *circuit_inputs, const char* pk_raw, const char *proof_json )
 {
-	CircuitReader circuit(pb, arith_file, circuit_inputs);
+	CircuitReader circuit(pb, arith_file, circuit_inputs, true);
+
+	if( ! pb.is_satisfied() ) {
+		cerr << "Error: not satisfied!" << endl;
+	}
 
     auto json = stub_prove_from_pb(pb, pk_raw);
 
@@ -57,18 +65,19 @@ static int main_test( ProtoboardT& pb, const char *arith_file, const char *circu
 }
 
 
-static int main_eval( ProtoboardT& pb, const char *arith_file, const char *circuit_inputs )
+static int main_eval( ProtoboardT& pb, const char *arith_file, const char *circuit_inputs, bool traceEnabled )
 {
-	CircuitReader circuit(pb, arith_file, circuit_inputs);
+	CircuitReader circuit(pb, arith_file, circuit_inputs, traceEnabled);
+
+	if( ! pb.is_satisfied() ) {
+		cerr << "Error: not satisfied!" << endl;
+	}
 
 	for( auto& wire : circuit.getOutputWireIds() )
 	{
 		const auto& value = circuit.varValue(wire);
-		cout << wire << "=" << value.as_ulong() << endl;
-	}
-
-	if( ! pb.is_satisfied() ) {
-		cerr << "Error: not satisfied!" << endl;
+		cout << wire << "=";
+		value.print();
 	}
 
 	return 0;
@@ -83,7 +92,7 @@ int main(int argc, char **argv)
 	const string progname(argv[0]);
 	const string usage_prefix(string("Usage: ") + progname + " <circuit.arith> ");
 	if( argc < 3 ) {
-		cerr << usage_prefix << "<genkeys|prove|verify|eval|test>" << endl;
+		cerr << usage_prefix << "<genkeys|prove|verify|eval|trace|test>" << endl;
 		return 1;
 	}
 
@@ -95,7 +104,7 @@ int main(int argc, char **argv)
 
 	if( cmd == "genkeys" ) {
 		if( sub_argc < 2 ) {
-			cerr << usage_prefix << "genkeys <pk.raw> <vk.json>" << endl;
+			cerr << usage_prefix << cmd << " <proving-key.raw> <verification-key.json>" << endl;
 			return 5;
 		}
 		const char *pk_raw = sub_argv[0];
@@ -104,17 +113,17 @@ int main(int argc, char **argv)
 	}
 	else if( cmd == "prove" ) {
 		if( sub_argc < 3 ) {
-			cerr << usage_prefix << "prove <pk.raw> <circuit.inputs> <proof.json>" << endl;
+			cerr << usage_prefix << cmd << " <circuit.inputs> <proving-key.raw> <output-proof.json>" << endl;
 			return 5;
 		}
-		const char *pk_raw = sub_argv[0];
-		const char *circuit_inputs = sub_argv[1];
+		const char *circuit_inputs = sub_argv[0];
+		const char *pk_raw = sub_argv[1];
 		const char *proof_json = sub_argv[2];
-		return main_prove(pb, pk_raw, arith_file, circuit_inputs, proof_json );
+		return main_prove(pb, arith_file, circuit_inputs, pk_raw, proof_json );
 	}
 	else if( cmd == "verify" ) {
 		if( sub_argc < 2 ) {
-			cerr << usage_prefix << "prove <vk.json> <proof.json>" << endl;
+			cerr << usage_prefix << cmd << " <verification-key.json> <proof.json>" << endl;
 			return 5;
 		}
 		const char *vk_json = sub_argv[0];
@@ -122,22 +131,22 @@ int main(int argc, char **argv)
 		return main_verify(pb, arith_file, vk_json, proof_json);
 	}
 	else if( cmd == "test" ) {
-		const char *circuit_inputs = nullptr;
-		if( sub_argc > 0 ) {
-			circuit_inputs = sub_argv[0];
-		}
-		return main_test(pb, arith_file, circuit_inputs);
-	}
-	else if( cmd == "eval" ) {
 		if( sub_argc == 0 ) {
-			cerr << usage_prefix << "eval <circuit.inputs>" << endl;
+			cerr << usage_prefix << cmd << " <circuit.inputs>" << endl;
 			return 5;
 		}
 		const char *circuit_inputs = sub_argv[0];
-		return main_eval(pb, arith_file, circuit_inputs);
+		return main_test(pb, arith_file, circuit_inputs);
+	}
+	else if( cmd == "eval" || cmd == "trace" ) {
+		if( sub_argc == 0 ) {
+			cerr << usage_prefix << cmd << " <circuit.inputs>" << endl;
+			return 5;
+		}
+		const char *circuit_inputs = sub_argv[0];
+		return main_eval(pb, arith_file, circuit_inputs, cmd == "trace");
 	}
 
 	cerr << "Error: unknown sub-command " << cmd << "\n";
 	return 2;
 }
-
