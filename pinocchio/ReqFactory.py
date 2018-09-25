@@ -65,19 +65,19 @@ class ReqFactory(Collapser):
 	# These requests generate BOOLEAN_TYPE buses, even in an ArithFactory,
 	# so they're common code.
 	def make_req(self, expr, type):
-		if (isinstance(expr, BitAnd)):
+		if isinstance(expr, BitAnd):
 			result = BitAndReq(self, expr, type)
-		elif (isinstance(expr, BitOr)):
+		elif isinstance(expr, BitOr):
 			result = BitOrReq(self, expr, type)
-		elif (isinstance(expr, BitNot)):
+		elif isinstance(expr, BitNot):
 			result = BitNotReq(self, expr, type)
-		elif (isinstance(expr, LogicalNot)):
+		elif isinstance(expr, LogicalNot):
 			result = LogicalNotReq(self, expr, type)
-		elif (isinstance(expr, Xor)):
+		elif isinstance(expr, Xor):
 			result = XorReq(self, expr, type)
-		elif (isinstance(expr, LeftShift)):
+		elif isinstance(expr, LeftShift):
 			result = LeftShiftReq(self, expr, type)
-		elif (isinstance(expr, RightShift)):
+		elif isinstance(expr, RightShift):
 			result = RightShiftReq(self, expr, type)
 		else:
 			print(expr.__class__)

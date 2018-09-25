@@ -96,9 +96,9 @@ class ConditionalReq(BooleanReq):
 class CmpReq(BooleanBinaryOpReq):
 	def __init__(self, reqfactory, expr, type):
 		BooleanBinaryOpReq.__init__(self, reqfactory, expr, type)
-		if (isinstance(expr, DFG.CmpLT)):
+		if isinstance(expr, DFG.CmpLT):
 			self._leq = False
-		elif (isinstance(expr, DFG.CmpLEQ)):
+		elif isinstance(expr, DFG.CmpLEQ):
 			self._leq = True
 		else:
 			assert(False)

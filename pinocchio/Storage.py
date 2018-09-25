@@ -71,8 +71,10 @@ class StorageKey(Key):
 
 	def __cmp__(self, other):
 		i = cmp(self.__class__, other.__class__)
-		if (i!=0): return i
+		if i != 0:
+			return i
 		i = cmp(self.storage, other.storage)
-		if (i!=0): return i
+		if i != 0:
+			return i
 		return cmp(self.idx, other.idx)
 

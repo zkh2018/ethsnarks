@@ -62,14 +62,14 @@ class ArithmeticInputBaseBus(ArithmeticBus):
 		# input storage location were, after all the fancy sorting,
 		# correctly assigned the corresponding
 		# Wire slots in the emitted arithmetic circuit.
-		assert(len(self.wire_list)==1)
+		assert len(self.wire_list) == 1
 		#assert(self.wire_list[0].idx == self.input_idx)
 			# not true for nizk_inputs, which are offset by the size
 			# of the regular inputs.
 		#print "my wire is %s, my input_idx is %s" % (self.wire_list[0].idx, self.input_idx)
 		#print "type(wire) = %s" % self.wire_list[0].__class__
 		comment = "input"
-		if (not self._used):
+		if not self._used:
 			comment += " (unused)"
 		return [ self.field_class(comment, Wire(self.wire_list[0].idx)) ]
 

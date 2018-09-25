@@ -1010,7 +1010,7 @@ class Vercomp(object):
 #				print "assigning %s" % sk
 #				global_symtab.assign(sk, Input(sk))
 		outsource_func = self.find_func("outsource")
-		if (self.verbose):
+		if self.verbose:
 			print("global_symtab: %s" % global_symtab)
 		self.timing.phase("root_funccall")
 		out_state = self.root_funccall(global_symtab)

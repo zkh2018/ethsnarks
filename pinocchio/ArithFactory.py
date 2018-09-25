@@ -25,23 +25,23 @@ class ArithFactory(ReqFactory):
 		return ArithmeticOutputBus(self.get_board(), expr_bus, idx)
 
 	def make_req(self, expr, type):
-		if (isinstance(expr, Input)):
+		if isinstance(expr, Input):
 			result = ArithmeticInputReq(self, expr, type)
-		elif (isinstance(expr, NIZKInput)):
+		elif isinstance(expr, NIZKInput):
 			result = ArithmeticNIZKInputReq(self, expr, type)
-		elif (isinstance(expr, Conditional)):
+		elif isinstance(expr, Conditional):
 			result = ConditionalReq(self, expr, type)
-		elif (isinstance(expr, CmpLT)):
+		elif isinstance(expr, CmpLT):
 			result = CmpLTReq(self, expr, type)
-		elif (isinstance(expr, CmpLEQ)):
+		elif isinstance(expr, CmpLEQ):
 			result = CmpLEQReq(self, expr, type)
-		elif (isinstance(expr, CmpEQ)):
+		elif isinstance(expr, CmpEQ):
 			result = CmpEQReqArith(self, expr, type)
-		elif (isinstance(expr, Constant)):
+		elif isinstance(expr, Constant):
 			result = ConstantReq(self, expr, type)
-		elif (isinstance(expr, Add)):
+		elif isinstance(expr, Add):
 			result = AddReq(self, expr, type)
-		elif (isinstance(expr, Subtract)):
+		elif isinstance(expr, Subtract):
 			# NB trying something new here. expr factory does memoization
 			# against existing graph, so rolling up a late expr ensures
 			# we'll avoid generating a duplicate Negate. (Not that negate
@@ -49,9 +49,9 @@ class ArithFactory(ReqFactory):
 			neg_expr = expr.factory.create(Negate, expr.right)
 			add_expr = expr.factory.create(Add, expr.left, neg_expr)
 			result = AddReq(self, add_expr, type)
-		elif (isinstance(expr, Multiply)):
+		elif isinstance(expr, Multiply):
 			result = MultiplyReq(self, expr, type)
-		elif (isinstance(expr, Negate)):
+		elif isinstance(expr, Negate):
 			result = NegateReq(self, expr, type)
 		else:
 			result = ReqFactory.make_req(self, expr, type)
@@ -60,7 +60,7 @@ class ArithFactory(ReqFactory):
 	def collapse_req(self, req):
 #		print "requested %s and %s is naturally %s" % (
 #			req.type, req, req.natural_type())
-		if (req.natural_type() == req.type):
+		if req.natural_type() == req.type:
 			return req.natural_impl()
 		else:
 			bus = req.get_bus_from_req(req._natural_req())

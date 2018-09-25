@@ -182,8 +182,8 @@ class ConstantBitXorBase(BooleanBus):
 		_val = self.value
 		biti = 0
 		count = 0
-		while (_val != 0):
-			if (_val & 1):
+		while _val != 0:
+			if _val & 1:
 				self._bit_map[biti] = count
 				count += 1
 			biti += 1
@@ -221,7 +221,7 @@ class ConstantBitXorBase(BooleanBus):
 		return cmds
 
 	def do_trace(self, j):
-		if (j in self._bit_map):
+		if j in self._bit_map:
 			count = self._bit_map[j]
 			k = self.wires_per_xor()
 			return self.wire_list[(count+1)*k-1]
@@ -279,7 +279,7 @@ class LeftShiftBus(BooleanBus):
 	
 	def do_trace(self, j):
 		parent_bit = j - self.left_shift
-		if (parent_bit < 0):
+		if parent_bit < 0:
 			return self.board.zero_wire()
 		elif (j >= self._trace_count):
 			return self.board.zero_wire()
@@ -289,12 +289,12 @@ class LeftShiftBus(BooleanBus):
 class BinaryBooleanBus(BooleanBus):
 	def __init__(self, board, bus_left, bus_right):
 		BooleanBus.__init__(self, board, MAJOR_LOGIC)
-		assert(bus_left.get_trace_type()==BOOLEAN_TYPE)
-		assert(bus_right.get_trace_type()==BOOLEAN_TYPE)
+		assert bus_left.get_trace_type() == BOOLEAN_TYPE
+		assert bus_right.get_trace_type() == BOOLEAN_TYPE
 		self.bus_left = bus_left
 		self.bus_right = bus_right
-		self._trace_count = max(
-			self.bus_left.get_trace_count(), self.bus_right.get_trace_count())
+		self._trace_count = max(self.bus_left.get_trace_count(),
+								self.bus_right.get_trace_count())
 
 	def get_trace_type(self):
 		return BOOLEAN_TYPE
