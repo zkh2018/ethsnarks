@@ -156,7 +156,7 @@ class Vercomp(object):
 		return tmpname
 
 	def preprocess_line(self, line):
-		if (line=='' or line[0]=='#'):
+		if line=='' or line[0]=='#':
 			return ''
 		return line.split("//")[0]
 
@@ -167,12 +167,12 @@ class Vercomp(object):
 		return self.factory.create(*args)
 
 	def decode_scalar_type(self, names):
-		if (names==["int"]):
+		if names == ["int"]:
 			return IntType()
-		elif (names==["unsigned", "int"]):
+		elif names == ["unsigned", "int"]:
 			return UnsignedType()
 		else:
-			assert(False)
+			raise RuntimeError("Unknown scalar type: " + str(names))
 
 	def decode_type(self, node, symtab, skip_type_decls=False):
 		# this can also declare a new type; returns TypeState

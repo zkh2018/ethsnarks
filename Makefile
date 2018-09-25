@@ -20,6 +20,7 @@ PYTHON ?= python3
 NAME ?= ethsnarks
 NPM ?= npm
 PINOCCHIO ?= python -mpinocchio
+PINOCCHIO_BUILD ?= examples/pinocchio/build
 GANACHE ?= $(ROOT_DIR)/node_modules/.bin/ganache-cli
 TRUFFLE ?= $(ROOT_DIR)/node_modules/.bin/truffle
 
@@ -103,10 +104,15 @@ coverage-html:
 
 #######################################################################
 
-examples/pinocchio/build/%.arith: examples/pinocchio/%.c
-	$(PINOCCHIO) --arith $@ $<
-	./bin/pinocchio $@
 
+$(PINOCCHIO_BUILD)/%.dot: $(PINOCCHIO_BUILD)/%.arith
+	PYTHONPATH=. python -mpinocchio.drawcircuit --arith $< --out $@
+
+$(PINOCCHIO_BUILD)/%.arith: examples/pinocchio/%.c
+	$(PINOCCHIO) --arith $@ $<
+
+$(PINOCCHIO_BUILD)/%.json: examples/pinocchio/%.c
+	$(PINOCCHIO) --json $@ $<
 
 #######################################################################
 
