@@ -49,8 +49,9 @@ class ShamirPolyTests(unittest.TestCase):
         # Randomized tests
         for _ in range(0, 10):
             alpha = [FQ.random() for _ in range(0, 4)]
+            start = FQ.random().n
             points = [(FQ(i), shamirs_poly(FQ(i), alpha))
-                      for i in range(0, len(alpha))]
+                      for i in range(start, len(alpha)+start)]
             assert alpha[0] == lagrange(points, 0)
             assert alpha[0] != lagrange(points[1:], 0)
             assert alpha[0] != lagrange(points[2:], 0)
