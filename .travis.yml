@@ -13,7 +13,7 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo make ubuntu-dependencies ; fi
   - make PIP_ARGS= python-dependencies
 script:
-  - make
+  - make debug
   - make test
 after_success:
   - make coverage
