@@ -44,24 +44,6 @@ std::vector<unsigned long> bit_list_to_ints(std::vector<bool> bit_list, const si
 }
 
 
-const VariableArrayT make_var_array( ProtoboardT &in_pb, size_t n, const std::string &annotation )
-{
-    VariableArrayT x;
-    x.allocate(in_pb, n, annotation);
-    return x;
-}
-
-
-/* `allocate_var_index` is private, must use this workaround... */
-const VariableT make_variable( ProtoboardT &in_pb, const std::string &annotation )
-{
-    VariableT x;
-    x.allocate(in_pb, annotation);
-    return x;
-}
-
-
-
 /**
 * Convert a bit vector to a pb_variable_array
 */
