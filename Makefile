@@ -142,10 +142,10 @@ requirements-dev:
 	$(PYTHON) -m pip install $(PIP_ARGS) -r requirements-dev.txt
 
 fedora-dependencies:
-	dnf install procps-ng-devel gmp-devel boost-devel cmake g++ python3-scipy python3-pip
+	dnf install procps-ng-devel gmp-devel boost-devel cmake g++ python3-pip
 
 ubuntu-dependencies:
-	apt-get install cmake make g++ libgmp-dev libboost-all-dev libprocps-dev python3-pip python3-scipy
+	apt-get install cmake make g++ libgmp-dev libboost-all-dev libprocps-dev python3-pip
 
 mac-dependencies:
 	brew install pkg-config boost cmake gmp openssl || true
