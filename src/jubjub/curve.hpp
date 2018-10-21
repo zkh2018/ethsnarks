@@ -27,8 +27,20 @@
 
 namespace ethsnarks {
 
+
+class jubjub_params {
+public:
+    const FieldT a;
+    const FieldT d;
+
+    jubjub_params() :
+        a("168700"),
+        d("168696")
+    {}
+};
+
+
 class isOnCurve : public GadgetT {
-//greater than gadget
 private:
     /* no internal variables */
 public:
@@ -58,6 +70,92 @@ public:
     void generate_r1cs_constraints();
     void generate_r1cs_witness();
 
+};
+
+
+class FasterPointAddition : public GadgetT {
+public:
+    const jubjub_params &m_params;
+
+    // First input point
+    const VariableT m_X1;
+    const VariableT m_Y1;
+
+    // Second input point
+    const VariableT m_X2;
+    const VariableT m_Y2;
+
+    // Intermediate variables
+    const VariableT m_beta;
+    const VariableT m_gamma;
+    const VariableT m_delta;
+    const VariableT m_epsilon;
+    const VariableT m_tau;
+    const VariableT m_X3;
+    const VariableT m_Y3;
+
+    FasterPointAddition(
+        ProtoboardT &pb,
+        const VariableT in_X1,
+        const VariableT in_Y1,
+        const VariableT in_X2,
+        const VariableT in_Y2,
+        const std::string &annotation_prefix
+    ) :
+        GadgetT(in_pb, annotation_prefix),
+        m_X1(in_X1), m_Y1(in_Y1),
+        m_X2(in_X2), m_Y2(in_Y2),
+        m_beta(make_variable(in_pb, FMT(this->annotation_prefix, ".beta"))),
+        m_gamma(make_variable(in_pb, FMT(this->annotation_prefix, ".gamma"))),
+        m_delta(make_variable(in_pb, FMT(this->annotation_prefix, ".delta"))),
+        m_epsilon(make_variable(in_pb, FMT(this->annotation_prefix, ".epsilon"))),
+        m_tau(make_variable(in_pb, FMT(this->annotation_prefix, ".tau"))),
+        m_X3(make_variable(in_pb, FMT(this->annotation_prefix, ".X3"))),
+        m_Y3(make_variable(in_pb, FMT(this->annotation_prefix, ".Y3"))),
+    {
+
+    }
+
+    void generate_r1cs_constraints()
+    {
+        this->pb.add_r1cs_constraint(
+            ConstraintT(m_X1, m_Y2, m_beta),
+                FMT(annotation_prefix, ".beta = X1 * Y2"));
+
+        this->pb.add_r1cs_constraint(
+            ConstraintT(m_Y1, m_X2, m_gamma),
+                FMT(annotation_prefix, ".gamma = Y1 * X2"));
+
+        this->pb.add_r1cs_constraint(
+            ConstraintT(m_Y1, m_Y2, m_delta),
+                FMT(annotation_prefix, ".delta = Y1 * Y2"));
+
+        this->pb.add_r1cs_constraint(
+            ConstraintT(m_X1, m_X2, m_epsilon),
+                FMT(annotation_prefix, ".epsilon = X1 * X2"));
+
+        this->pb.add_r1cs_constraint(
+            ConstraintT(m_delta, m_delta, m_tau),
+                FMT(annotation_prefix, ".tau = delta * epsilon"));
+
+        this->pb.add_r1cs_constraint(
+            ConstraintT(m_X3, {1 + (m_params.d*m_tau)}, {m_beta + m_gamma}),
+                FMT(annotation_prefix, ".x3 * (1 + (d*tau)) == (beta + gamma) "));
+
+        this->pb.add_r1cs_constraint(
+            ConstraintT(m_X3, {1 - (m_params.d*m_tau)}, {m_delta + (-jubjub_params.a * m_epsilon)}),
+                FMT(annotation_prefix, ".x3 * (1 + (d*tau)) == (delta + (-a * epsilon))"));
+    }
+
+    void generate_r1cs_witness()
+    {
+        this->pb.val(m_beta) = this->pb.val(m_X1) * this->pb.val(m_Y2);
+        this->pb.val(m_gamma) = this->pb.val(m_Y1) * this->pb.val(m_X2);
+        this->pb.val(m_delta) = this->pb.val(m_Y1) * this->pb.val(m_Y2);
+        this->pb.val(m_epsilon) = this->pb.val(m_X1) * this->pb.val(m_X2);
+        this->pb.val(m_X3) = (this->pb.val(m_beta)+this->pb.val(m_gamma)) / (1 + (m_params.d * this->pb.val(m_tau)));
+        this->pb.val(m_X3) = (this->pb.val(m_delta)+( -m_params.a * this->pb.val(m_epsilon))) / (1 - (m_params.d * this->pb.val(m_tau)));
+    }
 };
 
 

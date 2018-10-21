@@ -15,13 +15,13 @@ class lookup_2bit_gadget : public GadgetT
 {
 public:
     const std::vector<FieldT> &c;
-    VariableArrayT b;
+    const VariableArrayT b;
     VariableT r;
 
     lookup_2bit_gadget(
         ProtoboardT &in_pb,
         const std::vector<FieldT> &in_constants,
-        VariableArrayT in_bits,
+        const VariableArrayT in_bits,
         const std::string& annotation_prefix
     );
 

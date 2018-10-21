@@ -97,15 +97,21 @@ void isOnCurve::generate_r1cs_witness()
 }
 
 
-pointAddition::pointAddition(ProtoboardT &pb,
-                   /*const pb_linear_combination_array<FieldT> &bits,*/
-                   const VariableT &a, const VariableT &d,
-                   const VariableT &x1, const VariableT &y1,
-                   const VariableT &x2, const VariableT &y2,
-                   const VariableT &x3, const VariableT &y3,
-
-                   const std::string &annotation_prefix):
-        GadgetT(pb, annotation_prefix) , a(a), d(d) , x1(x1), y1(y1), x2(x2), y2(y2), x3(x3), y3(y3)
+pointAddition::pointAddition(
+    ProtoboardT &pb,
+    /*const pb_linear_combination_array<FieldT> &bits,*/
+    const VariableT &a, const VariableT &d,
+    const VariableT &x1, const VariableT &y1,
+    const VariableT &x2, const VariableT &y2,
+    const VariableT &x3, const VariableT &y3,
+    const std::string &annotation_prefix
+) :
+    GadgetT(pb, annotation_prefix),
+    a(a),
+    d(d),
+    x1(x1), y1(y1),
+    x2(x2), y2(y2),
+    x3(x3), y3(y3)
 {
 
 
