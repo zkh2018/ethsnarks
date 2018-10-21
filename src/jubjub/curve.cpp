@@ -140,7 +140,7 @@ void FasterPointAddition::generate_r1cs_constraints()
             FMT(annotation_prefix, ".epsilon = X1 * X2"));
 
     this->pb.add_r1cs_constraint(
-        ConstraintT(m_delta, m_delta, m_tau),
+        ConstraintT(m_delta, m_epsilon, m_tau),
             FMT(annotation_prefix, ".tau = delta * epsilon"));
 
     this->pb.add_r1cs_constraint(
@@ -151,6 +151,19 @@ void FasterPointAddition::generate_r1cs_constraints()
         ConstraintT(m_Y3, 1 - (m_params.d*m_tau), m_delta + ((-m_params.a)*m_epsilon)),
             FMT(annotation_prefix, ".y3 * (1 - (d*tau)) == (delta + a*epsilon) "));
 }
+
+
+const VariableT& FasterPointAddition::result_x()
+{
+    return m_X3;
+}
+
+
+const VariableT& FasterPointAddition::result_y()
+{
+    return m_Y3;
+}
+
 
 void FasterPointAddition::generate_r1cs_witness()
 {
@@ -163,6 +176,8 @@ void FasterPointAddition::generate_r1cs_witness()
     this->pb.val(m_delta) = this->pb.val(m_Y1) * this->pb.val(m_Y2);
 
     this->pb.val(m_epsilon) = this->pb.val(m_X1) * this->pb.val(m_X2);
+
+    this->pb.val(m_tau) = this->pb.val(m_delta) * this->pb.val(m_epsilon);
 
     auto x3_rhs = (one + (m_params.d * this->pb.val(m_tau))).inverse();
     this->pb.val(m_X3) = (this->pb.val(m_beta)+this->pb.val(m_gamma)) * x3_rhs;

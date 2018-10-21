@@ -104,6 +104,10 @@ public:
         const std::string &annotation_prefix
     );
 
+    const VariableT &result_x();
+
+    const VariableT &result_y();
+
     void generate_r1cs_constraints();
 
     void generate_r1cs_witness();
