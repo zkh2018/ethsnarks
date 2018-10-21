@@ -24,7 +24,7 @@ bool test_jubjub_add()
 	pb.val(c_x) = FieldT("6973964026021872993461206321838264291006454903617648820964060641444266170799");
 	pb.val(c_y) = FieldT("5058405786102109493822166715025707301516781386582502239931016782220981024527");
 
-	FasterPointAddition the_gadget(pb, params, a_x, a_y, b_x, b_y, "the_gadet");
+	FasterPointAddition the_gadget(pb, params, a_x, a_y, b_x, b_y, "the_gadget");
 
 	the_gadget.generate_r1cs_witness();
 	the_gadget.generate_r1cs_constraints();
@@ -37,12 +37,7 @@ bool test_jubjub_add()
         ConstraintT(c_y, 1, the_gadget.result_y()),
             FMT("y3", " is correct"));
 
-	if( ! pb.is_satisfied() ) {
-        std::cerr << "Not satisfied!\n";
-        return false;
-    }
-
-    return stub_test_proof_verify(pb);
+	return pb.is_satisfied();
 }
 
 // namespace ethsnarks

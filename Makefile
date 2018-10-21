@@ -83,8 +83,9 @@ cxx-tests:
 	./bin/test_r1cs_gg_ppzksnark_zok
 	./bin/test_shamir_poly
 	./bin/test_sha256_full_gadget
-	./bin/test_jubjub
 	./bin/test_lookup_2bit
+	./bin/test_jubjub
+	./bin/test_jubjub_add
 
 	time ./bin/hashpreimage_cli genkeys zksnark_element/hpi.pk.raw zksnark_element/hpi.vk.json
 	ls -lah zksnark_element/hpi.pk.raw

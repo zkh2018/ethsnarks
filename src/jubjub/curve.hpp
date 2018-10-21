@@ -40,6 +40,7 @@ public:
 };
 
 
+
 class isOnCurve : public GadgetT {
 private:
     /* no internal variables */
