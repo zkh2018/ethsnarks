@@ -9,7 +9,7 @@ namespace ethsnarks {
 	
 lookup_2bit_gadget::lookup_2bit_gadget(
 	ProtoboardT &in_pb,
-	const std::vector<FieldT> &in_constants,
+	const std::vector<FieldT> in_constants,
 	const VariableArrayT in_bits,
 	const std::string& annotation_prefix
 ) :

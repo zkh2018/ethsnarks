@@ -8,10 +8,6 @@ add_executable(test_vk_raw2json test_vk_raw2json.cpp)
 target_link_libraries(test_vk_raw2json ethsnarks_common)
 
 
-add_executable(test_jubjub_add test_jubjub_add.cpp)
-target_link_libraries(test_jubjub_add ethsnarks_common ethsnarks_jubjub)
-
-
 add_executable(test_lookup_2bit test_lookup_2bit.cpp)
 target_link_libraries(test_lookup_2bit ethsnarks_common)
 
@@ -58,3 +54,11 @@ target_link_libraries(test_longsightl_hash_mp ethsnarks_common)
 
 add_executable(test_jubjub test_jubjub.cpp)
 target_link_libraries(test_jubjub ethsnarks_common ethsnarks_jubjub)
+
+
+add_executable(test_jubjub_add test_jubjub_add.cpp)
+target_link_libraries(test_jubjub_add ethsnarks_common ethsnarks_jubjub)
+
+
+add_executable(test_jubjub_mul test_jubjub_mul.cpp)
+target_link_libraries(test_jubjub_mul ethsnarks_common ethsnarks_jubjub)

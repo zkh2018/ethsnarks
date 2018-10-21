@@ -14,13 +14,13 @@ namespace ethsnarks {
 class lookup_2bit_gadget : public GadgetT
 {
 public:
-    const std::vector<FieldT> &c;
+    const std::vector<FieldT> c;
     const VariableArrayT b;
     VariableT r;
 
     lookup_2bit_gadget(
         ProtoboardT &in_pb,
-        const std::vector<FieldT> &in_constants,
+        const std::vector<FieldT> in_constants,
         const VariableArrayT in_bits,
         const std::string& annotation_prefix
     );
