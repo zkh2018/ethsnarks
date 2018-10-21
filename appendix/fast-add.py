@@ -1,6 +1,6 @@
 from random import randint
 from os import urandom
-from ethsnarks.jubjub import FQ, Point, EtecPoint, JUBJUB_D, JUBJUB_A, JUBJUB_L
+from ethsnarks.jubjub import FQ, Point, JUBJUB_D, JUBJUB_A, JUBJUB_L
 
 
 def point_add(P1, P2):

@@ -1,6 +1,5 @@
 from math import ceil, log2
 from os import urandom
-from ethsnarks.field import FQ
 from ethsnarks.jubjub import Point
 
 N = 4

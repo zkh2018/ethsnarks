@@ -1,6 +1,6 @@
 from random import randint
 from os import urandom
-from ethsnarks.jubjub import FQ, Point, EtecPoint, JUBJUB_D, JUBJUB_A, JUBJUB_L
+from ethsnarks.jubjub import FQ, Point, JUBJUB_D, JUBJUB_A, JUBJUB_L
 
 
 def mixed_add(P1, P2, bit_flag):
@@ -97,7 +97,6 @@ def mixed_add(P1, P2, bit_flag):
 
     # madd-2008-hwcd
     #"""
-    c_X2 = X2
     c_Y2 = Y2
     c_X2plusY2 = X2 + Y2
     c_negaX2 = -(a * X2)
@@ -144,7 +143,7 @@ def mixed_add(P1, P2, bit_flag):
 if __name__ == "__main__":
     summed = (FQ(0), FQ(1), FQ(0), FQ(1))
 
-    base_start = Point.from_hash(urandom(32))    
+    base_start = Point.from_hash(urandom(32))
     scalar = randint(1, JUBJUB_L-1)
     result = base_start * scalar
 

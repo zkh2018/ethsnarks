@@ -364,6 +364,7 @@ void conditionalPointAddition::generate_r1cs_witness()
         this->pb.val(this->y_intermediate_toAdd2) = this->pb.lc_val(this->not_canAdd) * FieldT(1);
         this->pb.val(this->y_toAdd) = FieldT(1);//this->pb.lc_val(this->y_intermediate_toAdd2));
     }
+
     jubjub_pointAddition->generate_r1cs_witness();  
 
 }
@@ -398,7 +399,7 @@ pointMultiplication::pointMultiplication(ProtoboardT &pb,
     this->pb.add_r1cs_constraint(ConstraintT(coef[0], 1-coef[0], 0),
                            FMT(annotation_prefix, " boolean_r1cs_constraint canAdd"));
 
-    for(int i=1; i<coef_size; i++) { 
+    for(int i=1; i<coef_size; i++) {
         //boolean constarin coef[i]       
         this->pb.add_r1cs_constraint(ConstraintT(coef[i], 1-coef[i], 0),
                        FMT(annotation_prefix, " boolean_r1cs_constraint canAdd"));

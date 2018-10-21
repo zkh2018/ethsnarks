@@ -86,6 +86,7 @@ cxx-tests:
 	./bin/test_lookup_2bit
 	./bin/test_jubjub
 	./bin/test_jubjub_add
+	./bin/test_jubjub_mul
 
 	time ./bin/hashpreimage_cli genkeys zksnark_element/hpi.pk.raw zksnark_element/hpi.vk.json
 	ls -lah zksnark_element/hpi.pk.raw
