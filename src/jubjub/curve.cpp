@@ -18,9 +18,8 @@
 */
 
 
-#include <libff/common/profiling.hpp>
-#include <libff/common/utils.hpp>
 #include "jubjub/curve.hpp"
+#include "utils.hpp"
 
 namespace ethsnarks
 {
@@ -94,6 +93,82 @@ void isOnCurve::generate_r1cs_witness()
     this->pb.val(dxxyy) = FieldT(_d*_x*_x*_y*_y);
 
     this->pb.val(rhs) = FieldT(_d*_x*_x*_y*_y + 1); 
+}
+
+
+FasterPointAddition::FasterPointAddition(
+    ProtoboardT &in_pb,
+    const jubjub_params &in_params,
+    const VariableT in_X1,
+    const VariableT in_Y1,
+    const VariableT in_X2,
+    const VariableT in_Y2,
+    const std::string &annotation_prefix
+) :
+    GadgetT(in_pb, annotation_prefix),
+    m_params(in_params),
+    m_X1(in_X1), m_Y1(in_Y1),
+    m_X2(in_X2), m_Y2(in_Y2),
+    m_beta(make_variable(in_pb, FMT(this->annotation_prefix, ".beta"))),
+    m_gamma(make_variable(in_pb, FMT(this->annotation_prefix, ".gamma"))),
+    m_delta(make_variable(in_pb, FMT(this->annotation_prefix, ".delta"))),
+    m_epsilon(make_variable(in_pb, FMT(this->annotation_prefix, ".epsilon"))),
+    m_tau(make_variable(in_pb, FMT(this->annotation_prefix, ".tau"))),
+    m_X3(make_variable(in_pb, FMT(this->annotation_prefix, ".X3"))),
+    m_Y3(make_variable(in_pb, FMT(this->annotation_prefix, ".Y3")))
+{
+
+}
+
+
+void FasterPointAddition::generate_r1cs_constraints()
+{
+    this->pb.add_r1cs_constraint(
+        ConstraintT(m_X1, m_Y2, m_beta),
+            FMT(annotation_prefix, ".beta = X1 * Y2"));
+
+    this->pb.add_r1cs_constraint(
+        ConstraintT(m_Y1, m_X2, m_gamma),
+            FMT(annotation_prefix, ".gamma = Y1 * X2"));
+
+    this->pb.add_r1cs_constraint(
+        ConstraintT(m_Y1, m_Y2, m_delta),
+            FMT(annotation_prefix, ".delta = Y1 * Y2"));
+
+    this->pb.add_r1cs_constraint(
+        ConstraintT(m_X1, m_X2, m_epsilon),
+            FMT(annotation_prefix, ".epsilon = X1 * X2"));
+
+    this->pb.add_r1cs_constraint(
+        ConstraintT(m_delta, m_delta, m_tau),
+            FMT(annotation_prefix, ".tau = delta * epsilon"));
+
+    this->pb.add_r1cs_constraint(
+        ConstraintT(m_X3, 1 + (m_params.d*m_tau), m_beta + m_gamma),
+            FMT(annotation_prefix, ".x3 * (1 + (d*tau)) == (beta + gamma) "));
+
+    this->pb.add_r1cs_constraint(
+        ConstraintT(m_Y3, 1 - (m_params.d*m_tau), m_delta + ((-m_params.a)*m_epsilon)),
+            FMT(annotation_prefix, ".y3 * (1 - (d*tau)) == (delta + a*epsilon) "));
+}
+
+void FasterPointAddition::generate_r1cs_witness()
+{
+    auto one = FieldT("1");
+
+    this->pb.val(m_beta) = this->pb.val(m_X1) * this->pb.val(m_Y2);
+
+    this->pb.val(m_gamma) = this->pb.val(m_Y1) * this->pb.val(m_X2);
+
+    this->pb.val(m_delta) = this->pb.val(m_Y1) * this->pb.val(m_Y2);
+
+    this->pb.val(m_epsilon) = this->pb.val(m_X1) * this->pb.val(m_X2);
+
+    auto x3_rhs = (one + (m_params.d * this->pb.val(m_tau))).inverse();
+    this->pb.val(m_X3) = (this->pb.val(m_beta)+this->pb.val(m_gamma)) * x3_rhs;
+
+    auto y3_rhs = (one - (m_params.d * this->pb.val(m_tau))).inverse();
+    this->pb.val(m_Y3) = (this->pb.val(m_delta)+( -m_params.a * this->pb.val(m_epsilon))) * y3_rhs;
 }
 
 
