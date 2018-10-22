@@ -21,27 +21,6 @@ def shamirs_poly(x, a):
     return result
 
 
-"""
-def lagrange(points, x):
-    # Borrowed from: https://gist.github.com/melpomene/2482930
-    total = 0
-    n = len(points)
-    for i in range(n):
-        xi, yi = points[i]
-        def g(i, n):
-            tot_mul = 1
-            for j in range(n):
-                if i == j:
-                    continue
-                xj, yj = points[j]
-                # Use integer division here, versus SciPy's which uses floating point division
-                # This loses precision with large values of P, which can't be easily recovered
-                tot_mul *= (x - xj) // (xi - xj)
-            return tot_mul
-        total += yi * g(i, n)
-    return total
-"""
-
 def lagrange(points, x):
     # Borrowed from: https://gist.github.com/melpomene/2482930
     total = 0
@@ -56,9 +35,8 @@ def lagrange(points, x):
                 if i == j:
                     continue
                 xj, yj = points[j]
-                # Use integer division here, versus SciPy's which uses floating point division
-                # This loses precision with large values of P, which can't be easily recovered
-                tot_mul = tot_mul * ( (x - xj) / (xi - xj) )
+                tot_mul = tot_mul * ( (x - xj) // (xi - xj) )
             return tot_mul
-        total = total + (yi * g(i, n))
+        coefficient = g(i, n)
+        total = total + (yi * coefficient)
     return total

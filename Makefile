@@ -83,7 +83,10 @@ cxx-tests:
 	./bin/test_r1cs_gg_ppzksnark_zok
 	./bin/test_shamir_poly
 	./bin/test_sha256_full_gadget
+	./bin/test_lookup_2bit
 	./bin/test_jubjub
+	./bin/test_jubjub_add
+	./bin/test_jubjub_mul
 
 	time ./bin/hashpreimage_cli genkeys zksnark_element/hpi.pk.raw zksnark_element/hpi.vk.json
 	ls -lah zksnark_element/hpi.pk.raw
@@ -139,10 +142,10 @@ requirements-dev:
 	$(PYTHON) -m pip install $(PIP_ARGS) -r requirements-dev.txt
 
 fedora-dependencies:
-	dnf install procps-ng-devel gmp-devel boost-devel cmake g++ python3-scipy python3-pip
+	dnf install procps-ng-devel gmp-devel boost-devel cmake g++ python3-pip
 
 ubuntu-dependencies:
-	apt-get install cmake make g++ libgmp-dev libboost-all-dev libprocps-dev python3-pip python3-scipy
+	apt-get install cmake make g++ libgmp-dev libboost-all-dev libprocps-dev python3-pip
 
 mac-dependencies:
 	brew install pkg-config boost cmake gmp openssl || true

@@ -27,8 +27,21 @@
 
 namespace ethsnarks {
 
+
+class jubjub_params {
+public:
+    const FieldT a;
+    const FieldT d;
+
+    jubjub_params() :
+        a("168700"),
+        d("168696")
+    {}
+};
+
+
+
 class isOnCurve : public GadgetT {
-//greater than gadget
 private:
     /* no internal variables */
 public:
@@ -58,6 +71,47 @@ public:
     void generate_r1cs_constraints();
     void generate_r1cs_witness();
 
+};
+
+
+class FasterPointAddition : public GadgetT {
+public:
+    const jubjub_params &m_params;
+
+    // First input point
+    const VariableT m_X1;
+    const VariableT m_Y1;
+
+    // Second input point
+    const VariableT m_X2;
+    const VariableT m_Y2;
+
+    // Intermediate variables
+    const VariableT m_beta;
+    const VariableT m_gamma;
+    const VariableT m_delta;
+    const VariableT m_epsilon;
+    const VariableT m_tau;
+    const VariableT m_X3;
+    const VariableT m_Y3;
+
+    FasterPointAddition(
+        ProtoboardT &in_pb,
+        const jubjub_params &in_params,
+        const VariableT in_X1,
+        const VariableT in_Y1,
+        const VariableT in_X2,
+        const VariableT in_Y2,
+        const std::string &annotation_prefix
+    );
+
+    const VariableT &result_x();
+
+    const VariableT &result_y();
+
+    void generate_r1cs_constraints();
+
+    void generate_r1cs_witness();
 };
 
 
