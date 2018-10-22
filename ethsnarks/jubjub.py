@@ -366,6 +366,10 @@ class MontPoint(AbstractCurveOps, namedtuple('_MontPoint', ('x', 'y'))):
 		return MontPoint(self.x, -self.y)
 
 	def add(self, other):
+		"""
+		Affine point addition
+		Taken from: https://github.com/zcash/librustzcash/blob/master/sapling-crypto/src/circuit/ecc.rs#L659
+		"""
 		other = other.as_mont()
 		n = other.y - self.y
 		d = other.x - self.x
@@ -549,17 +553,6 @@ class EtecPoint(AbstractCurveOps, namedtuple('_EtecPoint', ('x', 'y', 't', 'z'))
 	def double(self):
 		"""
 		dbl-2008-hwcd
-
-		R1CS Constraints:
-
-			x1 * x1 = A
-			y1 * y1 = B
-			z1 * z1 = T0
-			[ x1 + y1 ] * [ x1 + y1 ] = T2
-			[ T2 - A - B ] * ( [ a*A + B ] - [ 2*T0 ] ) = new_x
-			[ a*A + B ] * [ a*A - B ] = new_y
-			[ T2 - A - B ] * [ a*A - B ] = new_t
-			( [ a*A + B ] - [ 2*T0 ] ) * [ a*A + B ] = new_z
 		"""
 		if self == self.infinity():
 			return self.infinity()
@@ -580,18 +573,6 @@ class EtecPoint(AbstractCurveOps, namedtuple('_EtecPoint', ('x', 'y', 't', 'z'))
 	def add(self, other):
 		"""
 		3.1 Unified addition in ε^e
-
-		R1CS Constraints:
-
-			[ 1*x1 ] * [ 1*x2 ] = x1x2
-			[ 1*y1 ] * [ 1*y2 ] = y1y2
-			[ 1*z1 ] * [ 1*z2 ] = z1z2
-			[ d*t1 ] * [ 1*t2 ] = dt1t2
-			[ x1+y1 ] * [ x2+y2 ] = e + [ -1*x1x2 + -2*y1y2 ]
-			e * [ z1z2 + -dt1t2 ] = new_x
-			[ z1z2 + dt1t2 ] * [ y1y2 + -a*x1x2 ] = new_y
-			e * [ y1y2 + -a*x1x2 ] = new_t
-			[ z1z2 + -dt1t2 ] * [ z1z2 + dt1t2 ] = new_z
 		"""
 		assert isinstance(other, EtecPoint)
 		if self == self.infinity():
