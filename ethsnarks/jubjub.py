@@ -365,6 +365,26 @@ class MontPoint(AbstractCurveOps, namedtuple('_MontPoint', ('x', 'y'))):
 	def neg(self):
 		return MontPoint(self.x, -self.y)
 
+	def add(self, other):
+		other = other.as_mont()
+		n = other.y - self.y
+		d = other.x - self.x
+		l = n / d
+
+		# (x' - x) * l == (y' - y)
+		assert (other.x - self.x) * l == (other.y - self.y)
+
+		xprime = (l*l) - MONT_A - self.x - other.x
+
+		# lambda * lambda = (A + x + x' + x'')
+		assert (l * l) == (MONT_A + self.x + other.x + xprime)
+
+		yprime = -( self.y + (l * (xprime - self.x)) )
+
+		assert (yprime + self.y) == l * (self.x - xprime)
+
+		return MontPoint(xprime, yprime)
+
 	def double(self):
 		return MontXZPoint(self.x, FQ(1)).double()
 
