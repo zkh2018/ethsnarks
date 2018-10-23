@@ -5,6 +5,8 @@
 
 #include "ethsnarks.hpp"
 
+#include <libsnark/gadgetlib1/pb_variable.hpp>
+
 namespace ethsnarks {
 
 
@@ -39,6 +41,15 @@ inline const VariableT make_variable( ProtoboardT &in_pb, const std::string &ann
     VariableT x;
     x.allocate(in_pb, annotation);
     return x;
+}
+
+
+/* Multiply a variable by a static number, as a linear combination term */
+inline const libsnark::pb_linear_combination<FieldT> make_linear_term( ProtoboardT &in_pb, VariableT var, FieldT coeff )
+{
+    libsnark::pb_linear_combination<FieldT> lc;
+    lc.assign(in_pb, var * coeff);
+    return lc;
 }
 
 

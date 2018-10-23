@@ -29,9 +29,9 @@ subadd_gadget::subadd_gadget(
 	cmp_N_A(in_pb, n_bits, N, A, N_lt_A, N_leq_A, FMT(this->annotation_prefix, ".cmp_N_A")),
 
 	// B+A comparison check
-	B_lt_Y(make_variable(in_pb, FMT(this->annotation_prefix, ".B < Y"))),
-	B_leq_Y(make_variable(in_pb, FMT(this->annotation_prefix, ".B <= Y"))),
-	cmp_B_Y(in_pb, n_bits, N, A, N_lt_A, N_leq_A, FMT(this->annotation_prefix, ".cmp_B_Y"))
+	B_lt_Y(make_variable(in_pb, FMT(this->annotation_prefix, ".Y < ((1<<N)-1)"))),
+	B_leq_Y(make_variable(in_pb, FMT(this->annotation_prefix, ".Y <= ((1<<N)-1)"))),
+	cmp_B_Y(in_pb, n_bits+1, Y, make_linear_term(in_pb, libsnark::ONE, (1<<n_bits)-1), B_lt_Y, B_leq_Y, FMT(this->annotation_prefix, ".cmp_B_Y"))
 {
 
 }
@@ -44,12 +44,20 @@ void subadd_gadget::generate_r1cs_constraints ()
 	cmp_B_Y.generate_r1cs_constraints();
 
 	this->pb.add_r1cs_constraint(
+		ConstraintT(A - N, FieldT::one(), X),
+			FMT(this->annotation_prefix, ".A - N == X"));
+
+	this->pb.add_r1cs_constraint(
+		ConstraintT(B + N, FieldT::one(), Y),
+			FMT(this->annotation_prefix, ".B + N == Y"));
+
+	this->pb.add_r1cs_constraint(
 		ConstraintT(N_leq_A, FieldT::one(), FieldT::one()),
 			FMT(this->annotation_prefix, ".N_leq_A == 1"));
 
 	this->pb.add_r1cs_constraint(
-		ConstraintT(B_leq_Y, FieldT::one(), FieldT::one()),
-			FMT(this->annotation_prefix, ".B_leq_Y == 1"));
+		ConstraintT(B_lt_Y, FieldT::one(), FieldT::one()),
+			FMT(this->annotation_prefix, ".B_lt_Y == 1"));
 }
 
 

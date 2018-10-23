@@ -19,8 +19,13 @@ bool test_subadd( FieldT A, FieldT B, FieldT N, size_t n_bits, bool expected, co
 
 	subadd_gadget the_gadget(pb, n_bits, v_A, v_B, v_N, test_name);
 
-	the_gadget.generate_r1cs_witness();
 	the_gadget.generate_r1cs_constraints();
+
+	the_gadget.generate_r1cs_witness();
+
+	std::cout << std::endl << std::endl;
+
+	std::cout << test_name << " = " << pb.num_constraints() << " constraints" << std::endl;
 
 	if( pb.is_satisfied() != expected ) {
 		std::cerr << "FAIL " << test_name << std::endl;
@@ -35,7 +40,14 @@ int main( void )
 {
 	bool result = true;
 
-	result &= test_subadd(100, 100, 10, 32, true, "1-bit");
+	// Types for board
+    ppT::init_public_params();
+
+	result &= test_subadd(1, 0, 1, 32, true, "1-bit good");
+	result &= test_subadd(0, 0, 1, 32, false, "1-bit bad (underflow)");
+
+	result &= test_subadd(255, 0, 0, 8, true, "8-bit good");
+	result &= test_subadd(255, 128, 128, 8, false, "8-bit bad (overflow)");
 
 	if( ! result ) {
 		return 1;
