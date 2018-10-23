@@ -12,7 +12,10 @@ namespace ethsnarks {
 *   X = A-N
 *   Y = B+N
 *
-* Prevents underflows and overflows
+* Prevents underflows and overflows, within an `n_bit` range
+*
+* e.g. A = 128, N=128, B=128 = overflow for 8 bits
+*      A = 0, N=128, B=0 = underflow for 8 bits
 */
 class subadd_gadget : public GadgetT {
 public:
@@ -26,9 +29,9 @@ public:
     const VariableT N_leq_A;
     libsnark::comparison_gadget<FieldT> cmp_N_A;
 
-    const VariableT B_lt_Y;
-    const VariableT B_leq_Y;
-    libsnark::comparison_gadget<FieldT> cmp_B_Y;
+    const VariableT Y_overflow_lt;
+    const VariableT Y_overflow_leq;
+    libsnark::comparison_gadget<FieldT> cmp_Y_overflow;
 
     subadd_gadget(
         ProtoboardT &in_pb,

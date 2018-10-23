@@ -23,17 +23,17 @@ subadd_gadget::subadd_gadget(
 	X(make_variable(in_pb, FMT(this->annotation_prefix, ".X"))),
 	Y(make_variable(in_pb, FMT(this->annotation_prefix, ".Y"))),
 
-	// A-N comparison check
+	// A-N underflow check, A>=N
 	N_lt_A(make_variable(in_pb, FMT(this->annotation_prefix, ".N < A"))),
 	N_leq_A(make_variable(in_pb, FMT(this->annotation_prefix, ".N <= A"))),
 	cmp_N_A(in_pb, n_bits, N, A, N_lt_A, N_leq_A, FMT(this->annotation_prefix, ".cmp_N_A")),
 
-	// B+A comparison check
-	B_lt_Y(make_variable(in_pb, FMT(this->annotation_prefix, ".Y < ((1<<N)-1)"))),
-	B_leq_Y(make_variable(in_pb, FMT(this->annotation_prefix, ".Y <= ((1<<N)-1)"))),
-	cmp_B_Y(in_pb, n_bits+1, Y, make_linear_term(in_pb, libsnark::ONE, (1<<n_bits)-1), B_lt_Y, B_leq_Y, FMT(this->annotation_prefix, ".cmp_B_Y"))
+	// B+N overflow check, B+N < (1<<n_bits)
+	Y_overflow_lt(make_variable(in_pb, FMT(this->annotation_prefix, ".Y < (1<<N)"))),
+	Y_overflow_leq(make_variable(in_pb, FMT(this->annotation_prefix, ".Y <= (1<<N)"))),
+	cmp_Y_overflow(in_pb, n_bits+1, Y, make_linear_term(in_pb, libsnark::ONE, (1<<n_bits)), Y_overflow_lt, Y_overflow_leq, FMT(this->annotation_prefix, ".cmp_B_Y"))
 {
-
+	assert( (n_bits+1) <= FieldT::capacity() );
 }
 
 
@@ -41,7 +41,7 @@ void subadd_gadget::generate_r1cs_constraints ()
 {
 	cmp_N_A.generate_r1cs_constraints();
 
-	cmp_B_Y.generate_r1cs_constraints();
+	cmp_Y_overflow.generate_r1cs_constraints();
 
 	this->pb.add_r1cs_constraint(
 		ConstraintT(A - N, FieldT::one(), X),
@@ -56,8 +56,8 @@ void subadd_gadget::generate_r1cs_constraints ()
 			FMT(this->annotation_prefix, ".N_leq_A == 1"));
 
 	this->pb.add_r1cs_constraint(
-		ConstraintT(B_lt_Y, FieldT::one(), FieldT::one()),
-			FMT(this->annotation_prefix, ".B_lt_Y == 1"));
+		ConstraintT(Y_overflow_lt, FieldT::one(), FieldT::one()),
+			FMT(this->annotation_prefix, ".Y_overflow_lt == 1"));
 }
 
 
@@ -69,7 +69,7 @@ void subadd_gadget::generate_r1cs_witness ()
 
 	cmp_N_A.generate_r1cs_witness();
 
-	cmp_B_Y.generate_r1cs_witness();
+	cmp_Y_overflow.generate_r1cs_witness();
 }
 
 // namespace ethsnarks

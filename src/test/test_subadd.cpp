@@ -23,8 +23,6 @@ bool test_subadd( FieldT A, FieldT B, FieldT N, size_t n_bits, bool expected, co
 
 	the_gadget.generate_r1cs_witness();
 
-	std::cout << std::endl << std::endl;
-
 	std::cout << test_name << " = " << pb.num_constraints() << " constraints" << std::endl;
 
 	if( pb.is_satisfied() != expected ) {
@@ -43,11 +41,14 @@ int main( void )
 	// Types for board
     ppT::init_public_params();
 
-	result &= test_subadd(1, 0, 1, 32, true, "1-bit good");
-	result &= test_subadd(0, 0, 1, 32, false, "1-bit bad (underflow)");
+	result &= test_subadd(1, 0, 1, 1, true, "1-bit good");
+	result &= test_subadd(0, 0, 1, 1, false, "1-bit bad (underflow)");
 
 	result &= test_subadd(255, 0, 0, 8, true, "8-bit good");
 	result &= test_subadd(255, 128, 128, 8, false, "8-bit bad (overflow)");
+	result &= test_subadd(255, 128, 127, 8, true, "8-bit good (max)");
+	result &= test_subadd(127, 0, 127, 8, true, "8-bit good (zero)");
+	result &= test_subadd(127, 0, 128, 8, false, "8-bit bad (underflow)");
 
 	if( ! result ) {
 		return 1;
