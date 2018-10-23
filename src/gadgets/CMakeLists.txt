@@ -9,4 +9,5 @@ add_library(ethsnarks_gadgets STATIC
 	shamir_poly.cpp
 
 	lookup_2bit.cpp
+	subadd.cpp
 )

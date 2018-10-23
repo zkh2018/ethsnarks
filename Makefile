@@ -84,6 +84,7 @@ cxx-tests:
 	./bin/test_shamir_poly
 	./bin/test_sha256_full_gadget
 	./bin/test_lookup_2bit
+	./bin/test_subadd
 	./bin/test_jubjub
 	./bin/test_jubjub_add
 	./bin/test_jubjub_mul
