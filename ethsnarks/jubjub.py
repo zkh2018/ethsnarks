@@ -135,10 +135,19 @@ class Point(AbstractCurveOps, namedtuple('_Point', ('x', 'y'))):
 		y = FQ(int.from_bytes(entropy, 'big'))
 		while True:
 			try:
-				return cls.from_y(y)
+				p = cls.from_y(y)
 			except SquareRootError:
 				y += 1
 				continue
+
+			"""
+			# XXX: verify point is on prime-ordered sub-curve
+			if p * JUBJUB_L != Point.infinity():
+				y += 1
+				continue
+			"""
+
+			return p
 
 	def as_edwards_yz(self):
 		return EdwardsYZPoint(self.y, FQ(1))
@@ -304,8 +313,8 @@ class MontPoint(AbstractCurveOps, namedtuple('_MontPoint', ('x', 'y'))):
 
 	 "Montgomery curves and the Montgomery ladder"
 	  - https://eprint.iacr.org/2017/293.pdf
-	    Daniel J. Bernstein and Tanja Lange
-   	"""
+		Daniel J. Bernstein and Tanja Lange
+	"""
 	def valid(self):
 		"""
 		B*y^2 = x^3 + A*x^2 + x
@@ -364,30 +373,6 @@ class MontPoint(AbstractCurveOps, namedtuple('_MontPoint', ('x', 'y'))):
 
 	def neg(self):
 		return MontPoint(self.x, -self.y)
-
-	def add(self, other):
-		"""
-		Affine point addition
-		Taken from: https://github.com/zcash/librustzcash/blob/master/sapling-crypto/src/circuit/ecc.rs#L659
-		"""
-		other = other.as_mont()
-		n = other.y - self.y
-		d = other.x - self.x
-		l = n / d
-
-		# (x' - x) * l == (y' - y)
-		assert (other.x - self.x) * l == (other.y - self.y)
-
-		xprime = (l*l) - MONT_A - self.x - other.x
-
-		# lambda * lambda = (A + x + x' + x'')
-		assert (l * l) == (MONT_A + self.x + other.x + xprime)
-
-		yprime = -( self.y + (l * (xprime - self.x)) )
-
-		assert (yprime + self.y) == l * (self.x - xprime)
-
-		return MontPoint(xprime, yprime)
 
 	def double(self):
 		return MontXZPoint(self.x, FQ(1)).double()
