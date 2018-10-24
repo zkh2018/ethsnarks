@@ -52,6 +52,10 @@ add_executable(test_longsightl_hash_mp test_longsightl_hash_mp.cpp)
 target_link_libraries(test_longsightl_hash_mp ethsnarks_common)
 
 
+add_executable(test_subadd test_subadd.cpp)
+target_link_libraries(test_subadd ethsnarks_common)
+
+
 add_executable(test_jubjub test_jubjub.cpp)
 target_link_libraries(test_jubjub ethsnarks_common ethsnarks_jubjub)
 

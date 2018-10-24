@@ -30,12 +30,17 @@ namespace ethsnarks {
 
 class jubjub_params {
 public:
+    // Edwards parameters
     const FieldT a;
     const FieldT d;
 
+    // Montgomery parameters
+    const FieldT A;
+
     jubjub_params() :
         a("168700"),
-        d("168696")
+        d("168696"),
+        A("168698")
     {}
 };
 
