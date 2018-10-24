@@ -75,7 +75,7 @@ public:
 
 
      pedersen_commitment(ProtoboardT &pb,
-                   //const pb_linear_combination_array<FieldT> &bits,
+                   const jubjub_params& in_params,
                    const VariableT &a, const VariableT &d,
                    const VariableT &base_x, const VariableT &base_y,
                    const VariableT &H_x, const VariableT &H_y,

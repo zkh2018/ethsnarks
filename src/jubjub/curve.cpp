@@ -25,74 +25,61 @@ namespace ethsnarks
 {
 
 
-isOnCurve::isOnCurve(ProtoboardT &pb,
-                   /*const pb_linear_combination_array<FieldT> &bits,*/
-                   const VariableT &x, const VariableT &y,
-                   const VariableT &a, const VariableT &d,
-                   const std::string &annotation_prefix):
-        GadgetT(pb, annotation_prefix), x(x), y(y), a(a), d(d) 
+isOnCurve::isOnCurve(
+    ProtoboardT &in_pb,
+    const jubjub_params &in_params,
+    const VariableT &in_x, const VariableT &in_y,
+    const std::string &annotation_prefix
+) :
+    GadgetT(in_pb, annotation_prefix),
+    m_params(in_params),
+    x(in_x),
+    y(in_y),
+    xx(make_variable(in_pb, FMT(annotation_prefix, ".xx"))),
+    yy(make_variable(in_pb, FMT(annotation_prefix, ".yy"))),
+    lhs(make_variable(in_pb, FMT(annotation_prefix, ".lhs"))),
+    rhs(make_variable(in_pb, FMT(annotation_prefix, ".rhs")))
 {
-    xx.allocate(this->pb, "xx");
-    yy.allocate(this->pb, "yy");
-    dxx.allocate(this->pb, "dxx");
-    axx.allocate(this->pb, "axx");
-    dxxyy.allocate(this->pb, "dxxyy");
-    lhs.allocate(this->pb, "lhs");
-    rhs.allocate(this->pb, "rhs");
- 
 
 }
-
 
 
 void isOnCurve::generate_r1cs_constraints()
 {
     // checks that a*x*x + y*y = 1 + d*x*x*y*y
-    // where x , y are curve points
+    // where x , y are curve coordinates
     // and a , d are curve parameters.
 
-    this->pb.add_r1cs_constraint(ConstraintT({x} , {x}, {xx}),
-                           FMT("find x*x", ""));
-    this->pb.add_r1cs_constraint(ConstraintT({y} , {y}, {yy}),
-                           FMT("find y*y", ""));
-    this->pb.add_r1cs_constraint(ConstraintT({a} , {xx}, {axx}),
-                           FMT( annotation_prefix, "find a*x*x"));
-    this->pb.add_r1cs_constraint(ConstraintT({axx, yy} , {1}, {lhs}),
-                           FMT("find lhs", ""));
-    this->pb.add_r1cs_constraint(ConstraintT({d} , {xx}, {dxx}),
-                           FMT("find dxx", ""));
-    this->pb.add_r1cs_constraint(ConstraintT({dxx} , {yy}, {dxxyy}),
-                           FMT("find rhs", ""));
-    this->pb.add_r1cs_constraint(ConstraintT({dxxyy , 1} , {1}, {rhs}),
-                           FMT("find rhs", ""));
-    this->pb.add_r1cs_constraint(ConstraintT({lhs} , {1}, {rhs}),
-                           FMT("lhs == rhs", ""));
+    this->pb.add_r1cs_constraint(
+        ConstraintT(x, x, xx),
+        FMT(this->annotation_prefix, ".xx = x*x"));
+
+    this->pb.add_r1cs_constraint(
+        ConstraintT(y, y, yy),
+        FMT(this->annotation_prefix, ".yy = y*y"));
+
+    this->pb.add_r1cs_constraint(
+        ConstraintT(xx*m_params.a + yy, 1, lhs),
+        FMT(this->annotation_prefix, ".lhs = a*xx + yy"));
+
+    this->pb.add_r1cs_constraint(
+        ConstraintT(xx*m_params.d, yy, rhs - 1),
+        FMT(this->annotation_prefix, ".rhs = 1 + d*xx*yy"));
 }
 
 
 void isOnCurve::generate_r1cs_witness()
 {
-    //linear_combination<FieldT> lc; 
+    const FieldT _x = this->pb.val(this->x);
+    const FieldT _y = this->pb.val(this->y);
+    const FieldT _xx(_x*_x);
+    const FieldT _yy(_y*_y);
 
+    this->pb.val(xx) = _xx;
+    this->pb.val(yy) = _yy;
 
-    FieldT _x = this->pb.lc_val(this->x);
-    FieldT _y = this->pb.lc_val(this->y);
-    FieldT _a = this->pb.lc_val(this->a);
-    FieldT _d = this->pb.lc_val(this->d);
-
-    this->pb.val(x) = FieldT(_x); 
-    this->pb.val(y) = FieldT(_y);
-    this->pb.val(a) = FieldT(_a);
-    this->pb.val(d) = FieldT(_d);
-
-    this->pb.val(xx) = FieldT(_x*_x);
-    this->pb.val(yy) = FieldT(_y*_y);
-    this->pb.val(axx) = FieldT(_a*_x*_x);
-    this->pb.val(lhs) = FieldT(_a*_x*_x + _y*_y);
-    this->pb.val(dxx) = FieldT(_x*_x*_d);
-    this->pb.val(dxxyy) = FieldT(_d*_x*_x*_y*_y);
-
-    this->pb.val(rhs) = FieldT(_d*_x*_x*_y*_y + 1); 
+    this->pb.val(lhs) = m_params.a*_xx + _yy;
+    this->pb.val(rhs) = FieldT::one() + m_params.d*_xx*_yy;
 }
 
 
@@ -109,13 +96,13 @@ FasterPointAddition::FasterPointAddition(
     m_params(in_params),
     m_X1(in_X1), m_Y1(in_Y1),
     m_X2(in_X2), m_Y2(in_Y2),
-    m_beta(make_variable(in_pb, FMT(this->annotation_prefix, ".beta"))),
-    m_gamma(make_variable(in_pb, FMT(this->annotation_prefix, ".gamma"))),
-    m_delta(make_variable(in_pb, FMT(this->annotation_prefix, ".delta"))),
-    m_epsilon(make_variable(in_pb, FMT(this->annotation_prefix, ".epsilon"))),
-    m_tau(make_variable(in_pb, FMT(this->annotation_prefix, ".tau"))),
-    m_X3(make_variable(in_pb, FMT(this->annotation_prefix, ".X3"))),
-    m_Y3(make_variable(in_pb, FMT(this->annotation_prefix, ".Y3")))
+    m_beta(make_variable(in_pb, FMT(annotation_prefix, ".beta"))),
+    m_gamma(make_variable(in_pb, FMT(annotation_prefix, ".gamma"))),
+    m_delta(make_variable(in_pb, FMT(annotation_prefix, ".delta"))),
+    m_epsilon(make_variable(in_pb, FMT(annotation_prefix, ".epsilon"))),
+    m_tau(make_variable(in_pb, FMT(annotation_prefix, ".tau"))),
+    m_X3(make_variable(in_pb, FMT(annotation_prefix, ".X3"))),
+    m_Y3(make_variable(in_pb, FMT(annotation_prefix, ".Y3")))
 {
 
 }
@@ -189,6 +176,7 @@ void FasterPointAddition::generate_r1cs_witness()
 
 pointAddition::pointAddition(
     ProtoboardT &pb,
+    const jubjub_params& in_params,
     /*const pb_linear_combination_array<FieldT> &bits,*/
     const VariableT &a, const VariableT &d,
     const VariableT &x1, const VariableT &y1,
@@ -197,15 +185,14 @@ pointAddition::pointAddition(
     const std::string &annotation_prefix
 ) :
     GadgetT(pb, annotation_prefix),
+    m_params(in_params),
     a(a),
     d(d),
     x1(x1), y1(y1),
     x2(x2), y2(y2),
     x3(x3), y3(y3)
 {
-
-
-    jubjub_isOnCurve.reset( new isOnCurve (this->pb, x3, y3, a, d, "modulo"));
+    jubjub_isOnCurve.reset( new isOnCurve (this->pb, in_params, x3, y3, FMT(this->annotation_prefix, ".on_curve")));
     x1x2.allocate(this->pb, "x1x2");
     x1y2.allocate(this->pb, "x1y2");
     y1y2.allocate(this->pb, "y1y2");
@@ -291,16 +278,20 @@ void pointAddition::generate_r1cs_witness()
 
 
 conditionalPointAddition::conditionalPointAddition(ProtoboardT &pb,
-                   /*const pb_linear_combination_array<FieldT> &bits,*/
+                    const jubjub_params& in_params,
                    const VariableT &a, const VariableT &d,
                    const VariableT &x1, const VariableT &y1,
                    const VariableT &x2, const VariableT &y2,
                    const VariableT &x3, const VariableT &y3,
                    const VariableT &canAdd, const std::string &_annotation_prefix):
-        GadgetT(pb, _annotation_prefix) , a(a), d(d) , x1(x1), y1(y1), x2(x2), y2(y2), x3(x3), y3(y3), canAdd(canAdd)
+        GadgetT(pb, _annotation_prefix),
+        m_params(in_params),
+        a(a), d(d),
+        x1(x1), y1(y1),
+        x2(x2), y2(y2),
+        x3(x3), y3(y3),
+        canAdd(canAdd)
 {
-
-      
     x_toAdd.allocate(this->pb, "x_toAdd");
     y_toAdd.allocate(this->pb, "y_toAdd");
 
@@ -309,8 +300,7 @@ conditionalPointAddition::conditionalPointAddition(ProtoboardT &pb,
 
     not_canAdd.allocate(this->pb, "not_canAdd");
 
-    jubjub_pointAddition.reset( new pointAddition (this->pb, a, d, x1, y1, x_toAdd , y_toAdd , x3, y3, "x1, y1 + x2 , y2"));
-
+    jubjub_pointAddition.reset( new pointAddition (this->pb, in_params, a, d, x1, y1, x_toAdd , y_toAdd , x3, y3, "x1, y1 + x2 , y2"));
 }
 
 
@@ -370,14 +360,21 @@ void conditionalPointAddition::generate_r1cs_witness()
 }
 
 
-pointMultiplication::pointMultiplication(ProtoboardT &pb,
-                   /*const pb_linear_combination_array<FieldT> &bits,*/
-                   const VariableT &a, const VariableT &d,
-                   const VariableT &x, const VariableT &y,
-                   const VariableArrayT &coef, const VariableArrayT x_ret, 
-                   const VariableArrayT y_ret, const std::string &annotation_prefix, 
-                   int coef_size):
-        GadgetT(pb, annotation_prefix) , a(a), d(d) , x(x), y(y), coef(coef), x_ret(x_ret), y_ret(y_ret), coef_size(coef_size)
+pointMultiplication::pointMultiplication(
+    ProtoboardT &pb,
+    const jubjub_params& in_params,
+    const VariableT &a, const VariableT &d,
+    const VariableT &x, const VariableT &y,
+    const VariableArrayT &coef,
+    const VariableArrayT x_ret, const VariableArrayT y_ret,
+    const std::string &annotation_prefix,
+    int coef_size
+) :
+    GadgetT(pb, annotation_prefix),
+    a(a), d(d),
+    x(x), y(y),
+    coef(coef),
+    x_ret(x_ret), y_ret(y_ret), coef_size(coef_size)
 {
 
     //performs point multiplicaion using double and add method
@@ -387,14 +384,14 @@ pointMultiplication::pointMultiplication(ProtoboardT &pb,
     x_zero.allocate(pb, "x_zero");
     y_zero.allocate(pb, "y_zero");
 
-    x_intermediary.allocate(pb, coef_size, FMT("annotation_prefix", " x intermediary"));
-    y_intermediary.allocate(pb, coef_size, FMT("annotation_prefix", " y intermediary"));
+    x_intermediary.allocate(pb, coef_size, FMT(annotation_prefix, " x intermediary"));
+    y_intermediary.allocate(pb, coef_size, FMT(annotation_prefix, " y intermediary"));
 
     pb.val(x_zero) = FieldT("0");
     pb.val(y_zero) = FieldT("1");
 
-    this->doub[0].reset( new pointAddition (this->pb, a, d, x_zero, y_zero , x_zero , y_zero, x_intermediary[0], y_intermediary[0], "x1, y1 + x2 , y2"));
-    this->add[0].reset( new conditionalPointAddition (this->pb, a, d, x_intermediary[0], y_intermediary[0] , x, y, x_ret[0], y_ret[0], coef[0], "x1, y1 + x2 , y2"));
+    this->doub[0].reset( new pointAddition (this->pb, in_params, a, d, x_zero, y_zero , x_zero , y_zero, x_intermediary[0], y_intermediary[0], "x1, y1 + x2 , y2"));
+    this->add[0].reset( new conditionalPointAddition (this->pb, in_params, a, d, x_intermediary[0], y_intermediary[0] , x, y, x_ret[0], y_ret[0], coef[0], "x1, y1 + x2 , y2"));
     //boolean constrain coef[0]
     this->pb.add_r1cs_constraint(ConstraintT(coef[0], 1-coef[0], 0),
                            FMT(annotation_prefix, " boolean_r1cs_constraint canAdd"));
@@ -404,9 +401,9 @@ pointMultiplication::pointMultiplication(ProtoboardT &pb,
         this->pb.add_r1cs_constraint(ConstraintT(coef[i], 1-coef[i], 0),
                        FMT(annotation_prefix, " boolean_r1cs_constraint canAdd"));
         //double
-        this->doub[i].reset( new pointAddition (this->pb, a, d, x_ret[i-1], y_ret[i-1] , x_ret[i-1] , y_ret[i-1], x_intermediary[i], y_intermediary[i], "x1, y1 + x2 , y2"));
+        this->doub[i].reset( new pointAddition (this->pb, in_params, a, d, x_ret[i-1], y_ret[i-1] , x_ret[i-1] , y_ret[i-1], x_intermediary[i], y_intermediary[i], "x1, y1 + x2 , y2"));
         //add
-        this->add[i].reset( new conditionalPointAddition (this->pb, a, d, x_intermediary[i], y_intermediary[i] , x, y, x_ret[i], y_ret[i], coef[i], "x1, y1 + x2 , y2"));
+        this->add[i].reset( new conditionalPointAddition (this->pb, in_params, a, d, x_intermediary[i], y_intermediary[i] , x, y, x_ret[i], y_ret[i], coef[i], "x1, y1 + x2 , y2"));
     }
 }
 

@@ -48,30 +48,24 @@ public:
 
 class isOnCurve : public GadgetT {
 private:
-    /* no internal variables */
+    const jubjub_params &m_params;
+
 public:
+    const VariableT x;
+    const VariableT y;
 
-    VariableT x;
-    VariableT y;
-    VariableT a;
-    VariableT d;
     //intermeditate variables 
-    VariableT xx;
-    VariableT axx;
-    VariableT dxx;
-    VariableT yy;
-    VariableT dxxyy;
-    VariableT lhs;
-    VariableT rhs;
-
+    const VariableT xx;
+    const VariableT yy;
+    const VariableT lhs;
+    const VariableT rhs;
 
     std::string annotation_prefix = "isonCurve";
 
     isOnCurve(ProtoboardT &pb,
-                   /*const pb_linear_combination_array<FieldT> &bits,*/
-                   const VariableT &x, const VariableT &y, 
-                   const VariableT &a, const VariableT &d,
-                   const std::string &annotation_prefix);
+              const jubjub_params &in_params,
+              const VariableT &in_x, const VariableT &in_y,
+              const std::string &annotation_prefix);
 
     void generate_r1cs_constraints();
     void generate_r1cs_witness();
@@ -124,6 +118,8 @@ class pointAddition : public GadgetT {
 //greater than gadget
 private:
     /* no internal variables */
+    const jubjub_params& m_params;
+
 public:
     VariableT a;
     VariableT d;
@@ -153,6 +149,7 @@ public:
 
 
     pointAddition(ProtoboardT &pb,
+                    const jubjub_params& in_params,
                    /*const pb_linear_combination_array<FieldT> &bits,*/
                    const VariableT &a, const VariableT &d,
 
@@ -171,6 +168,8 @@ class conditionalPointAddition : public GadgetT {
 //greater than gadget
 private:
     /* no internal variables */
+    const jubjub_params& m_params;
+
 public:
     VariableT a;
     VariableT d;
@@ -199,7 +198,7 @@ public:
 
 
     conditionalPointAddition(ProtoboardT &pb,
-                   /*const pb_linear_combination_array<FieldT> &bits,*/
+                    const jubjub_params& in_params,
                    const VariableT &a, const VariableT &d,
                    const VariableT &x1, const VariableT &y1,
                    const VariableT &x2, const VariableT &y2,
@@ -246,7 +245,7 @@ public:
     std::vector<std::shared_ptr<conditionalPointAddition > > add; //double
 
     pointMultiplication(ProtoboardT &pb,
-                   /*const pb_linear_combination_array<FieldT> &bits,*/
+                   const jubjub_params& in_params,
                    const VariableT &a, const VariableT &d,
                    const VariableT &x_base, const VariableT &y_base,
                    const VariableArrayT &coef, const VariableArrayT x_ret,

@@ -46,17 +46,12 @@ fixed_base_mul::fixed_base_mul(
 				lookup_y.emplace_back(y);
 			}
 
-			const FieldT& x1 = start_x;
-			const FieldT& y1 = start_y;
-			const FieldT& x2 = x;
-			const FieldT& y2 = y;
-
 			// Affine addition
 			// TODO: move into library
-			const FieldT x1y2 = x1 * y2;
-			const FieldT y1x2 = y1 * x2;
-			const FieldT y1y2 = y1 * y2;
-			const FieldT x1x2 = x1 * x2;
+			const FieldT x1y2 = start_x * y;
+			const FieldT y1x2 = start_y * x;
+			const FieldT y1y2 = start_y * y;
+			const FieldT x1x2 = start_x * x;
 			const FieldT dx1x2y1y2 = in_params.d * x1x2 * y1y2;
 
 			x = (x1y2 + y1x2) * (FieldT::one() + dx1x2y1y2).inverse();

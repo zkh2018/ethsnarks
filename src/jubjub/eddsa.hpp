@@ -110,7 +110,7 @@ public:
 
     eddsa(
         ProtoboardT &pb,
-        //const pb_linear_combination_array<FieldT> &bits,
+        const jubjub_params &in_params,
         const VariableT &a, const VariableT &d,
         const VariableArrayT &pk_x, const VariableArrayT &pk_y,
         const VariableT &b_x, const VariableT &b_y,
