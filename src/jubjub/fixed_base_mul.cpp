@@ -1,10 +1,13 @@
 #include "jubjub/fixed_base_mul.hpp"
 
 namespace ethsnarks {
-	
+
+namespace jubjub {
+
+
 fixed_base_mul::fixed_base_mul(
 	ProtoboardT &in_pb,
-	const jubjub_params& in_params,
+	const Params& in_params,
 	const FieldT& in_base_x,
 	const FieldT& in_base_y,
 	const VariableArrayT in_scalar,
@@ -31,7 +34,7 @@ fixed_base_mul::fixed_base_mul(
 		// For each window, generate 4 points, in little endian:
 		// (0,0) = 0 = 0
 		// (1,0) = 1 = start 		# add
-		// (0,1) = 2 = 1+1			# double
+		// (0,1) = 2 = start+start	# double
 		// (1,1) = 3 = 2+start 		# double and add
 		for( int j = 0; j < window_size_items; j++ )
 		{
@@ -128,6 +131,10 @@ const VariableT& fixed_base_mul::result_x() {
 
 const VariableT& fixed_base_mul::result_y() {
 	return m_adders[ m_adders.size() - 1 ].result_y();
+}
+
+
+// namespace jubjub
 }
 
 // namespace ethsnarks

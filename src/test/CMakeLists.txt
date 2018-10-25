@@ -66,3 +66,11 @@ target_link_libraries(test_jubjub_add ethsnarks_common ethsnarks_jubjub)
 
 add_executable(test_jubjub_mul test_jubjub_mul.cpp)
 target_link_libraries(test_jubjub_mul ethsnarks_common ethsnarks_jubjub)
+
+
+add_executable(test_jubjub_dbl test_jubjub_dbl.cpp)
+target_link_libraries(test_jubjub_dbl ethsnarks_common ethsnarks_jubjub)
+
+
+add_executable(test_jubjub_mul_fixed test_jubjub_mul_fixed.cpp)
+target_link_libraries(test_jubjub_mul_fixed ethsnarks_common ethsnarks_jubjub)

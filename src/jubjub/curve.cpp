@@ -24,10 +24,12 @@
 namespace ethsnarks
 {
 
+namespace jubjub
+{
 
 isOnCurve::isOnCurve(
     ProtoboardT &in_pb,
-    const jubjub_params &in_params,
+    const Params &in_params,
     const VariableT &in_x, const VariableT &in_y,
     const std::string &annotation_prefix
 ) :
@@ -83,100 +85,11 @@ void isOnCurve::generate_r1cs_witness()
 }
 
 
-FasterPointAddition::FasterPointAddition(
-    ProtoboardT &in_pb,
-    const jubjub_params &in_params,
-    const VariableT in_X1,
-    const VariableT in_Y1,
-    const VariableT in_X2,
-    const VariableT in_Y2,
-    const std::string &annotation_prefix
-) :
-    GadgetT(in_pb, annotation_prefix),
-    m_params(in_params),
-    m_X1(in_X1), m_Y1(in_Y1),
-    m_X2(in_X2), m_Y2(in_Y2),
-    m_beta(make_variable(in_pb, FMT(annotation_prefix, ".beta"))),
-    m_gamma(make_variable(in_pb, FMT(annotation_prefix, ".gamma"))),
-    m_delta(make_variable(in_pb, FMT(annotation_prefix, ".delta"))),
-    m_epsilon(make_variable(in_pb, FMT(annotation_prefix, ".epsilon"))),
-    m_tau(make_variable(in_pb, FMT(annotation_prefix, ".tau"))),
-    m_X3(make_variable(in_pb, FMT(annotation_prefix, ".X3"))),
-    m_Y3(make_variable(in_pb, FMT(annotation_prefix, ".Y3")))
-{
-
-}
-
-
-void FasterPointAddition::generate_r1cs_constraints()
-{
-    this->pb.add_r1cs_constraint(
-        ConstraintT(m_X1, m_Y2, m_beta),
-            FMT(annotation_prefix, ".beta = X1 * Y2"));
-
-    this->pb.add_r1cs_constraint(
-        ConstraintT(m_Y1, m_X2, m_gamma),
-            FMT(annotation_prefix, ".gamma = Y1 * X2"));
-
-    this->pb.add_r1cs_constraint(
-        ConstraintT(m_Y1, m_Y2, m_delta),
-            FMT(annotation_prefix, ".delta = Y1 * Y2"));
-
-    this->pb.add_r1cs_constraint(
-        ConstraintT(m_X1, m_X2, m_epsilon),
-            FMT(annotation_prefix, ".epsilon = X1 * X2"));
-
-    this->pb.add_r1cs_constraint(
-        ConstraintT(m_delta, m_epsilon, m_tau),
-            FMT(annotation_prefix, ".tau = delta * epsilon"));
-
-    this->pb.add_r1cs_constraint(
-        ConstraintT(m_X3, 1 + (m_params.d*m_tau), m_beta + m_gamma),
-            FMT(annotation_prefix, ".x3 * (1 + (d*tau)) == (beta + gamma) "));
-
-    this->pb.add_r1cs_constraint(
-        ConstraintT(m_Y3, 1 - (m_params.d*m_tau), m_delta + ((-m_params.a)*m_epsilon)),
-            FMT(annotation_prefix, ".y3 * (1 - (d*tau)) == (delta + a*epsilon) "));
-}
-
-
-const VariableT& FasterPointAddition::result_x()
-{
-    return m_X3;
-}
-
-
-const VariableT& FasterPointAddition::result_y()
-{
-    return m_Y3;
-}
-
-
-void FasterPointAddition::generate_r1cs_witness()
-{
-    auto one = FieldT("1");
-
-    this->pb.val(m_beta) = this->pb.val(m_X1) * this->pb.val(m_Y2);
-
-    this->pb.val(m_gamma) = this->pb.val(m_Y1) * this->pb.val(m_X2);
-
-    this->pb.val(m_delta) = this->pb.val(m_Y1) * this->pb.val(m_Y2);
-
-    this->pb.val(m_epsilon) = this->pb.val(m_X1) * this->pb.val(m_X2);
-
-    this->pb.val(m_tau) = this->pb.val(m_delta) * this->pb.val(m_epsilon);
-
-    auto x3_rhs = (one + (m_params.d * this->pb.val(m_tau))).inverse();
-    this->pb.val(m_X3) = (this->pb.val(m_beta)+this->pb.val(m_gamma)) * x3_rhs;
-
-    auto y3_rhs = (one - (m_params.d * this->pb.val(m_tau))).inverse();
-    this->pb.val(m_Y3) = (this->pb.val(m_delta)+( -m_params.a * this->pb.val(m_epsilon))) * y3_rhs;
-}
 
 
 pointAddition::pointAddition(
     ProtoboardT &pb,
-    const jubjub_params& in_params,
+    const Params& in_params,
     /*const pb_linear_combination_array<FieldT> &bits,*/
     const VariableT &a, const VariableT &d,
     const VariableT &x1, const VariableT &y1,
@@ -211,22 +124,35 @@ void pointAddition::generate_r1cs_constraints()
   
     // where x , y are curve points
     // and a , d are curve parameters.
-    this->pb.add_r1cs_constraint(ConstraintT({y1} , {x2}, {y1x2}),
-                           FMT("find y1*x2 == y1x2", ""));
-    this->pb.add_r1cs_constraint(ConstraintT({x1} , {y2}, {x1y2}),
-                           FMT("find x1y2 == x1y2", ""));
-    this->pb.add_r1cs_constraint(ConstraintT({x1} , {x2}, {x1x2}),
-                           FMT("x1*x2 == x1x2", ""));
-    this->pb.add_r1cs_constraint(ConstraintT({y1} , {y2}, {y1y2}),
-                           FMT(annotation_prefix, "find y1*y2= y1y2"));
-    this->pb.add_r1cs_constraint(ConstraintT({x1x2} , {y1y2}, {x1x2y1y2}),
-                           FMT("find lhs", ""));
+    this->pb.add_r1cs_constraint(
+        ConstraintT({y1} , {x2}, {y1x2}),
+        FMT("find y1*x2 == y1x2", ""));
+
+    this->pb.add_r1cs_constraint(
+        ConstraintT({x1} , {y2}, {x1y2}),
+        FMT("find x1y2 == x1y2", ""));
+
+    this->pb.add_r1cs_constraint(
+        ConstraintT({x1} , {x2}, {x1x2}),
+        FMT("x1*x2 == x1x2", ""));
+
+    this->pb.add_r1cs_constraint(
+        ConstraintT({y1} , {y2}, {y1y2}),
+        FMT(annotation_prefix, "find y1*y2= y1y2"));
+
+    this->pb.add_r1cs_constraint(
+        ConstraintT({x1x2} , {y1y2}, {x1x2y1y2}),
+        FMT("find lhs", ""));
+
     this->pb.add_r1cs_constraint(ConstraintT({d} , {x1x2y1y2}, {dx1x2y1y2}),
                            FMT("confirm dx1x2y1y2", ""));
+
     this->pb.add_r1cs_constraint(ConstraintT({a} , {x1x2}, {ax1x2}),
                            FMT("confirm ax1x2", ""));
+
     this->pb.add_r1cs_constraint(ConstraintT({y3} , {1, -dx1x2y1y2}  ,  {y1y2 , -ax1x2}),
                            FMT("confirm y3", ""));
+
     this->pb.add_r1cs_constraint(ConstraintT({x3} , {1, dx1x2y1y2}, {x1y2, y1x2}),
                            FMT("confirm x3", ""));
 
@@ -278,7 +204,7 @@ void pointAddition::generate_r1cs_witness()
 
 
 conditionalPointAddition::conditionalPointAddition(ProtoboardT &pb,
-                    const jubjub_params& in_params,
+                    const Params& in_params,
                    const VariableT &a, const VariableT &d,
                    const VariableT &x1, const VariableT &y1,
                    const VariableT &x2, const VariableT &y2,
@@ -362,7 +288,7 @@ void conditionalPointAddition::generate_r1cs_witness()
 
 pointMultiplication::pointMultiplication(
     ProtoboardT &pb,
-    const jubjub_params& in_params,
+    const Params& in_params,
     const VariableT &a, const VariableT &d,
     const VariableT &x, const VariableT &y,
     const VariableArrayT &coef,
@@ -432,6 +358,9 @@ void pointMultiplication::generate_r1cs_witness()
     }
 }
 
+
+// namespace jubjub
+}
 
 // namespace ethsnarks
 }

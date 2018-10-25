@@ -32,12 +32,12 @@ namespace ethsnarks {
 
 void tests()
 {
-    std::shared_ptr<isOnCurve> jubjub_isOnCurve;
-    std::shared_ptr<pointAddition> jubjub_pointAddition;
-    std::shared_ptr<isOnCurve> jubjub_isOnCurveX3Y3;
+    std::shared_ptr<jubjub::isOnCurve> jubjub_isOnCurve;
+    std::shared_ptr<jubjub::pointAddition> jubjub_pointAddition;
+    std::shared_ptr<jubjub::isOnCurve> jubjub_isOnCurveX3Y3;
 
     ProtoboardT pb;
-    const jubjub_params params;
+    const jubjub::Params params;
 
     VariableT x;
     VariableT y;
@@ -90,9 +90,9 @@ void tests()
 
 
 
-    jubjub_isOnCurve.reset( new isOnCurve (pb, params, x, y, "Confirm x, y is on the twiseted edwards curve"));
-    jubjub_pointAddition.reset( new pointAddition (pb, params, a, d, x1, y1 , x2 , y2, x3, y3 , "x1, y1 + x2 , y2"));
-    jubjub_isOnCurveX3Y3.reset( new isOnCurve (pb, params, x3, y3, "confirm x3, y3 is on the curve"));
+    jubjub_isOnCurve.reset( new jubjub::isOnCurve (pb, params, x, y, "Confirm x, y is on the twiseted edwards curve"));
+    jubjub_pointAddition.reset( new jubjub::pointAddition (pb, params, a, d, x1, y1 , x2 , y2, x3, y3 , "x1, y1 + x2 , y2"));
+    jubjub_isOnCurveX3Y3.reset( new jubjub::isOnCurve (pb, params, x3, y3, "confirm x3, y3 is on the curve"));
 
     jubjub_isOnCurve->generate_r1cs_constraints();
     jubjub_pointAddition->generate_r1cs_constraints();
@@ -116,8 +116,8 @@ void tests()
 
 void test_pointAddition ()
 {
-    std::shared_ptr<pointAddition> jubjub_pointAddition;
-    const jubjub_params params;
+    std::shared_ptr<jubjub::pointAddition> jubjub_pointAddition;
+    const jubjub::Params params;
 
     ProtoboardT pb;
 
@@ -171,7 +171,7 @@ void test_pointAddition ()
     pb.val(y_zero) = FieldT("1");
 
 
-    jubjub_pointAddition.reset( new pointAddition (pb, params, a, d, x1, y1 , x2 , y2, x3, y3 , "x1, y1 + x2 , y2"));
+    jubjub_pointAddition.reset( new jubjub::pointAddition (pb, params, a, d, x1, y1 , x2 , y2, x3, y3 , "x1, y1 + x2 , y2"));
     jubjub_pointAddition->generate_r1cs_constraints();
     jubjub_pointAddition->generate_r1cs_witness();
 
@@ -194,10 +194,10 @@ void test_pointAddition ()
 
 void test_conditional_addition()
 { 
-    std::shared_ptr<conditionalPointAddition> jubjub_conditionalPointAddition;
-    std::shared_ptr<conditionalPointAddition> jubjub_conditionalPointAddition1;
+    std::shared_ptr<jubjub::conditionalPointAddition> jubjub_conditionalPointAddition;
+    std::shared_ptr<jubjub::conditionalPointAddition> jubjub_conditionalPointAddition1;
 
-    const jubjub_params params;
+    const jubjub::Params params;
 
     ProtoboardT pb;
 
@@ -241,13 +241,13 @@ void test_conditional_addition()
 
     //this->add[0].reset( new conditionalPointAddition (this->pb, a, d, x_zero, y_zero , x_zero, y_zero, x_ret[1], y_ret[1], coef[0], "x1, y1 + x2 , y2"));
 
-    jubjub_conditionalPointAddition.reset( new conditionalPointAddition (pb, params, a, d, x, y, x, y ,x_ret[0], y_ret[0],coef[0], " "));
+    jubjub_conditionalPointAddition.reset( new jubjub::conditionalPointAddition (pb, params, a, d, x, y, x, y ,x_ret[0], y_ret[0],coef[0], " "));
     jubjub_conditionalPointAddition->generate_r1cs_constraints();
     jubjub_conditionalPointAddition->generate_r1cs_witness();
 
 
 
-    jubjub_conditionalPointAddition.reset( new conditionalPointAddition (pb, params, a, d, x, y, x, y ,x_ret[1], y_ret[1],coef[1], " "));
+    jubjub_conditionalPointAddition.reset( new jubjub::conditionalPointAddition (pb, params, a, d, x, y, x, y ,x_ret[1], y_ret[1],coef[1], " "));
     jubjub_conditionalPointAddition->generate_r1cs_constraints();
     jubjub_conditionalPointAddition->generate_r1cs_witness();
 
@@ -264,10 +264,10 @@ void test_conditional_addition()
 
 void test_pointMultiplication()
 {
-    std::shared_ptr<pointMultiplication> jubjub_pointMultiplication;
+    std::shared_ptr<jubjub::pointMultiplication> jubjub_pointMultiplication;
     ProtoboardT pb;
 
-    const jubjub_params params;
+    const jubjub::Params params;
 
     VariableT x;
     VariableT y;
@@ -303,7 +303,7 @@ void test_pointMultiplication()
 
     coef.fill_with_bits(pb, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 , 1, 1, 1, 1});
 
-    jubjub_pointMultiplication.reset( new pointMultiplication (pb, params, a, d, x, y, coef,x_ret, y_ret, "jubjub_pointMultiplication", 253));
+    jubjub_pointMultiplication.reset( new jubjub::pointMultiplication (pb, params, a, d, x, y, coef,x_ret, y_ret, "jubjub_pointMultiplication", 253));
     jubjub_pointMultiplication->generate_r1cs_constraints();
     jubjub_pointMultiplication->generate_r1cs_witness();
 
@@ -338,9 +338,9 @@ void test_pointMultiplication()
 
 void test_pointMultiplication2()
 {
-    std::shared_ptr<pointMultiplication> jubjub_pointMultiplication;
+    std::shared_ptr<jubjub::pointMultiplication> jubjub_pointMultiplication;
     ProtoboardT pb;
-    const jubjub_params params;
+    const jubjub::Params params;
 
     VariableT x;
     VariableT y;
@@ -374,7 +374,7 @@ void test_pointMultiplication2()
 
     coef.fill_with_bits(pb, {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1});
 
-    jubjub_pointMultiplication.reset( new pointMultiplication (pb, params, a, d, x, y, coef,x_ret, y_ret, " ", 253));
+    jubjub_pointMultiplication.reset( new jubjub::pointMultiplication (pb, params, a, d, x, y, coef,x_ret, y_ret, " ", 253));
     jubjub_pointMultiplication->generate_r1cs_constraints();
     jubjub_pointMultiplication->generate_r1cs_witness();
 
@@ -389,8 +389,8 @@ template<typename HashT>
 void test_eddsa()
 {
     ProtoboardT pb;
-    std::shared_ptr<eddsa<HashT>> jubjub_eddsa;
-    const jubjub_params params;
+    std::shared_ptr<jubjub::eddsa<HashT>> jubjub_eddsa;
+    const jubjub::Params params;
 
     VariableT base_x;
     VariableT base_y;
@@ -465,7 +465,7 @@ void test_eddsa()
     r_x_bin.fill_with_bits(pb,  { 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0 });
     r_y_bin.fill_with_bits(pb,  { 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0 });
 */
-    jubjub_eddsa.reset(new eddsa<HashT> (pb, params, a, d, pk_x_bin, pk_y_bin, base_x,base_y,r_x_bin, r_y_bin, message, S));
+    jubjub_eddsa.reset(new jubjub::eddsa<HashT> (pb, params, a, d, pk_x_bin, pk_y_bin, base_x,base_y,r_x_bin, r_y_bin, message, S));
     jubjub_eddsa->generate_r1cs_constraints();
     jubjub_eddsa->generate_r1cs_witness();
     assert(pb.is_satisfied());
@@ -477,8 +477,8 @@ void test_eddsa()
 void test_pedersen()
 {
     ProtoboardT pb;
-    std::shared_ptr<pedersen_commitment> jubjub_pedersen_commitment;
-    const jubjub_params params;
+    std::shared_ptr<jubjub::pedersen_commitment> jubjub_pedersen_commitment;
+    const jubjub::Params params;
 
     VariableT base_x;
     VariableT base_y;
@@ -534,7 +534,7 @@ void test_pedersen()
     r.fill_with_bits(pb, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1});
 
 
-    jubjub_pedersen_commitment.reset(new pedersen_commitment (pb, params, a,d, base_x, base_y, h_x, h_y,commitment_x, commitment_y,m, r));
+    jubjub_pedersen_commitment.reset(new jubjub::pedersen_commitment (pb, params, a,d, base_x, base_y, h_x, h_y,commitment_x, commitment_y,m, r));
     jubjub_pedersen_commitment->generate_r1cs_constraints();
     jubjub_pedersen_commitment->generate_r1cs_witness();
     assert(pb.is_satisfied());

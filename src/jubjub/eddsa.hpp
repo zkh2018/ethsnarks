@@ -33,6 +33,9 @@
 
 namespace ethsnarks {
 
+namespace jubjub {
+
+
 using libsnark::multipacking_gadget;
 using libsnark::block_variable;
 using libsnark::digest_variable;
@@ -110,7 +113,7 @@ public:
 
     eddsa(
         ProtoboardT &pb,
-        const jubjub_params &in_params,
+        const Params &in_params,
         const VariableT &a, const VariableT &d,
         const VariableArrayT &pk_x, const VariableArrayT &pk_y,
         const VariableT &b_x, const VariableT &b_y,
@@ -121,6 +124,10 @@ public:
     void generate_r1cs_constraints();
     void generate_r1cs_witness();
 };
+
+
+// namespace jubjub
+}
 
 // namespace ethsnarks
 }

@@ -20,13 +20,14 @@
 #include "jubjub/pedersen_commitment.hpp"
 
 
-namespace ethsnarks
-{
+namespace ethsnarks {
+
+namespace jubjub {
 
 
 pedersen_commitment::pedersen_commitment(
     ProtoboardT &pb,
-    const jubjub_params& in_params,
+    const Params& in_params,
     const VariableT &a, const VariableT &d,
     const VariableT &base_x, const VariableT &base_y,
     const VariableT &H_x, const VariableT &H_y,
@@ -99,6 +100,10 @@ void  pedersen_commitment::generate_r1cs_witness()
     for (uint i = 0 ; i < 253; i++) { 
         std::cout << i << " i  " << this->pb.lc_val(S[i]) << std::endl;
     }*/
+}
+
+
+// namespace jubjub
 }
 
 // namespace ethsnarks

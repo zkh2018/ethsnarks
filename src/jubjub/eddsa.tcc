@@ -21,11 +21,13 @@
 
 namespace ethsnarks {
 
+namespace jubjub {
+
 
 template<typename HashT>
 eddsa<HashT>::eddsa(
     ProtoboardT &pb,
-    const jubjub_params &in_params,
+    const Params& in_params,
     const VariableT &a, const VariableT &d,
     const VariableArrayT &pk_x, const VariableArrayT &pk_y,
     const VariableT &b_x, const VariableT &b_y,
@@ -235,6 +237,9 @@ void eddsa<HashT>::generate_r1cs_witness()
     */
 }
 
+
+// namespace jubjub
+}
 
 // namespace ethsnarks
 }

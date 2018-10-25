@@ -25,30 +25,17 @@
 
 #include "ethsnarks.hpp"
 
+#include "jubjub/adder.hpp"
+#include "jubjub/params.hpp"
+
 namespace ethsnarks {
 
-
-class jubjub_params {
-public:
-    // Edwards parameters
-    const FieldT a;
-    const FieldT d;
-
-    // Montgomery parameters
-    const FieldT A;
-
-    jubjub_params() :
-        a("168700"),
-        d("168696"),
-        A("168698")
-    {}
-};
-
+namespace jubjub {
 
 
 class isOnCurve : public GadgetT {
 private:
-    const jubjub_params &m_params;
+    const Params &m_params;
 
 public:
     const VariableT x;
@@ -63,7 +50,7 @@ public:
     std::string annotation_prefix = "isonCurve";
 
     isOnCurve(ProtoboardT &pb,
-              const jubjub_params &in_params,
+              const Params &in_params,
               const VariableT &in_x, const VariableT &in_y,
               const std::string &annotation_prefix);
 
@@ -73,52 +60,11 @@ public:
 };
 
 
-class FasterPointAddition : public GadgetT {
-public:
-    const jubjub_params &m_params;
-
-    // First input point
-    const VariableT m_X1;
-    const VariableT m_Y1;
-
-    // Second input point
-    const VariableT m_X2;
-    const VariableT m_Y2;
-
-    // Intermediate variables
-    const VariableT m_beta;
-    const VariableT m_gamma;
-    const VariableT m_delta;
-    const VariableT m_epsilon;
-    const VariableT m_tau;
-    const VariableT m_X3;
-    const VariableT m_Y3;
-
-    FasterPointAddition(
-        ProtoboardT &in_pb,
-        const jubjub_params &in_params,
-        const VariableT in_X1,
-        const VariableT in_Y1,
-        const VariableT in_X2,
-        const VariableT in_Y2,
-        const std::string &annotation_prefix
-    );
-
-    const VariableT &result_x();
-
-    const VariableT &result_y();
-
-    void generate_r1cs_constraints();
-
-    void generate_r1cs_witness();
-};
-
-
 class pointAddition : public GadgetT {
 //greater than gadget
 private:
     /* no internal variables */
-    const jubjub_params& m_params;
+    const Params& m_params;
 
 public:
     VariableT a;
@@ -149,7 +95,7 @@ public:
 
 
     pointAddition(ProtoboardT &pb,
-                    const jubjub_params& in_params,
+                    const Params& in_params,
                    /*const pb_linear_combination_array<FieldT> &bits,*/
                    const VariableT &a, const VariableT &d,
 
@@ -168,7 +114,7 @@ class conditionalPointAddition : public GadgetT {
 //greater than gadget
 private:
     /* no internal variables */
-    const jubjub_params& m_params;
+    const Params& m_params;
 
 public:
     VariableT a;
@@ -198,7 +144,7 @@ public:
 
 
     conditionalPointAddition(ProtoboardT &pb,
-                    const jubjub_params& in_params,
+                    const Params& in_params,
                    const VariableT &a, const VariableT &d,
                    const VariableT &x1, const VariableT &y1,
                    const VariableT &x2, const VariableT &y2,
@@ -245,7 +191,7 @@ public:
     std::vector<std::shared_ptr<conditionalPointAddition > > add; //double
 
     pointMultiplication(ProtoboardT &pb,
-                   const jubjub_params& in_params,
+                   const Params& in_params,
                    const VariableT &a, const VariableT &d,
                    const VariableT &x_base, const VariableT &y_base,
                    const VariableArrayT &coef, const VariableArrayT x_ret,
@@ -255,6 +201,10 @@ public:
     void generate_r1cs_constraints();
     void generate_r1cs_witness();
 };
+
+
+// namespace jubjub
+}
 
 // namespace ethsnarks
 }
