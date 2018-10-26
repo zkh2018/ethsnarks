@@ -1,11 +1,13 @@
-#ifndef ETHSNARKS_JUBJUB_FIXEDMULT_HPP_
-#define ETHSNARKS_JUBJUB_FIXEDMULT_HPP_
+#ifndef JUBJUB_FIXEDMULT_HPP_
+#define JUBJUB_FIXEDMULT_HPP_
 
-#include "ethsnarks.hpp"
-#include "jubjub/curve.hpp"
 #include "gadgets/lookup_2bit.hpp"
+#include "jubjub/adder.hpp"
+
 
 namespace ethsnarks {
+
+namespace jubjub {
 
 
 /**
@@ -29,13 +31,13 @@ class fixed_base_mul : public GadgetT {
 public:
 	const VariableArrayT m_scalar;
 
-	std::vector<FasterPointAddition> m_adders;
+	std::vector<PointAdder> m_adders;
 	std::vector<lookup_2bit_gadget> m_windows_x;
 	std::vector<lookup_2bit_gadget> m_windows_y;
 
 	fixed_base_mul(
 		ProtoboardT &in_pb,
-		const jubjub_params& in_params,
+		const Params& in_params,
 		const FieldT& in_base_x,
 		const FieldT& in_base_y,
 		const VariableArrayT in_scalar,
@@ -50,9 +52,12 @@ public:
 
 	const VariableT& result_y();
 };
-	
+
+// namespace jubjub
+}
+
 // namespace ethsnarks
 }
 
-// ETHSNARKS_JUBJUB_FIXEDMULT_HPP_
+// JUBJUB_FIXEDMULT_HPP_
 #endif

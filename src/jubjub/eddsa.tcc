@@ -21,11 +21,13 @@
 
 namespace ethsnarks {
 
+namespace jubjub {
+
 
 template<typename HashT>
 eddsa<HashT>::eddsa(
     ProtoboardT &pb,
-    //const pb_linear_combination_array<FieldT> &bits,
+    const Params& in_params,
     const VariableT &a, const VariableT &d,
     const VariableArrayT &pk_x, const VariableArrayT &pk_y,
     const VariableT &b_x, const VariableT &b_y,
@@ -116,12 +118,12 @@ eddsa<HashT>::eddsa(
   
     //take the first 253 bits of the hash
     h_bits.insert(h_bits.end(), h->bits.begin() , h->bits.end()); 
-    jubjub_isOnCurve1.reset( new isOnCurve (pb, pk_x_packed[0], pk_y_packed[0], a, d, "Confirm public key is on the twiseted edwards curve"));
-    jubjub_isOnCurve2.reset( new isOnCurve (pb, r_x_packed[0], r_y_packed[0], a, d, "Confirm r point is on the twiseted edwards curve"));
+    jubjub_isOnCurve1.reset( new isOnCurve (pb, in_params, pk_x_packed[0], pk_y_packed[0], "Confirm public key is on the twiseted edwards curve"));
+    jubjub_isOnCurve2.reset( new isOnCurve (pb, in_params, r_x_packed[0], r_y_packed[0], "Confirm r point is on the twiseted edwards curve"));
 
-    jubjub_pointMultiplication_lhs.reset( new pointMultiplication (pb, a, d, b_x, b_y, S, lhs_x, lhs_y, " lhs check ", 256));
-    jubjub_pointMultiplication_rhs.reset( new pointMultiplication (pb, a, d, pk_x_packed[0], pk_y_packed[0], h_bits, rhs_mul_x, rhs_mul_y, "rhs mul ", 253));
-    jubjub_pointAddition.reset( new pointAddition (pb, a, d, rhs_mul_x[252], rhs_mul_y[252] , r_x_packed[0] , r_y_packed[0], rhs_x, rhs_y , "rhs addition"));
+    jubjub_pointMultiplication_lhs.reset( new pointMultiplication (pb, in_params, a, d, b_x, b_y, S, lhs_x, lhs_y, " lhs check ", 256));
+    jubjub_pointMultiplication_rhs.reset( new pointMultiplication (pb, in_params, a, d, pk_x_packed[0], pk_y_packed[0], h_bits, rhs_mul_x, rhs_mul_y, "rhs mul ", 253));
+    jubjub_pointAddition.reset( new pointAddition (pb, in_params, a, d, rhs_mul_x[252], rhs_mul_y[252] , r_x_packed[0] , r_y_packed[0], rhs_x, rhs_y , "rhs addition"));
 }
 
 
@@ -235,6 +237,9 @@ void eddsa<HashT>::generate_r1cs_witness()
     */
 }
 
+
+// namespace jubjub
+}
 
 // namespace ethsnarks
 }

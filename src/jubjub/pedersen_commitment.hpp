@@ -27,6 +27,8 @@
 
 namespace ethsnarks {
 
+namespace jubjub {
+
 
 class  pedersen_commitment : public GadgetT {
 
@@ -75,7 +77,7 @@ public:
 
 
      pedersen_commitment(ProtoboardT &pb,
-                   //const pb_linear_combination_array<FieldT> &bits,
+                   const Params& in_params,
                    const VariableT &a, const VariableT &d,
                    const VariableT &base_x, const VariableT &base_y,
                    const VariableT &H_x, const VariableT &H_y,
@@ -86,6 +88,10 @@ public:
     void generate_r1cs_constraints();
     void generate_r1cs_witness();
 };
+
+
+// namespace jubjub
+}
 
 // namespace ethsnarks
 }

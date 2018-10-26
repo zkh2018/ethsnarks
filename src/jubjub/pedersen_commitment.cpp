@@ -20,13 +20,14 @@
 #include "jubjub/pedersen_commitment.hpp"
 
 
-namespace ethsnarks
-{
+namespace ethsnarks {
+
+namespace jubjub {
 
 
 pedersen_commitment::pedersen_commitment(
     ProtoboardT &pb,
-    //const pb_linear_combination_array<FieldT> &bits,
+    const Params& in_params,
     const VariableT &a, const VariableT &d,
     const VariableT &base_x, const VariableT &base_y,
     const VariableT &H_x, const VariableT &H_y,
@@ -53,14 +54,14 @@ pedersen_commitment::pedersen_commitment(
     res_y.allocate(pb, "y_zero");
 
     // make sure both points are on the twisted edwards cruve
-    jubjub_isOnCurve1.reset( new isOnCurve (pb, base_x,base_y, a, d, "Confirm x, y is on the twiseted edwards curve"));
-    jubjub_isOnCurve2.reset( new isOnCurve (pb, H_x, H_y, a, d, "Confirm x, y is on the twiseted edwards curve"));
+    jubjub_isOnCurve1.reset( new isOnCurve (pb, in_params, base_x,base_y, "Confirm x, y is on the twiseted edwards curve"));
+    jubjub_isOnCurve2.reset( new isOnCurve (pb, in_params, H_x, H_y, "Confirm x, y is on the twiseted edwards curve"));
 
     // base * m
-    jubjub_pointMultiplication_lhs.reset( new pointMultiplication (pb, a, d, base_x, base_y, m, lhs_x, lhs_y, " lhs check ", 253));
+    jubjub_pointMultiplication_lhs.reset( new pointMultiplication (pb, in_params, a, d, base_x, base_y, m, lhs_x, lhs_y, " lhs check ", 253));
     // h*r
-    jubjub_pointMultiplication_rhs.reset( new pointMultiplication (pb, a, d, H_x, H_y, r, rhs_x, rhs_y, "rhs mul ", 253));
-    jubjub_pointAddition.reset( new pointAddition (pb, a, d, rhs_x[252], rhs_y[252] , lhs_x[252] , lhs_y[252], res_x, res_y , "rhs addition"));
+    jubjub_pointMultiplication_rhs.reset( new pointMultiplication (pb, in_params, a, d, H_x, H_y, r, rhs_x, rhs_y, "rhs mul ", 253));
+    jubjub_pointAddition.reset( new pointAddition (pb, in_params, a, d, rhs_x[252], rhs_y[252] , lhs_x[252] , lhs_y[252], res_x, res_y , "rhs addition"));
 }
 
 
@@ -99,6 +100,10 @@ void  pedersen_commitment::generate_r1cs_witness()
     for (uint i = 0 ; i < 253; i++) { 
         std::cout << i << " i  " << this->pb.lc_val(S[i]) << std::endl;
     }*/
+}
+
+
+// namespace jubjub
 }
 
 // namespace ethsnarks

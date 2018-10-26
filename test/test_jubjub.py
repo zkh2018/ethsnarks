@@ -26,7 +26,8 @@ class TestJubjub(unittest.TestCase):
 			d = p.double().as_point()
 			q = p.as_mont()
 			r = q.as_point()
-			#self.assertEqual(p, r)
+			self.assertEqual(p, r)
+			self.assertEqual(d, p.double())
 			self.assertTrue(r.valid())
 			self.assertTrue(q.valid())
 
