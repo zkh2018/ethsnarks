@@ -48,6 +48,16 @@ bin/miximus_genKeys: build/Makefile
 build/src/libmiximus.$(DLL_EXT): build/Makefile
 	make -C build
 
+cmake-debug: build
+	cd build && cmake -DCMAKE_BUILD_TYPE=Debug ..
+
+cmake-release: build
+	cd build && cmake -DCMAKE_BUILD_TYPE=Release ..
+
+release: cmake-release all
+
+debug: cmake-debug all
+
 build/Makefile: build CMakeLists.txt
 	cd build && cmake ..
 
@@ -74,6 +84,13 @@ cxx-tests:
 	./bin/test_r1cs_gg_ppzksnark_zok
 	./bin/test_shamir_poly
 	./bin/test_sha256_full_gadget
+	./bin/test_lookup_2bit
+	./bin/test_subadd > /dev/null
+	./bin/test_jubjub
+	./bin/test_jubjub_add
+	./bin/test_jubjub_dbl
+	./bin/test_jubjub_mul
+	./bin/test_jubjub_mul_fixed
 
 	time ./bin/hashpreimage_cli genkeys zksnark_element/hpi.pk.raw zksnark_element/hpi.vk.json
 	ls -lah zksnark_element/hpi.pk.raw
@@ -114,10 +131,10 @@ $(PINOCCHIO_BUILD)/%.arith: examples/pinocchio/%.c
 $(PINOCCHIO_BUILD)/%.json: examples/pinocchio/%.c
 	$(PINOCCHIO) --json $@ $<
 
+
 #######################################################################
 
-
-lint: python-pyflakes python-pylint cxx-lint
+lint: python-pyflakes python-pylint cxx-lint solidity-lint
 
 python-pyflakes:
 	$(PYTHON) -mpyflakes $(NAME)
@@ -146,13 +163,20 @@ requirements-dev:
 	$(PYTHON) -m pip install $(PIP_ARGS) -r requirements-dev.txt
 
 fedora-dependencies:
-	dnf install procps-ng-devel gmp-devel boost-devel cmake g++ python3-scipy python3-pip
+	dnf install procps-ng-devel gmp-devel boost-devel cmake g++ python3-pip
 
 ubuntu-dependencies:
-	apt-get install cmake make g++ libgmp-dev libboost-all-dev libprocps-dev python3-pip python3-scipy
+	apt-get install cmake make g++ libgmp-dev libboost-all-dev libprocps-dev python3-pip
 
 mac-dependencies:
 	brew install pkg-config boost cmake gmp openssl || true
+
+
+#######################################################################
+
+
+solidity-lint:
+	$(NPM) run lint
 
 
 #######################################################################
@@ -172,6 +196,9 @@ $(GANACHE): node_modules
 .PHONY: truffle-test
 truffle-test: $(TRUFFLE)
 	$(NPM) run test
+
+truffle-migrate: $(TRUFFLE)
+	$(TRUFFLE) migrate
 
 truffle-compile: $(TRUFFLE)
 	$(TRUFFLE) compile

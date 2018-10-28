@@ -105,7 +105,7 @@ void CircuitReader::parseInputs( const char *inputsFilepath )
 	string line;
 
 	if (!inputfs.good()) {
-		std::cerr << "Unable to open input file" << inputsFilepath << std::endl;
+		std::cerr << "Unable to open input file: " << inputsFilepath << std::endl;
 		exit(-1);
 	}
 	else {
@@ -568,7 +568,7 @@ void CircuitReader::addSplitConstraint(const InputWires& inputs, const OutputWir
 
 	for( size_t i = 0; i < outputs.size(); i++)
 	{
-		auto &out_bit_var = varGet(outputs[i], FMT("bit_", "%zu", i));
+		auto &out_bit_var = varGet(outputs[i], FMT("split.output", "[%d][%zu]", outputs[i], i));
 
 		generate_boolean_r1cs_constraint<FieldT>(pb, out_bit_var);
 
@@ -577,7 +577,10 @@ void CircuitReader::addSplitConstraint(const InputWires& inputs, const OutputWir
 		two_i += two_i;
 	}
 
-	pb.add_r1cs_constraint(ConstraintT(varGet(inputs[0]), 1, sum), "split result");
+	pb.add_r1cs_constraint(
+		ConstraintT(
+			varGet(inputs[0], FMT("split.input", "[%d]", inputs[0])), 1, sum),
+			"split result");
 }
 
 
@@ -589,11 +592,14 @@ void CircuitReader::addPackConstraint(const InputWires& inputs, const OutputWire
 
 	for( size_t i = 0; i < inputs.size(); i++ )
 	{
-		sum.add_term(varGet(inputs[i]) * two_i);
+		sum.add_term(varGet(inputs[i], FMT("pack.input", "[%d]", inputs[i])) * two_i);
 		two_i += two_i;
 	}
 
-	pb.add_r1cs_constraint(ConstraintT(varGet(outputs[0]), 1, sum), "pack");
+	pb.add_r1cs_constraint(
+		ConstraintT(
+			varGet(outputs[0], FMT("pack.output", "[%d]", outputs[0])), 1, sum),
+			"pack");
 }
 
 

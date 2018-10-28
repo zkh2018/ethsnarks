@@ -8,7 +8,7 @@ namespace ethsnarks {
 
 bool stub_verify( const char *vk_json, const char *proof_json );
 
-int stub_main_verify( const char *prog_name, int argc, char **argv );
+int stub_main_verify( const char *prog_name, int argc, const char **argv );
 
 bool stub_test_proof_verify( const ProtoboardT &in_pb );
 

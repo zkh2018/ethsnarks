@@ -51,7 +51,7 @@ int stub_genkeys_from_pb( ProtoboardT& pb, const char *pk_file, const char *vk_f
 }
 
 
-int stub_main_verify( const char *prog_name, int argc, char **argv )
+int stub_main_verify( const char *prog_name, int argc, const char **argv )
 {
     if( argc < 3 )
     {

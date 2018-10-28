@@ -24,7 +24,6 @@ The number of rounds for constructing the keyed permutation is
 from __future__ import print_function
 
 import math
-import struct
 from binascii import unhexlify
 from random import randint
 
@@ -104,21 +103,6 @@ def make_constants_cxx(name, n):
     return _constants_cxx_format(*make_constants(name, n))
 
 
-def powmod(a, b, n):
-    """Modulo exponentiation"""
-    c = 0
-    f = 1
-    k = int(math.log(b, 2))
-    while k >= 0:
-        c *= 2
-        f = (f*f)%n
-        if b & (1 << k):
-            c += 1
-            f = (f*a) % n
-        k -= 1
-    return f
-
-
 def LongsightL(x, k, C, R, e, p):
     """
     @param x input
@@ -139,7 +123,7 @@ def LongsightL(x, k, C, R, e, p):
 
     for i, C_i in enumerate([0] + C):
         t = (x_i + k + C_i) % p
-        x_i = powmod(t, e, p)
+        x_i = pow(t, e, p)
 
     y = (x_i + k) % p
 
@@ -197,4 +181,4 @@ def LongsightL12p5_MP(M, IV):
 
 
 if __name__ == "__main__":
-    print(make_constants_cxx_L("LongsightL", 12, 5))
+    print(make_constants_cxx("LongsightL", 12))

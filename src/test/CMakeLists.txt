@@ -1,11 +1,16 @@
+add_executable(benchmark_mpz_mul benchmark_mpz_mul.cpp)
+target_link_libraries(benchmark_mpz_mul ff)
 
+add_executable(benchmark_pairing benchmark_pairing.cpp)
+target_link_libraries(benchmark_pairing ff)
 
 add_executable(test_vk_raw2json test_vk_raw2json.cpp)
 target_link_libraries(test_vk_raw2json ethsnarks_common)
 
 
-add_executable(test_shootout test_shootout.cpp)
-target_link_libraries(test_shootout ff)
+add_executable(test_lookup_2bit test_lookup_2bit.cpp)
+target_link_libraries(test_lookup_2bit ethsnarks_common)
+
 
 add_executable(test_load_proofkey test_load_proofkey.cpp)
 target_link_libraries(test_load_proofkey ethsnarks_common)
@@ -46,3 +51,26 @@ target_link_libraries(test_longsightl ethsnarks_common)
 add_executable(test_longsightl_hash_mp test_longsightl_hash_mp.cpp)
 target_link_libraries(test_longsightl_hash_mp ethsnarks_common)
 
+
+add_executable(test_subadd test_subadd.cpp)
+target_link_libraries(test_subadd ethsnarks_common)
+
+
+add_executable(test_jubjub test_jubjub.cpp)
+target_link_libraries(test_jubjub ethsnarks_common ethsnarks_jubjub)
+
+
+add_executable(test_jubjub_add test_jubjub_add.cpp)
+target_link_libraries(test_jubjub_add ethsnarks_common ethsnarks_jubjub)
+
+
+add_executable(test_jubjub_mul test_jubjub_mul.cpp)
+target_link_libraries(test_jubjub_mul ethsnarks_common ethsnarks_jubjub)
+
+
+add_executable(test_jubjub_dbl test_jubjub_dbl.cpp)
+target_link_libraries(test_jubjub_dbl ethsnarks_common ethsnarks_jubjub)
+
+
+add_executable(test_jubjub_mul_fixed test_jubjub_mul_fixed.cpp)
+target_link_libraries(test_jubjub_mul_fixed ethsnarks_common ethsnarks_jubjub)

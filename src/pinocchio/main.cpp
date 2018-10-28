@@ -6,6 +6,7 @@ using ethsnarks::CircuitReader;
 using ethsnarks::ProtoboardT;
 using ethsnarks::stub_prove_from_pb;
 using ethsnarks::stub_genkeys_from_pb;
+using ethsnarks::stub_main_verify;
 
 using std::ofstream;
 using std::cout;
@@ -28,7 +29,7 @@ static int main_genkeys( ProtoboardT& pb, const char *arith_file, const char *pk
 
 static int main_prove( ProtoboardT& pb, const char *arith_file, const char *circuit_inputs, const char* pk_raw, const char *proof_json )
 {
-	CircuitReader circuit(pb, arith_file, circuit_inputs, true);
+	CircuitReader circuit(pb, arith_file, circuit_inputs);
 
 	if( ! pb.is_satisfied() ) {
 		cerr << "Error: not satisfied!" << endl;
@@ -43,12 +44,6 @@ static int main_prove( ProtoboardT& pb, const char *arith_file, const char *circ
     fh.close();
 
 	return 0;
-}
-
-
-static int main_verify( ProtoboardT& pb, const char *arith_file, const char *vk_json, const char *proof_json )
-{
-	return ethsnarks::stub_verify(vk_json, proof_json);
 }
 
 
@@ -126,9 +121,7 @@ int main(int argc, char **argv)
 			cerr << usage_prefix << cmd << " <verification-key.json> <proof.json>" << endl;
 			return 5;
 		}
-		const char *vk_json = sub_argv[0];
-		const char *proof_json = sub_argv[1];
-		return main_verify(pb, arith_file, vk_json, proof_json);
+		return stub_main_verify("", 3, (const char**)&argv[2]);
 	}
 	else if( cmd == "test" ) {
 		if( sub_argc == 0 ) {
