@@ -73,7 +73,6 @@ CircuitReader::CircuitReader(
 	traceEnabled(in_traceEnabled)
 {
 	parseCircuit(arithFilepath);
-	//mapValuesToProtoboard();
 
 	if( inputsFilepath ) {
 		parseInputs(inputsFilepath);
@@ -228,6 +227,7 @@ void CircuitReader::parseCircuit(const char* arithFilepath)
 			continue;
 		}
 		else if (1 == sscanf(line.c_str(), "input %u", &wireId)) {
+			// XXX: public inputs need to go first!
 			numInputs++;
 			varNew(wireId, FMT("input_", "%zu", wireId));
 			inputWireIds.push_back(wireId);
@@ -457,31 +457,6 @@ void CircuitReader::makeConstraints( const CircuitInstruction& inst )
 }
 
 
-void CircuitReader::mapValuesToProtoboard()
-{
-	if( traceEnabled ) {
-		enter_block("Assigning values");
-	}
-
-	for( auto& item : zerop_items )
-	{
-		auto val = varValue(item.in_wire_id);
-		if( val != FieldT::zero() ) {
-			// M = 1/X
-			pb.val(item.aux_var) = FieldT::one() * val.inverse();
-		}
-		else {
-			// M = 0
-			pb.val(item.aux_var) = 0;
-		}
-	}
-
-	if( traceEnabled ) {
-		leave_block("Assigning values");
-	}
-}
-
-
 FieldT CircuitReader::varValue( Wire wire_id )
 {
 	auto& var = varGet(wire_id);
@@ -630,7 +605,7 @@ void CircuitReader::addNonzeroCheckConstraint(const InputWires& inputs, const Ou
 	VariableT M;
 	M.allocate(this->pb, FMT("zerop aux", " (%zu,%zu)", inputs[0], outputs[0]));
 
-	//generate_boolean_r1cs_constraint<FieldT>(pb, Y);
+	generate_boolean_r1cs_constraint<FieldT>(pb, Y);
 
 	pb.add_r1cs_constraint(ConstraintT(X, 1 - LinearCombinationT(Y), 0), "X is 0, or Y is 1");
 

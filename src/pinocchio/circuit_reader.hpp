@@ -117,7 +117,6 @@ protected:
 	void makeAllConstraints( );
 	void makeConstraints( const CircuitInstruction& inst );
 	void addOperationConstraints( const char *type, const InputWires& inWires, const OutputWires& outWires );
-	void mapValuesToProtoboard();
 
 
 	void addMulConstraint(const InputWires& inputs, const OutputWires& outputs);
