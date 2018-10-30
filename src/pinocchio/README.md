@@ -185,3 +185,62 @@ const-mul-ffff in 1 <3872> out 1 <3873>
 ```
 
 Multiplies input wire by `-0xFFFF` (-65535) and sets output wire to the result.
+
+
+# Proposed Instructions
+
+## table
+
+The `table` instruction acts as a look-up table, or LUT, allowing arbitrary logic to be implemented without combinations of gates. Adding this instruction will make it very easy to translate Fairplay circuits into the 'Extended Pinocchio Format'.
+
+```
+table %d <%d ...> in <%d ...> out %d
+```
+
+For example
+
+```
+table 3 <0 1 0 1 0 1 0 1> in <3872 3873 3874> out <3875>
+```
+
+This maps the 3 input bits (3872, 3873 and 3874) from the table (`0 1 0 1 0 1 0 1`) to the output variable (3875). The inputs are taken in little-endian order. With (from the example above), `1 0 0` mapping to `0`, `0 1 0` mapping to `1` and `1 1 0` mapping to `0`.
+
+The FairPlay compiler uses lookup tables for every operation, allowing lookup tables of length zero to length 4.
+
+The syntax of this instruction is:
+
+```
+"table" <nbits> "<" bit [bit [...]] ">" "in" "<" wire [wire [...]] ">" "out" "<" wire ">"
+```
+
+### Table of length 4
+
+```
+table 4 <0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1> in <3872 3873 3874 3875> out <3876>
+```
+
+### Table of length 3
+
+```
+table 3 <0 1 0 1 0 1 0 1> in <3872 3873 3874> out <3875>
+```
+
+### Table of length 2
+
+```
+table 2 <0 1 0 1> in <3872 3873> out <3874>
+```
+
+### Table of length 1
+
+```
+table 1 <0 1> in <3872> out <3873>
+```
+
+### Table of length 0
+
+Regardless of if the input value is 0 or 1, both values will be mapped to the same value. This is a constant, and shouldn't be necessary, but is used by the FairPlay v1 SFDL compiler.
+
+```
+table 0 <1> in <3872> out <3873>
+```
