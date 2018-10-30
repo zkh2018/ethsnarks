@@ -210,7 +210,7 @@ The FairPlay compiler uses lookup tables for every operation, allowing lookup ta
 The syntax of this instruction is:
 
 ```
-"table" <nbits> "<" bit [bit [...]] ">" "in" "<" wire [wire [...]] ">" "out" "<" wire ">"
+"table" nbits "<" bit [bit [...]] ">" "in" "<" wire [wire [...]] ">" "out" "<" wire ">"
 ```
 
 ### Table of length 4
@@ -233,8 +233,10 @@ table 2 <0 1 0 1> in <3872 3873> out <3874>
 
 ### Table of length 1
 
+The only real reason for a gate of table length 1 is to invert the input.
+
 ```
-table 1 <0 1> in <3872> out <3873>
+table 1 <1 0> in <3872> out <3873>
 ```
 
 ### Table of length 0
