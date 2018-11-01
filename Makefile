@@ -19,11 +19,8 @@ PIP_ARGS ?= --user
 PYTHON ?= python3
 NAME ?= ethsnarks
 NPM ?= npm
-PINOCCHIO ?= python -mpinocchio
-PINOCCHIO_BUILD ?= examples/pinocchio/build
 GANACHE ?= $(ROOT_DIR)/node_modules/.bin/ganache-cli
 TRUFFLE ?= $(ROOT_DIR)/node_modules/.bin/truffle
-
 COVERAGE = $(PYTHON) -mcoverage run --source=$(NAME) -p
 
 
@@ -124,23 +121,10 @@ coverage-html:
 #######################################################################
 
 
-$(PINOCCHIO_BUILD)/%.dot: $(PINOCCHIO_BUILD)/%.arith
-	PYTHONPATH=. python -mpinocchio.drawcircuit --arith $< --out $@
-
-$(PINOCCHIO_BUILD)/%.arith: examples/pinocchio/%.c
-	$(PINOCCHIO) --arith $@ $<
-
-$(PINOCCHIO_BUILD)/%.json: examples/pinocchio/%.c
-	$(PINOCCHIO) --json $@ $<
-
-
-#######################################################################
-
 lint: python-pyflakes python-pylint cxx-lint solidity-lint
 
 python-pyflakes:
 	$(PYTHON) -mpyflakes $(NAME)
-	$(PYTHON) -mpyflakes pinocchio
 
 python-pylint:
 	$(PYTHON) -mpylint $(NAME) || true
