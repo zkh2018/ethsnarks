@@ -43,7 +43,8 @@ enum Opcode {
 	SPLIT_OPCODE,
 	PACK_OPCODE,
 	CONST_MUL_NEG_OPCODE,
-	CONST_MUL_OPCODE
+	CONST_MUL_OPCODE,
+	TABLE_OPCODE
 };
 
 
@@ -59,6 +60,7 @@ public:
 	FieldT constant;
 	InputWires inputs;
 	OutputWires outputs;
+	std::vector<FieldT> table;
 
 	const char *name() const;
 	void print() const;
@@ -128,6 +130,8 @@ protected:
 	void addSplitConstraint(const InputWires& inputs, const OutputWires& outputs);
 	void addPackConstraint(const InputWires& inputs, const OutputWires& outputs);
 	void addNonzeroCheckConstraint(const InputWires& inputs, const OutputWires& outputs);
+
+	void addTableConstraint(const InputWires& inputs, const OutputWires& outputs, const std::vector<FieldT> table);
 
 	void handleAddition(const InputWires& inputs, const OutputWires& outputs);
 	void handleMulConst(const InputWires& inputs, const OutputWires& outputs, const FieldT& constant);

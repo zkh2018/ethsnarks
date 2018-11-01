@@ -25,6 +25,9 @@ SOFTWARE.
 
 #include "circuit_reader.hpp"
 #include "utils.hpp"
+#include "gadgets/lookup_1bit.cpp"
+#include "gadgets/lookup_2bit.cpp"
+#include "gadgets/lookup_3bit.cpp"
 #include "libsnark/gadgetlib1/gadgets/basic_gadgets.hpp"
 
 #include <fstream>
@@ -44,11 +47,22 @@ using libsnark::generate_boolean_r1cs_constraint;
 namespace ethsnarks {
 
 
-static void readIds(char* str, std::vector<unsigned int>& vec){
+static void readIds(char* str, std::vector<unsigned int>& vec)
+{
 	istringstream iss_i(str, istringstream::in);
 	unsigned int id;
 	while (iss_i >> id) {
 		vec.push_back(id);
+	}
+}
+
+
+static void readTable(char* str, std::vector<FieldT>& vec)
+{
+	istringstream iss_i(str, istringstream::in);
+	string token;
+	while (iss_i >> token) {
+		vec.push_back(FieldT(token.c_str()));
 	}
 }
 
@@ -183,6 +197,18 @@ void CircuitReader::evalInstruction( const CircuitInstruction &inst )
 	else if( opcode == CONST_MUL_OPCODE) {
 		varSet(outWires[0], constant * inValues[0], "const-mul, A * constant = C");
 	}
+	else if( opcode == TABLE_OPCODE ) {		
+		int pow2s = 1;
+		int idx = 0;
+		for( const auto& val : inValues ) {
+			if( val == FieldT::one() ) {
+				idx += pow2s;
+			}
+			pow2s = pow2s * 2;
+		}
+
+		varSet(outWires[0], inst.table[idx], "table lookup");
+	}
 }
 
 
@@ -211,6 +237,7 @@ void CircuitReader::parseCircuit(const char* arithFilepath)
 	char type[200];
 	char* inputStr;
 	char* outputStr;
+	char* tableStr = nullptr;
 	unsigned int numGateInputs, numGateOutputs;
 
 	// Parse the circuit: few lines were imported from Pinocchio's code.
@@ -241,6 +268,40 @@ void CircuitReader::parseCircuit(const char* arithFilepath)
 			numOutputs++;
 			varNew(wireId, FMT("output_", "%zu", wireId));
 			outputWireIds.push_back(wireId);
+		}
+		else if (4 == sscanf(line.c_str(), "table %u [%s] in <%[^>]> out <%[^>]>",
+							 &numGateInputs, tableStr, inputStr, outputStr)) {
+			InputWires inWires;
+			OutputWires outWires;
+			readIds(inputStr, inWires);
+			readIds(outputStr, outWires);
+
+			if( numGateInputs != inWires.size() ) {
+				std::cerr << "Error parsing line: " << line << std::endl;
+				std::cerr << " input gate mismatch, expected " << numGateInputs << " got " << inWires.size() << std::endl;
+				exit(6);
+			}
+
+			if( outWires.size() != 1 ) {
+				std::cerr << "Error parsing line: " << line << std::endl;
+				std::cerr << " output gate mismatch, expected 1, got " << outWires.size() << std::endl;
+				exit(6);
+			}
+
+			if( numGateInputs < 1 || numGateOutputs > 3 ) {
+				std::cerr << "Error parsing line: " << line << std::endl;
+				std::cerr << " unsupported lookup table size: " << inWires.size() << std::endl;
+				exit(6);
+			}
+
+			std::vector<FieldT> table;
+			readTable(tableStr, table);
+			if( table.size() != (1u<<numGateInputs) ) {
+				std::cerr << "Error parsing line: " << line << std::endl;
+				std::cerr << " bad number of table entries, got " << table.size() << " expected " << (1<<inWires.size()) << std::endl;
+				exit(6);
+			}
+			instructions.push_back({TABLE_OPCODE, 0, inWires, outWires, table});
 		}
 		else if (5 == sscanf(line.c_str(), "%s in %u <%[^>]> out %u <%[^>]>", type,
 						&numGateInputs, inputStr, &numGateOutputs, outputStr)) {
@@ -344,46 +405,75 @@ const char* CircuitInstruction::name( ) const
 		case PACK_OPCODE: return "pack";
 		case CONST_MUL_OPCODE: return "const-mul";
 		case CONST_MUL_NEG_OPCODE: return "const-mul-neg";
+		case TABLE_OPCODE: return "table";
 		default: return "unknown";
 	}
 }
 
 
+static void printWires( const std::vector<Wire> wire_id_list )
+{
+	bool first = true;
+	cout << "<";
+	for( const auto& wire_id : wire_id_list ) {
+		if( first ) {
+			first = false;
+		}
+		else {
+			cout << " ";
+		}
+		cout << wire_id;	
+	}
+	cout << ">";
+}
+
+
+static void printTable( const std::vector<FieldT> &table ) {
+	bool first = true;
+	cout << "[";
+	for( const auto& item : table ) {
+		if( first ) {
+			first = false;
+		}
+		else {
+			cout << " ";
+		}
+		const auto& value = item.as_bigint();
+		::gmp_printf("%Nd", value.data, value.N);
+	}
+	cout << "]";
+}
+
+
 void CircuitInstruction::print() const
 {
-	// Display input wires
-	bool first = true;
-	cout << this->name() << " in " << inputs.size() << " <";
-	for( auto& wire_id : inputs ) {
-		if( first ) {
-			first = false;
-		}
-		else {
-			cout << " ";
-		}
-		cout << wire_id;	
-	}
-
-	// Display output wires
-	cout << "> out " << outputs.size() << " <";
-	first = true;
-	for( auto& wire_id : outputs ) {
-		if( first ) {
-			first = false;
-		}
-		else {
-			cout << " ";
-		}
-		cout << wire_id;	
-	}
-
-	// Display constant value, when necessary
-	if( opcode == CONST_MUL_NEG_OPCODE || opcode == CONST_MUL_OPCODE ) {
-		cout << ">" << " constant=";
-		constant.print();
+	// Display table when necessary
+	if( opcode == TABLE_OPCODE ) {
+		cout << "table ";
+		printTable(table);
+		cout << " in ";
+		printWires(inputs);
+		cout << " out " << outputs.size() << " ";
+		printWires(outputs);
+		cout << endl;
 	}
 	else {
-		cout << ">" << endl;
+		// Display input wires
+		cout << this->name() << " in " << inputs.size() << " ";
+		printWires(inputs);
+
+		// Display output wires
+		cout << " out " << outputs.size() << " ";
+		printWires(outputs);
+
+		// Display constant value, when necessary
+		if( opcode == CONST_MUL_NEG_OPCODE || opcode == CONST_MUL_OPCODE ) {
+			cout << " constant=";
+			constant.print();	// prints newline
+		}
+		else {
+			cout << endl;
+		}
 	}
 }
 
@@ -437,6 +527,10 @@ void CircuitReader::makeConstraints( const CircuitInstruction& inst )
 	else if ( opcode == PACK_OPCODE ) {
 		assert(outWires.size() == 1);
 		addPackConstraint(inWires, outWires);
+	}
+	else if( opcode == TABLE_OPCODE )
+	{
+		addTableConstraint(inWires, outWires, inst.table);
 	}
 
 	if( traceEnabled )
@@ -492,6 +586,25 @@ const VariableT& CircuitReader::varGet( Wire wire_id, const std::string &annotat
 		return varNew(wire_id, annotation);
 	}
 	return variableMap[wire_id];
+}
+
+
+void CircuitReader::addTableConstraint(const InputWires& inputs, const OutputWires& outputs, const std::vector<FieldT> table)
+{
+	if( table.size() == 2 ) {
+		lookup_1bit_gadget lut(pb, table, varGet(inputs[0]), "lookup_1bit");
+		lut.generate_r1cs_constraints();
+	}
+	else if( table.size() == 4 ) {
+		std::vector<VariableT> lut_inputs = {varGet(inputs[0]), varGet(inputs[1])};
+		lookup_2bit_gadget lut(pb, table, {lut_inputs.begin(), lut_inputs.end()}, "lookup_2bit");
+		lut.generate_r1cs_constraints();
+	}
+	else if( table.size() == 8 ) {
+		std::vector<VariableT> lut_inputs = {varGet(inputs[0]), varGet(inputs[1]), varGet(inputs[2])};
+		lookup_3bit_gadget lut(pb, table, {lut_inputs.begin(), lut_inputs.end()}, "lookup_3bit");
+		lut.generate_r1cs_constraints();
+	}
 }
 
 

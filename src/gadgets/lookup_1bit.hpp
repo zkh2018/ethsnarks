@@ -1,5 +1,5 @@
-#ifndef ETHSNARKS_LOOKUP_2BIT_HPP_
-#define ETHSNARKS_LOOKUP_2BIT_HPP_
+#ifndef ETHSNARKS_LOOKUP_1BIT_HPP_
+#define ETHSNARKS_LOOKUP_1BIT_HPP_
 
 // Copyright (c) 2018 HarryR
 // License: LGPL-3.0+
@@ -9,19 +9,19 @@
 namespace ethsnarks {
 
 /**
-* Two-bit window lookup table using one constraint
+* One-bit window lookup table using one constraint
 */
-class lookup_2bit_gadget : public GadgetT
+class lookup_1bit_gadget : public GadgetT
 {
 public:
     const std::vector<FieldT> c;
-    const VariableArrayT b;
+    const VariableT b;
     VariableT r;
 
-    lookup_2bit_gadget(
+    lookup_1bit_gadget(
         ProtoboardT &in_pb,
         const std::vector<FieldT> in_constants,
-        const VariableArrayT in_bits,
+        const VariableT in_bit,
         const std::string& annotation_prefix
     );
 
@@ -35,5 +35,5 @@ public:
 // namespace ethsnarks
 }
 
-// ETHSNARKS_LOOKUP_2BIT_HPP_
+// ETHSNARKS_LOOKUP_1BIT_HPP_
 #endif

@@ -40,4 +40,5 @@ public:
 // namespace ethsnarks
 }
 
+// ETHSNARKS_LOOKUP_3BIT_HPP_
 #endif

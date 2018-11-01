@@ -84,7 +84,9 @@ cxx-tests:
 	./bin/test_r1cs_gg_ppzksnark_zok
 	./bin/test_shamir_poly
 	./bin/test_sha256_full_gadget
+	./bin/test_lookup_1bit
 	./bin/test_lookup_2bit
+	./bin/test_lookup_3bit
 	./bin/test_subadd > /dev/null
 	./bin/test_jubjub
 	./bin/test_jubjub_add
