@@ -234,10 +234,10 @@ void CircuitReader::parseCircuit(const char* arithFilepath)
 		exit(-1);
 	}
 
-	char type[200];
+	char type[200];	// XXX: buffer overflow!
 	char* inputStr;
 	char* outputStr;
-	char* tableStr = nullptr;
+	char* tableStr;
 	unsigned int numGateInputs, numGateOutputs;
 
 	// Parse the circuit: few lines were imported from Pinocchio's code.
@@ -248,6 +248,7 @@ void CircuitReader::parseCircuit(const char* arithFilepath)
 		}
 		inputStr = new char[line.size()];
 		outputStr = new char[line.size()];
+		tableStr = new char[line.size()];
 
 		Wire wireId;
 		if (line[0] == '#') {
@@ -269,12 +270,13 @@ void CircuitReader::parseCircuit(const char* arithFilepath)
 			varNew(wireId, FMT("output_", "%zu", wireId));
 			outputWireIds.push_back(wireId);
 		}
-		else if (4 == sscanf(line.c_str(), "table %u [%s] in <%[^>]> out <%[^>]>",
+		else if (4 == sscanf(line.c_str(), "table %u <%[^>]> in <%[^>]> out <%[^>]>",
 							 &numGateInputs, tableStr, inputStr, outputStr)) {
 			InputWires inWires;
 			OutputWires outWires;
 			readIds(inputStr, inWires);
 			readIds(outputStr, outWires);
+			numGateOutputs = outWires.size();
 
 			if( numGateInputs != inWires.size() ) {
 				std::cerr << "Error parsing line: " << line << std::endl;
@@ -288,9 +290,9 @@ void CircuitReader::parseCircuit(const char* arithFilepath)
 				exit(6);
 			}
 
-			if( numGateInputs < 1 || numGateOutputs > 3 ) {
+			if( numGateInputs <= 0 || numGateInputs > 3u ) {
 				std::cerr << "Error parsing line: " << line << std::endl;
-				std::cerr << " unsupported lookup table size: " << inWires.size() << std::endl;
+				std::cerr << " unsupported lookup table size: " << numGateInputs << std::endl;
 				exit(6);
 			}
 
@@ -303,8 +305,8 @@ void CircuitReader::parseCircuit(const char* arithFilepath)
 			}
 			instructions.push_back({TABLE_OPCODE, 0, inWires, outWires, table});
 		}
-		else if (5 == sscanf(line.c_str(), "%s in %u <%[^>]> out %u <%[^>]>", type,
-						&numGateInputs, inputStr, &numGateOutputs, outputStr)) {
+		else if (5 == sscanf(line.c_str(), "%s in %u <%[^>]> out %u <%[^>]>",
+						type, &numGateInputs, inputStr, &numGateOutputs, outputStr)) {
 
 			OutputWires outWires;
 			InputWires inWires;
@@ -372,6 +374,7 @@ void CircuitReader::parseCircuit(const char* arithFilepath)
 		}
 		delete[] inputStr;
 		delete[] outputStr;
+		delete[] tableStr;
 	}
 	arithfs.close();
 
