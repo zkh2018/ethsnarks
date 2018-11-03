@@ -23,6 +23,8 @@ GANACHE ?= $(ROOT_DIR)/node_modules/.bin/ganache-cli
 TRUFFLE ?= $(ROOT_DIR)/node_modules/.bin/truffle
 COVERAGE = $(PYTHON) -mcoverage run --source=$(NAME) -p
 
+PINOCCHIO_TESTS=$(wildcard test/pinocchio/*.circuit)
+
 
 #######################################################################
 
@@ -66,7 +68,7 @@ depends/libsnarks/CMakeLists.txt:
 
 
 .PHONY: test
-test: cxx-tests python-test truffle-test
+test: pinocchio-test cxx-tests python-test truffle-test
 
 python-test:
 	$(COVERAGE) -m unittest discover test/
@@ -98,6 +100,20 @@ cxx-tests:
 	time ./bin/test_load_proofkey zksnark_element/hpi.pk.raw
 
 	time ./bin/miximus_cli genkeys zksnark_element/miximus.pk.raw zksnark_element/miximus.vk.json
+
+
+#######################################################################
+# Pinocchio Tests
+
+
+pinocchio-test: $(addsuffix .result, $(basename $(PINOCCHIO_TESTS)))
+
+pinocchio-clean:
+	rm -f test/pinocchio/*.result
+
+test/pinocchio/%.result: test/pinocchio/%.circuit test/pinocchio/%.test test/pinocchio/%.input ./bin/pinocchio
+	./bin/pinocchio $< eval $(basename $<).input > $@
+	diff -ru $(basename $<).test $@ || rm $@
 
 
 #######################################################################

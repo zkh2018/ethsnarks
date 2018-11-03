@@ -1,5 +1,0 @@
-total 3
-input 0
-input 1
-output 2
-table 2 <1 0 1 0> in <0 1> out <2>

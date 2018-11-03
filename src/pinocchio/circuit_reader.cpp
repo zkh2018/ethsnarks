@@ -130,8 +130,10 @@ void CircuitReader::parseInputs( const char *inputsFilepath )
 			}
 			Wire wireId;
 			inputStr = new char[line.size()];
-			if (2 == sscanf(line.c_str(), "%u %s", &wireId, inputStr)) {
-				varSet(wireId, readFieldElementFromHex(inputStr));
+			char separator[2];
+			if (3 == sscanf(line.c_str(), "%u%[= ]%s", &wireId, separator, inputStr)) {
+				const auto value = readFieldElementFromHex(inputStr);
+				varSet(wireId, value);
 			}
 			else {
 				std::cerr << "Error in Input" << endl;
@@ -202,18 +204,8 @@ void CircuitReader::evalInstruction( const CircuitInstruction &inst )
 		for( unsigned int i = 0; i < inValues.size(); i++ ) {
 			const auto& val = inValues[inValues.size() - 1 - i].as_ulong();
 			assert( val == 0 || val == 1 );
-			printf("Index %u = %lu\n", i, val);
 			idx += idx + val;
 		}
-		printf("IDX: %u\n", idx);
-
-		int i = 0;
-		for( auto v : inst.table ) {
-			printf("%d = ", i++);
-			v.print();
-		}
-
-		printf("Setting out wires: %u\n", outWires[0]);
 
 		varSet(outWires[0], inst.table[idx], "table lookup");
 	}

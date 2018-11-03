@@ -98,7 +98,6 @@ public:
 	bool traceEnabled;
 
 protected:
-	std::map<Wire,LinearCombinationT> wireLC;
 	std::map<Wire,VariableT> variableMap;
 
 	std::vector<ZeroEqualityItem> zerop_items;
