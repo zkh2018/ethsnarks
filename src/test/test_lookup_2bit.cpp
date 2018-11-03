@@ -3,16 +3,15 @@
 #include "stubs.hpp"
 #include "gadgets/lookup_2bit.hpp"
 
+using ethsnarks::FieldT;
+
+
 namespace ethsnarks {
 
-bool test_lookup_2bit()
+
+bool test_lookup_2bit(const std::vector<FieldT> rand_items)
 {
     ProtoboardT pb;
-
-    const std::vector<FieldT> rand_items = {
-        FieldT::random_element(), FieldT::random_element(),
-        FieldT::random_element(), FieldT::random_element()
-    };
 
     std::vector<VariableArrayT> items;
     std::vector<lookup_2bit_gadget> gadgets;
@@ -27,17 +26,15 @@ bool test_lookup_2bit()
         gadgets[i].generate_r1cs_witness();
         gadgets[i].generate_r1cs_constraints();
 
+        assert( pb.val(gadgets[i].result()) == rand_items[i] );
+
         if( ! pb.is_satisfied() ) {
             std::cerr << "Not satisfied " << i << std::endl;
+            return false;
         }
     }
 
-    if( ! pb.is_satisfied() ) {
-        std::cerr << "Not satisfied!\n";
-        return false;
-    }
-
-    return stub_test_proof_verify(pb);
+    return true;
 }
 
 // namespace ethsnarks
@@ -49,9 +46,39 @@ int main( int argc, char **argv )
     // Types for board 
     ethsnarks::ppT::init_public_params();
 
-    if( ! ethsnarks::test_lookup_2bit() )
+    if( ! ethsnarks::test_lookup_2bit({
+        FieldT::random_element(), FieldT::random_element(),
+        FieldT::random_element(), FieldT::random_element()
+    }))
     {
-        std::cerr << "FAIL\n";
+        std::cerr << "FAIL 1\n";
+        return 1;
+    }
+
+    if( ! ethsnarks::test_lookup_2bit({
+        FieldT::one(), FieldT::zero(),
+        FieldT::zero(), FieldT::one()
+    }))
+    {
+        std::cerr << "FAIL 2\n";
+        return 1;
+    }
+
+    if( ! ethsnarks::test_lookup_2bit({
+        FieldT::zero(), FieldT::one(),
+        FieldT::one(), FieldT::zero()
+    }))
+    {
+        std::cerr << "FAIL 3\n";
+        return 1;
+    }
+
+    if( ! ethsnarks::test_lookup_2bit({
+        FieldT::one(), FieldT::one(),
+        FieldT::one(), FieldT::one()
+    }))
+    {
+        std::cerr << "FAIL 4\n";
         return 1;
     }
 

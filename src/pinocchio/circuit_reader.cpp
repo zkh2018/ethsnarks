@@ -198,14 +198,22 @@ void CircuitReader::evalInstruction( const CircuitInstruction &inst )
 		varSet(outWires[0], constant * inValues[0], "const-mul, A * constant = C");
 	}
 	else if( opcode == TABLE_OPCODE ) {		
-		int pow2s = 1;
-		int idx = 0;
-		for( const auto& val : inValues ) {
-			if( val == FieldT::one() ) {
-				idx += pow2s;
-			}
-			pow2s = pow2s * 2;
+		unsigned int idx = 0;
+		for( unsigned int i = 0; i < inValues.size(); i++ ) {
+			const auto& val = inValues[inValues.size() - 1 - i].as_ulong();
+			assert( val == 0 || val == 1 );
+			printf("Index %u = %lu\n", i, val);
+			idx += idx + val;
 		}
+		printf("IDX: %u\n", idx);
+
+		int i = 0;
+		for( auto v : inst.table ) {
+			printf("%d = ", i++);
+			v.print();
+		}
+
+		printf("Setting out wires: %u\n", outWires[0]);
 
 		varSet(outWires[0], inst.table[idx], "table lookup");
 	}
@@ -433,7 +441,7 @@ static void printWires( const std::vector<Wire> wire_id_list )
 
 static void printTable( const std::vector<FieldT> &table ) {
 	bool first = true;
-	cout << "[";
+	cout << "<";
 	for( const auto& item : table ) {
 		if( first ) {
 			first = false;
@@ -444,7 +452,7 @@ static void printTable( const std::vector<FieldT> &table ) {
 		const auto& value = item.as_bigint();
 		::gmp_printf("%Nd", value.data, value.N);
 	}
-	cout << "]";
+	cout << ">";
 }
 
 
@@ -452,11 +460,11 @@ void CircuitInstruction::print() const
 {
 	// Display table when necessary
 	if( opcode == TABLE_OPCODE ) {
-		cout << "table ";
+		cout << "table " << inputs.size() << " ";
 		printTable(table);
 		cout << " in ";
 		printWires(inputs);
-		cout << " out " << outputs.size() << " ";
+		cout << " out ";
 		printWires(outputs);
 		cout << endl;
 	}
@@ -531,8 +539,7 @@ void CircuitReader::makeConstraints( const CircuitInstruction& inst )
 		assert(outWires.size() == 1);
 		addPackConstraint(inWires, outWires);
 	}
-	else if( opcode == TABLE_OPCODE )
-	{
+	else if( opcode == TABLE_OPCODE ) {
 		addTableConstraint(inWires, outWires, inst.table);
 	}
 
@@ -595,13 +602,11 @@ const VariableT& CircuitReader::varGet( Wire wire_id, const std::string &annotat
 void CircuitReader::addTableConstraint(const InputWires& inputs, const OutputWires& outputs, const std::vector<FieldT> table)
 {
 	if( table.size() == 2 ) {
-		lookup_1bit_gadget lut(pb, table, varGet(inputs[0]), "lookup_1bit");
-		lut.generate_r1cs_constraints();
+		lookup_1bit_constraints(pb, table, varGet(inputs[0]), varGet(outputs[0]), "lookup_1bit");
 	}
 	else if( table.size() == 4 ) {
 		std::vector<VariableT> lut_inputs = {varGet(inputs[0]), varGet(inputs[1])};
-		lookup_2bit_gadget lut(pb, table, {lut_inputs.begin(), lut_inputs.end()}, "lookup_2bit");
-		lut.generate_r1cs_constraints();
+		lookup_2bit_constraints(pb, table, {lut_inputs.begin(), lut_inputs.end()}, varGet(outputs[0]), "lookup_2bit");
 	}
 	else if( table.size() == 8 ) {
 		std::vector<VariableT> lut_inputs = {varGet(inputs[0]), varGet(inputs[1]), varGet(inputs[2])};
@@ -704,13 +709,17 @@ void CircuitReader::addPackConstraint(const InputWires& inputs, const OutputWire
 *
 * This is equivalent to satisfying the following two constraints:
 *
-*	X * M - Y = 0
+*	(X * M) - Y = 0
 *
-* and
+* and:
 *
 *	X * (1 - Y) = 0
 *
-* For some value M, where M should be (1.0/X), or the modulo inverse of X.
+* in addition to the bitness constraint for Y:
+*
+*   Y * Y = Y
+*
+* For any value M, M should be (1.0/X), where `X*M==1` if X is non-zero.
 */
 void CircuitReader::addNonzeroCheckConstraint(const InputWires& inputs, const OutputWires& outputs)
 {

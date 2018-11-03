@@ -8,6 +8,10 @@
 
 namespace ethsnarks {
 
+
+void lookup_1bit_constraints( ProtoboardT& pb, const std::vector<FieldT> c, const VariableT bit, const VariableT r, const std::string& annotation_prefix );
+
+
 /**
 * One-bit window lookup table using one constraint
 */

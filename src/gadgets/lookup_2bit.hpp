@@ -8,8 +8,13 @@
 
 namespace ethsnarks {
 
+
+void lookup_2bit_constraints( ProtoboardT& pb, const std::vector<FieldT> c, const VariableArrayT b, const VariableT r, const std::string& annotation_prefix );
+
+
 /**
 * Two-bit window lookup table using one constraint
+* Maps the bits `b` to a list of constants `c`
 */
 class lookup_2bit_gadget : public GadgetT
 {
@@ -31,6 +36,7 @@ public:
 
     void generate_r1cs_witness ();
 };
+
 
 // namespace ethsnarks
 }
