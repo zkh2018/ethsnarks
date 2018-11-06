@@ -113,6 +113,25 @@ void tests()
 
 }
 
+void test_isOnCurve_negative() {
+    std::shared_ptr<jubjub::isOnCurve> jubjub_isOnCurve;
+
+    ProtoboardT pb;
+    const jubjub::Params params;
+    VariableT x;
+    VariableT y;
+    x.allocate(pb, "x");
+    y.allocate(pb, "y");
+    pb.val(x) = 0;
+    pb.val(y) = 0;
+
+    jubjub_isOnCurve.reset(new jubjub::isOnCurve (pb, params, x, y, "Confirm x, y is on the twiseted edwards curve"));
+    jubjub_isOnCurve->generate_r1cs_constraints();
+    jubjub_isOnCurve->generate_r1cs_witness();
+
+    assert(!pb.is_satisfied());
+}
+
 
 void test_pointAddition ()
 {
@@ -556,6 +575,9 @@ int main () {
     typedef ethsnarks::sha256_full_gadget_512 HashT;
     ethsnarks::test_eddsa<HashT>();
     ethsnarks::test_pedersen();
+
+    ethsnarks::tests();
+    ethsnarks::test_isOnCurve_negative();
 
     return 0;
 }
