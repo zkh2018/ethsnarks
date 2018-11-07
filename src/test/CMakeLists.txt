@@ -1,3 +1,6 @@
+add_subdirectory(jubjub)
+
+
 add_executable(benchmark_mpz_mul benchmark_mpz_mul.cpp)
 target_link_libraries(benchmark_mpz_mul ff)
 
@@ -63,22 +66,3 @@ target_link_libraries(test_longsightl_hash_mp ethsnarks_common)
 add_executable(test_subadd test_subadd.cpp)
 target_link_libraries(test_subadd ethsnarks_common)
 
-
-add_executable(test_jubjub test_jubjub.cpp)
-target_link_libraries(test_jubjub ethsnarks_common ethsnarks_jubjub)
-
-
-add_executable(test_jubjub_add test_jubjub_add.cpp)
-target_link_libraries(test_jubjub_add ethsnarks_common ethsnarks_jubjub)
-
-
-add_executable(test_jubjub_mul test_jubjub_mul.cpp)
-target_link_libraries(test_jubjub_mul ethsnarks_common ethsnarks_jubjub)
-
-
-add_executable(test_jubjub_dbl test_jubjub_dbl.cpp)
-target_link_libraries(test_jubjub_dbl ethsnarks_common ethsnarks_jubjub)
-
-
-add_executable(test_jubjub_mul_fixed test_jubjub_mul_fixed.cpp)
-target_link_libraries(test_jubjub_mul_fixed ethsnarks_common ethsnarks_jubjub)

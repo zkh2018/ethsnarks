@@ -8,4 +8,5 @@ add_library(ethsnarks_jubjub STATIC
   scalarmult.cpp
   adder.cpp
   doubler.cpp
+  isoncurve.cpp
 )

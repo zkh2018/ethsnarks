@@ -46,6 +46,16 @@ inline const VariableT make_variable( ProtoboardT &in_pb, const std::string &ann
 }
 
 
+/* `allocate_var_index` is private, must use this workaround... */
+inline const VariableT make_variable( ProtoboardT &in_pb, const FieldT value, const std::string &annotation )
+{
+    VariableT x;
+    x.allocate(in_pb, annotation);
+    in_pb.val(x) = value;
+    return x;
+}
+
+
 /* Multiply a variable by a static number, as a linear combination term */
 inline const libsnark::pb_linear_combination<FieldT> make_linear_term( ProtoboardT &in_pb, VariableT var, FieldT coeff )
 {
