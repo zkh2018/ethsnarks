@@ -16,7 +16,7 @@ void lookup_1bit_constraints( ProtoboardT& pb, const std::vector<FieldT> c, cons
             FMT(annotation_prefix, ".result"));
 }
 
-	
+
 lookup_1bit_gadget::lookup_1bit_gadget(
 	ProtoboardT &in_pb,
 	const std::vector<FieldT> in_constants,

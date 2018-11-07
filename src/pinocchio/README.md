@@ -48,6 +48,8 @@ output 14                        # output of dot product a, b
 
 ## Input / Output
 
+All public inputs and outputs for the circuit are used as public inputs for the circuit. For example, if the file contains 3 inputs and 2 outputs the resulting circuit will have 5 public inputs which need to be passed in upon verification.
+
 ### total
 
 Specify the total number of wires

@@ -199,7 +199,7 @@ void CircuitReader::evalInstruction( const CircuitInstruction &inst )
 	else if( opcode == CONST_MUL_OPCODE) {
 		varSet(outWires[0], constant * inValues[0], "const-mul, A * constant = C");
 	}
-	else if( opcode == TABLE_OPCODE ) {		
+	else if( opcode == TABLE_OPCODE ) {
 		unsigned int idx = 0;
 		for( unsigned int i = 0; i < inValues.size(); i++ ) {
 			const auto& val = inValues[inValues.size() - 1 - i].as_ulong();
@@ -425,7 +425,7 @@ static void printWires( const std::vector<Wire> wire_id_list )
 		else {
 			cout << " ";
 		}
-		cout << wire_id;	
+		cout << wire_id;
 	}
 	cout << ">";
 }

@@ -45,7 +45,7 @@ bool test_lookup_1bit()
 
 int main( int argc, char **argv )
 {
-    // Types for board 
+    // Types for board
     ethsnarks::ppT::init_public_params();
 
     if( ! ethsnarks::test_lookup_1bit() )
