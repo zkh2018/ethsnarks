@@ -67,6 +67,10 @@ void isOnCurve::generate_r1cs_constraints()
     this->pb.add_r1cs_constraint(
         ConstraintT(xx*m_params.d, yy, rhs - 1),
         FMT(this->annotation_prefix, ".rhs = 1 + d*xx*yy"));
+
+    this->pb.add_r1cs_constraint(
+        ConstraintT(rhs, 1, lhs),
+        FMT(this->annotation_prefix, " rhs = lhs"));
 }
 
 
