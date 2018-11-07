@@ -21,8 +21,9 @@ NAME ?= ethsnarks
 NPM ?= npm
 GANACHE ?= $(ROOT_DIR)/node_modules/.bin/ganache-cli
 TRUFFLE ?= $(ROOT_DIR)/node_modules/.bin/truffle
-
 COVERAGE = $(PYTHON) -mcoverage run --source=$(NAME) -p
+
+PINOCCHIO_TESTS=$(wildcard test/pinocchio/*.circuit)
 
 
 #######################################################################
@@ -30,9 +31,8 @@ COVERAGE = $(PYTHON) -mcoverage run --source=$(NAME) -p
 
 all: build/src/libmiximus.$(DLL_EXT) truffle-compile
 
-clean: coverage-clean
+clean: coverage-clean python-clean
 	rm -rf build
-	find . -name '__pycache__' -exec rm -rf '{}' ';'
 
 
 #######################################################################
@@ -68,7 +68,7 @@ depends/libsnarks/CMakeLists.txt:
 
 
 .PHONY: test
-test: cxx-tests python-test truffle-test
+test: pinocchio-test cxx-tests python-test truffle-test
 
 python-test:
 	$(COVERAGE) -m unittest discover test/
@@ -83,11 +83,15 @@ cxx-tests:
 	./bin/test_r1cs_gg_ppzksnark_zok
 	./bin/test_shamir_poly
 	./bin/test_sha256_full_gadget
+	./bin/test_lookup_1bit
 	./bin/test_lookup_2bit
+	./bin/test_lookup_3bit
 	./bin/test_subadd > /dev/null
 	./bin/test_jubjub
 	./bin/test_jubjub_add
+	./bin/test_jubjub_dbl
 	./bin/test_jubjub_mul
+	./bin/test_jubjub_mul_fixed
 
 	time ./bin/hashpreimage_cli genkeys zksnark_element/hpi.pk.raw zksnark_element/hpi.vk.json
 	ls -lah zksnark_element/hpi.pk.raw
@@ -96,6 +100,20 @@ cxx-tests:
 	time ./bin/test_load_proofkey zksnark_element/hpi.pk.raw
 
 	time ./bin/miximus_cli genkeys zksnark_element/miximus.pk.raw zksnark_element/miximus.vk.json
+
+
+#######################################################################
+# Pinocchio Tests
+
+
+pinocchio-test: $(addsuffix .result, $(basename $(PINOCCHIO_TESTS)))
+
+pinocchio-clean:
+	rm -f test/pinocchio/*.result
+
+test/pinocchio/%.result: test/pinocchio/%.circuit test/pinocchio/%.test test/pinocchio/%.input ./bin/pinocchio
+	./bin/pinocchio $< eval $(basename $<).input > $@
+	diff -ru $(basename $<).test $@ || rm $@
 
 
 #######################################################################
@@ -126,6 +144,10 @@ python-pyflakes:
 
 python-pylint:
 	$(PYTHON) -mpylint $(NAME) || true
+
+python-clean:
+	find . -name '*.pyc' -exec rm -f '{}' ';'
+	find . -name '__pycache__' -exec rm -rf '{}' ';'
 
 cxx-lint:
 	cppcheck -I depends/libsnark/ -I depends/libsnark/depends/libff/ -I depends/libsnark/depends/libfqfft/ -I src/ --enable=all src/ || true

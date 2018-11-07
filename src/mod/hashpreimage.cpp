@@ -156,12 +156,7 @@ char *hashpreimage_prove( const char *pk_file, const uint8_t *preimage_bytes64 )
         return nullptr;
     }
 
-    auto proving_key = ethsnarks::loadFromFile<ethsnarks::ProvingKeyT>(pk_file);
-    // TODO: verify if proving key was loaded correctly, if not return NULL
-
-    auto primary_input = pb.primary_input();
-    auto proof = libsnark::r1cs_gg_ppzksnark_zok_prover<ethsnarks::ppT>(proving_key, primary_input, pb.auxiliary_input());
-    auto json = ethsnarks::proof_to_json(proof, primary_input);
+    auto json = ethsnarks::stub_prove_from_pb(pb, pk_file);
 
     return ::strdup(json.c_str());
 }

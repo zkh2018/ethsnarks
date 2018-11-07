@@ -80,7 +80,7 @@ int main( int argc, char **argv )
     }
     else if( 0 == ::strcmp(argv[1], "verify") )
     {
-        return stub_main_verify(argv[0], argc-1, &argv[1]);
+        return stub_main_verify(argv[0], argc-1, (const char **)&argv[1]);
     }
 
     cerr << "Error: unknown sub-command " << argv[1] << endl;

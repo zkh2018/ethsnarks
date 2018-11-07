@@ -8,6 +8,8 @@ add_library(ethsnarks_gadgets STATIC
 	sha256_full.cpp
 	shamir_poly.cpp
 
+	lookup_1bit.cpp
 	lookup_2bit.cpp
+	lookup_3bit.cpp
 	subadd.cpp
 )

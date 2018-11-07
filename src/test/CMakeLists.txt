@@ -8,8 +8,16 @@ add_executable(test_vk_raw2json test_vk_raw2json.cpp)
 target_link_libraries(test_vk_raw2json ethsnarks_common)
 
 
+add_executable(test_lookup_1bit test_lookup_1bit.cpp)
+target_link_libraries(test_lookup_1bit ethsnarks_common)
+
+
 add_executable(test_lookup_2bit test_lookup_2bit.cpp)
 target_link_libraries(test_lookup_2bit ethsnarks_common)
+
+
+add_executable(test_lookup_3bit test_lookup_3bit.cpp)
+target_link_libraries(test_lookup_3bit ethsnarks_common)
 
 
 add_executable(test_load_proofkey test_load_proofkey.cpp)

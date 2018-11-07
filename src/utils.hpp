@@ -26,6 +26,8 @@ libff::bit_vector bytes_to_bv(const uint8_t *in_bytes, const size_t in_count);
 
 VariableArrayT VariableArray_from_bits( ProtoboardT &in_pb, const libff::bit_vector& bits, const std::string &annotation_prefix="" );
 
+void dump_pb_r1cs_constraints(const ProtoboardT& pb);
+
 
 inline const VariableArrayT make_var_array( ProtoboardT &in_pb, size_t n, const std::string &annotation )
 {
