@@ -73,7 +73,7 @@ test: pinocchio-test cxx-tests python-test truffle-test
 python-test:
 	$(COVERAGE) -m unittest discover test/
 
-cxx-tests:
+cxx-tests: zksnark_element/miximus.vk.json
 	./bin/test_field_packing > /dev/null
 	./bin/test_hashpreimage
 	./bin/test_longsightl
@@ -100,6 +100,7 @@ cxx-tests:
 	time ./bin/hashpreimage_cli verify zksnark_element/hpi.vk.json zksnark_element/hpi.proof.json
 	time ./bin/test_load_proofkey zksnark_element/hpi.pk.raw
 
+zksnark_element/miximus.vk.json:
 	time ./bin/miximus_cli genkeys zksnark_element/miximus.pk.raw zksnark_element/miximus.vk.json
 
 
@@ -197,7 +198,7 @@ $(TRUFFLE): node_modules
 $(GANACHE): node_modules
 
 .PHONY: truffle-test
-truffle-test: $(TRUFFLE)
+truffle-test: $(TRUFFLE) zksnark_element/miximus.vk.json
 	$(NPM) run test
 
 truffle-migrate: $(TRUFFLE)
