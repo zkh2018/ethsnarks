@@ -24,8 +24,8 @@ from .numbertheory import SquareRootError
 
 JUBJUB_Q = SNARK_SCALAR_FIELD
 JUBJUB_ORDER = 21888242871839275222246405745257275088614511777268538073601725287587578984328
-JUBJUB_L = JUBJUB_ORDER//8
 JUBJUB_C = 8		# Cofactor
+JUBJUB_L = JUBJUB_ORDER//JUBJUB_C
 JUBJUB_A = 168700	# Coefficient A
 JUBJUB_D = 168696	# Coefficient D
 
@@ -129,9 +129,12 @@ class Point(AbstractCurveOps, namedtuple('_Point', ('x', 'y'))):
 		Hashes the input entropy repeatedly, and interprets it as the Y
 		coordinate then recovers the X coordinate, if no valid point can be
 		recovered Y is incremented until a matching X coordinate is found.
+
+		The point is guaranteed to be prime order and not the identity
 		"""
 		assert isinstance(entropy, bytes)
 		entropy = sha256(entropy).digest()
+
 		y = FQ(int.from_bytes(entropy, 'big'))
 		while True:
 			try:
@@ -140,32 +143,21 @@ class Point(AbstractCurveOps, namedtuple('_Point', ('x', 'y'))):
 				y += 1
 				continue
 
-			"""
-			# XXX: verify point is on prime-ordered sub-curve
-			if p * JUBJUB_L != Point.infinity():
-				y += 1
-				continue
-			"""
+			# Multiply point by cofactor, ensures it's on the prime-order subgroup
+			p = p * JUBJUB_C
+
+			# Recover the point again to correct the sign of the point
+			# TODO: find a more efficient mechanism to determine the sign
+			p = cls.from_y(p.y)
+
+			# Verify point is on prime-ordered sub-group
+			if (p * JUBJUB_L) != Point.infinity():
+				raise RuntimeError("Point not on prime-ordered subgroup")
 
 			return p
 
-	def as_edwards_yz(self):
-		return EdwardsYZPoint(self.y, FQ(1))
-
-	def as_mont_xz(self):
-		"""
-		IACR 2008/218
-		2.Switching to Edwards curves and back
-		"""
-		return MontXZPoint(FQ(1) + self.y, FQ(1) - self.y)
-
 	def as_proj(self):
 		return ProjPoint(self.x, self.y, FQ(1))
-
-	def as_mont(self):
-		u = (1 + self.y) / (1 - self.y)
-		v = (1 + self.y) / ( (1 - self.y) * self.x )
-		return MontPoint(u, v)
 
 	def as_etec(self):
 		return EtecPoint(self.x, self.y, self.x*self.y, FQ(1))
@@ -204,198 +196,12 @@ class Point(AbstractCurveOps, namedtuple('_Point', ('x', 'y'))):
 		return Point(FQ(0), FQ(1))
 
 
-class EdwardsYZPoint(AbstractCurveOps, namedtuple('_EdwardsYZPoint', ('y', 'z'))):
-	def as_point(self):
-		"""
-		Rescale the y coordinate, then recover the point
-		"""
-		return Point.from_y(self.y / self.z)
-
-	def as_edwards_yz(self):
-		return self
-
-	def rescale(self):
-		return EdwardsYZPoint(self.y / self.z, FQ(1))
-
-	def as_proj(self):
-		return self.as_point().as_proj()
-
-	def as_mont_xz(self):
-		"""
-		IACR 2008/218
-		2.Switching to Edwards curves and back
-		"""
-		return MontXZPoint(self.z + self.y, self.z - self.y)
-
-	def as_mont(self):
-		return self.as_mont_xz().as_mont()
-
-	def as_etec(self):
-		return self.as_point().as_etec()
-
-	def double(self):
-		return self.as_mont_xz().double()
-
-	def infinity(self):
-		return EdwardsYZPoint(FQ(1), FQ(1))
-
-	def valid(self):
-		return self.as_point().valid()
-
-
-class MontXZPoint(AbstractCurveOps, namedtuple('_MontXZPoint', ('x', 'z'))):
-	def as_edwards_yz(self):
-		"""
-		IACR 2008/218
-		2.Switching to Edwards curves and back
-		"""
-		return EdwardsYZPoint(self.x - self.z, self.x + self.z)
-
-	def as_mont(self):
-		"""
-		Rescale the point, then recover the Y coordinate
-		"""
-		# XXX: needs conversion via Edwards YZ, then to full point, then back to Montgomery form!!
-		return self.as_edwards_yz().as_point().as_mont()
-
-	def as_mont_xz(self):
-		return self
-
-	def as_etec(self):
-		return self.as_point().as_etec()
-
-	def as_proj(self):
-		return self.as_point().as_etec().as_proj()
-
-	def as_point(self):
-		return self.as_edwards_yz().as_point()
-
-	def valid(self):
-		return self.as_point().valid()
-
-	def rescale(self):
-		return MontXZPoint(self.x / self.z, FQ(1))
-
-	def double(self):
-		"""
-		dbl-1987-m-3
-		Source: 1987 Montgomery "Speeding the Pollard and elliptic curve methods of factorization",
-		page 261, sixth display, plus common-subexpression elimination
-
-		R1CS Constraints:
-
-			AA = [x + z] * [x + z]
-			BB = [x - z] * [x - z]
-			xz = AA * BB
-			z = [AA - BB] * [BB + a24*[AA - BB]]
-		"""
-		A = self.x + self.z
-		AA = A**2
-		B = self.x - self.z
-		BB = B**2
-		xz = AA*BB
-		C = AA-BB
-		z = C*(BB+MONT_A24*C)
-		return MontXZPoint(xz, z)
-
-
-class MontPoint(AbstractCurveOps, namedtuple('_MontPoint', ('x', 'y'))):
-	"""
-	This also implements the mixed Edwards-Montgomery representation described in the
-	paper:
-
-	 "Efficient arithmetic on elliptic curves using a mixed Edwards-Montgomery represetation"
-	 - https://eprint.iacr.org/2008/218.pdf
-	   Wouter Gastryck, Steven Galbraith and Reza Rezaeian Farashahi
-
-	And:
-
-	 "Montgomery curves and the Montgomery ladder"
-	  - https://eprint.iacr.org/2017/293.pdf
-		Daniel J. Bernstein and Tanja Lange
-	"""
-	def valid(self):
-		"""
-		B*y^2 = x^3 + A*x^2 + x
-		"""
-		y2 = self.y * self.y
-		x2 = self.x * self.x
-		x3 = x2 * self.x
-		return MONT_B * y2 == x3 + MONT_A*x2 + self.x
-
-	@classmethod
-	def from_x(cls, x):
-		"""
-		There are two valid y points for every x:
-
-			(x, y) and (x, -y)
-		"""
-		x2 = x * x
-		x3 = x2 * x
-		y2 = x3 + MONT_A*x2 + x
-		return cls(x, y2.sqrt())
-
-	def as_mont(self):
-		return self
-
-	def as_mont_xz(self):
-		return MontXZPoint(self.x, FQ(1))
-
-	def as_point(self):
-		"""
-		IACR 2008/218
-		2.Switching to Edwards curves and back
-
-			Phi : M -> Ed : (x,y) -> (x/y, (x-1)/(x+1))
-			Psi : Ed -> M : (X,Y) -> ((1+Y)/(1-Y), X * ((1+Y)/(1-Y)))
-
-		In projective coordinates this correspondence becomes remarkably simple:
-
-			Phi : (x, z) -> (x - z, x + z)
-			Psi : (Y, Z) -> (Z + Y, Z - Y)
-
-		Therefore, from the x/Y-coordinate-only viewpoint, switching between
-		Edwards curves and Montgomery curves is quasi cost-free.
-		"""
-		x = self.x / self.y
-		y = (self.x - 1) / (self.x + 1)
-		return Point(x, y)
-
-	def as_edwards_yz(self):
-		return EdwardsYZPoint(self.x - 1, self.x + 1)
-
-	def as_proj(self):
-		return self.as_point().as_proj()
-
-	def as_etec(self):
-		return self.as_point().as_etec()
-
-	def neg(self):
-		return MontPoint(self.x, -self.y)
-
-	def double(self):
-		return MontXZPoint(self.x, FQ(1)).double()
-
-
 class ProjPoint(AbstractCurveOps, namedtuple('_ProjPoint', ('x', 'y', 'z'))):
 	def rescale(self):
 		return ProjPoint(self.x / self.z, self.y / self.z, FQ(1))
 
 	def as_proj(self):
 		return self
-
-	def as_mont(self):
-		return self.as_point().as_mont()
-
-	def as_mont_xz(self):
-		"""
-		IACR 2008/218
-		2.Switching to Edwards curves and back
-		"""
-		return MontXZPoint(self.z + self.y, self.z - self.y)
-
-	def as_edwards_yz(self):
-		return EdwardsYZPoint(self.y, self.z)
 
 	def as_etec(self):
 		"""
@@ -486,16 +292,6 @@ class EtecPoint(AbstractCurveOps, namedtuple('_EtecPoint', ('x', 'y', 't', 'z'))
 	def as_etec(self):
 		return self
 
-	def as_mont_xz(self):
-		"""
-		IACR 2008/218
-		2.Switching to Edwards curves and back
-		"""
-		return MontXZPoint(self.z + self.y, self.z - self.y)
-
-	def as_edwards_yz(self):
-		return EdwardsYZPoint(self.y, self.z)
-
 	def as_point(self):
 		"""
 		Ignoring the T value, project from 3d X,Y,Z to 2d X,Y coordinates
@@ -513,11 +309,6 @@ class EtecPoint(AbstractCurveOps, namedtuple('_EtecPoint', ('x', 'y', 't', 'z'))
 			(X : Y : T : Z) -> (X, Y, Z)
 		"""
 		return ProjPoint(self.x, self.y, self.z)
-
-	def as_mont(self):
-		u = (1 + self.y) / (1 - self.y)
-		v = (1 + self.y) / ( (1 - self.y) * self.x )
-		return MontPoint(u, v)
 
 	@staticmethod
 	def infinity():
