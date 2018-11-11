@@ -39,28 +39,38 @@ void bits2blocks_padded(ProtoboardT& in_pb, const VariableArrayT& in_bits, size_
         block.resize(block_size);
 
         size_t block_end = (in_bits_offset + block_size);
-        size_t j = 0;
+        size_t bits_end = block_end;
+        if( bits_end > in_bits.size() ) {
+            bits_end = in_bits.size();
+        }
 
+        size_t j = 0;
         if( in_bits_offset < in_bits.size() ) {
-            while( in_bits_offset < block_end ) {
+            while( in_bits_offset < bits_end ) {
                 block[j++].index = in_bits[in_bits_offset++].index;
             }
         }
 
-        while( in_bits_offset < block_end ) {
-            block[j++].allocate(in_pb, FMT("padding", "[%zu]", in_bits_offset++));
+        // Allocate remaining bits in the block
+        while( in_bits_offset < block_end )
+        {
+            block[j].allocate(in_pb, FMT("padding", "[%zu]", in_bits_offset));
+
+            // Set the bit immediately after the input bits to 1
+            if( in_bits_offset == in_bits.size() ) {
+                in_pb.val(block[j]) = FieldT::one();
+            }
+
+            j += 1;
+            in_bits_offset += 1;
         }
     }
 
     auto& last_block = out_blocks[out_blocks.size() - 1];
 
-    // Set the bit immediately after the input bits to 1
-    size_t one_flag_offset = in_bits.size() % block_size;
-    in_pb.val(last_block[ one_flag_offset ]) = FieldT::one();
-
     // Add 64bit big-endian length specifier to the end
     size_t bitlen = in_bits.size();
-    static const libff::bit_vector bitlen_bits = libff::int_list_to_bits({
+    const libff::bit_vector bitlen_bits = libff::int_list_to_bits({
         (bitlen >> 56) & 0xFF,
         (bitlen >> 48) & 0xFF,
         (bitlen >> 40) & 0xFF,

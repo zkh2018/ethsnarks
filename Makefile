@@ -83,6 +83,7 @@ cxx-tests: zksnark_element/miximus.vk.json
 	./bin/test_r1cs_gg_ppzksnark_zok
 	./bin/test_shamir_poly
 	./bin/test_sha256_full_gadget
+	./bin/test_sha256_many > /dev/null
 	./bin/test_lookup_1bit
 	./bin/test_lookup_2bit
 	./bin/test_lookup_3bit
