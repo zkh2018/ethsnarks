@@ -83,7 +83,7 @@ void bits2blocks_padded(ProtoboardT& in_pb, const VariableArrayT& in_bits, size_
     size_t k = 0;
     for( size_t j = (SHA256_block_size - 64); j < SHA256_block_size; j++ )
     {
-        in_pb.val(last_block[j]) = bitlen_bits[k++];
+        in_pb.val(last_block[j]) = FieldT(bitlen_bits[k++]);
     }
 }
 
