@@ -287,8 +287,7 @@ class MontXZPoint(AbstractCurveOps, namedtuple('_MontXZPoint', ('x', 'z'))):
 			AA = [x + z] * [x + z]
 			BB = [x - z] * [x - z]
 			xz = AA * BB
-			C = AA - BB
-			z = C * [BB + a24*C]
+			z = [AA - BB] * [BB + a24*[AA - BB]]
 		"""
 		A = self.x + self.z
 		AA = A**2

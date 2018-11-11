@@ -60,6 +60,7 @@ The following gadgets are available
 
  * 1-of-N
  * [2-bit lookup table](src/gadgets/lookup_2bit.cpp)
+ * [3-bit lookup table](src/gadgets/lookup_3bit.cpp)
  * [MiMC](https://eprint.iacr.org/2016/492) / LongsightL cipher
  * [Miyaguchi-Preneel one-way function](https://en.wikipedia.org/wiki/One-way_compression_function)
  * 'Field-native' Merkle tree

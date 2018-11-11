@@ -20,6 +20,7 @@ typedef libsnark::protoboard<FieldT> ProtoboardT;
 typedef libsnark::pb_variable<ethsnarks::FieldT> VariableT;
 typedef libsnark::pb_variable_array<FieldT> VariableArrayT;
 typedef libsnark::pb_linear_combination<FieldT> LinearCombinationT;
+typedef libsnark::pb_linear_combination_array<FieldT> LinearCombinationArrayT;
 typedef libsnark::linear_term<FieldT> LinearTermT;
 typedef libsnark::gadget<ethsnarks::FieldT> GadgetT;
 
@@ -28,10 +29,6 @@ typedef libsnark::r1cs_gg_ppzksnark_zok_proving_key<ppT> ProvingKeyT;
 typedef libsnark::r1cs_gg_ppzksnark_zok_verification_key<ppT> VerificationKeyT;
 typedef libsnark::r1cs_gg_ppzksnark_zok_primary_input<ppT> PrimaryInputT;
 typedef libsnark::r1cs_gg_ppzksnark_zok_auxiliary_input<ppT> AuxiliaryInputT;
-
-//using ProverF = libsnark::r1cs_gg_ppzksnark_zok_prover<ppT>;
-//typedef libsnark::r1cs_gg_ppzksnark_zok_verifier_strong_IC<ppT> VerifierF;
-//typedef libsnark::r1cs_gg_ppzksnark_zok_generator<ppT> GeneratorF;
 
 }
 

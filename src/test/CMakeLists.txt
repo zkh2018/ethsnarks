@@ -35,6 +35,10 @@ add_executable(test_sha256_full_gadget test_sha256_full_gadget.cpp)
 target_link_libraries(test_sha256_full_gadget ethsnarks_common crypto)
 
 
+add_executable(test_sha256_many test_sha256_many.cpp)
+target_link_libraries(test_sha256_many ethsnarks_common crypto)
+
+
 add_executable(test_proof_raw2json test_proof_raw2json.cpp)
 target_link_libraries(test_proof_raw2json ethsnarks_common)
 

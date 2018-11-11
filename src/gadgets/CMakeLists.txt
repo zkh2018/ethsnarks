@@ -6,6 +6,7 @@ add_library(ethsnarks_gadgets STATIC
 
 	one_of_n.cpp
 	sha256_full.cpp
+	sha256_many.cpp
 	shamir_poly.cpp
 
 	lookup_1bit.cpp

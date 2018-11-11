@@ -139,6 +139,7 @@ void print_bytes( const char *prefix, const size_t n_bytes, const uint8_t *in_by
 
 void dump_pb_r1cs_constraints(const ProtoboardT& pb)
 {
+#ifdef DEBUG
     auto full_variable_assignment = pb.primary_input();
     const auto auxiliary_input = pb.auxiliary_input();
     full_variable_assignment.insert(full_variable_assignment.end(), auxiliary_input.begin(), auxiliary_input.end());
@@ -161,6 +162,7 @@ void dump_pb_r1cs_constraints(const ProtoboardT& pb)
         dump_r1cs_constraint(constraint, full_variable_assignment, cs.variable_annotations);
         printf("\n");
     }
+#endif
 }
 
 
