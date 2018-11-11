@@ -146,10 +146,6 @@ class Point(AbstractCurveOps, namedtuple('_Point', ('x', 'y'))):
 			# Multiply point by cofactor, ensures it's on the prime-order subgroup
 			p = p * JUBJUB_C
 
-			# Recover the point again to correct the sign of the point
-			# TODO: find a more efficient mechanism to determine the sign
-			p = cls.from_y(p.y)
-
 			# Verify point is on prime-ordered sub-group
 			if (p * JUBJUB_L) != Point.infinity():
 				raise RuntimeError("Point not on prime-ordered subgroup")

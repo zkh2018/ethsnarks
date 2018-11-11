@@ -51,7 +51,7 @@ class TestJubjub(unittest.TestCase):
 		for _ in range(0, 10):
 			p = self._point_r()
 			q = Point.from_y(p.y)
-			self.assertEqual(p, q)
+			self.assertTrue(p.x in [q.x, -q.x])
 
 	def test_6_recover_y(self):
 		"""
@@ -90,7 +90,7 @@ class TestJubjub(unittest.TestCase):
 
 	def test_8_hash_to_point(self):
 		p = Point.from_hash(b'test')
-		expected = Point(x=15577855429915469259082910404430224363679763503760569987003124820590856199664,
+		expected = Point(x=6310387441923805963163495340827050724868600896655464356695079365984952295953,
 						 y=12999349368805111542414555617351208271526681431102644160586079028197231734677)
 		self.assertEqual(p, expected)
 
