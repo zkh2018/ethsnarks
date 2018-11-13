@@ -7,7 +7,7 @@
 namespace ethsnarks {
 
 /**
-* Generalised boolean, returns true if number is zero, otherwise false
+* Generalised boolean, returns true if number is non-zero, otherwise false
 */
 class IsNonZero : public GadgetT {
 public:

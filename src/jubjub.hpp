@@ -8,6 +8,8 @@
 #include "jubjub/scalarmult.hpp"
 #include "jubjub/fixed_base_mul.hpp"
 #include "jubjub/conditional_point.hpp"
+#include "jubjub/commitment.hpp"
+#include "jubjub/notloworder.hpp"
 
 // JUBJUB_HPP_
 #endif

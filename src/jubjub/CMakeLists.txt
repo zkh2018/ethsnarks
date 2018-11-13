@@ -10,4 +10,5 @@ add_library(ethsnarks_jubjub STATIC
   doubler.cpp
   isoncurve.cpp
   commitment.cpp
+  notloworder.cpp
 )

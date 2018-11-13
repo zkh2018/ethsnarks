@@ -18,3 +18,6 @@ target_link_libraries(test_jubjub_isoncurve ethsnarks_common ethsnarks_jubjub)
 
 add_executable(test_jubjub_commitment test_jubjub_commitment.cpp)
 target_link_libraries(test_jubjub_commitment ethsnarks_common ethsnarks_jubjub)
+
+add_executable(test_jubjub_notloworder test_jubjub_notloworder.cpp)
+target_link_libraries(test_jubjub_notloworder ethsnarks_common ethsnarks_jubjub)
