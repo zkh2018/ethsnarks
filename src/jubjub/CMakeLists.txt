@@ -9,4 +9,5 @@ add_library(ethsnarks_jubjub STATIC
   adder.cpp
   doubler.cpp
   isoncurve.cpp
+  commitment.cpp
 )

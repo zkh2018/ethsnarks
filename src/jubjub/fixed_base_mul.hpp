@@ -48,9 +48,9 @@ public:
 
 	void generate_r1cs_witness ();
 
-	const VariableT& result_x();
+	const VariableT& result_x() const;
 
-	const VariableT& result_y();
+	const VariableT& result_y() const;
 };
 
 // namespace jubjub

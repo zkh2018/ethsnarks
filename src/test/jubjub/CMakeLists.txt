@@ -15,3 +15,6 @@ target_link_libraries(test_jubjub_mul_fixed ethsnarks_common ethsnarks_jubjub)
 
 add_executable(test_jubjub_isoncurve test_jubjub_isoncurve.cpp)
 target_link_libraries(test_jubjub_isoncurve ethsnarks_common ethsnarks_jubjub)
+
+add_executable(test_jubjub_commitment test_jubjub_commitment.cpp)
+target_link_libraries(test_jubjub_commitment ethsnarks_common ethsnarks_jubjub)
