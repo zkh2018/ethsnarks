@@ -17,7 +17,7 @@
     along with Miximus.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-pragma solidity 0.4.24;
+pragma solidity ^0.4.24;
 
 import "./Verifier.sol";
 import "./SnarkUtils.sol";
