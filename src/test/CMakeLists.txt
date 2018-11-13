@@ -70,3 +70,7 @@ target_link_libraries(test_longsightl_hash_mp ethsnarks_common)
 add_executable(test_subadd test_subadd.cpp)
 target_link_libraries(test_subadd ethsnarks_common)
 
+
+add_executable(test_isnonzero test_isnonzero.cpp)
+target_link_libraries(test_isnonzero ethsnarks_common)
+

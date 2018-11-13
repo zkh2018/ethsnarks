@@ -94,6 +94,7 @@ cxx-tests: zksnark_element/miximus.vk.json
 	./bin/test_jubjub_mul
 	./bin/test_jubjub_mul_fixed
 	./bin/test_jubjub_isoncurve > /dev/null
+	./bin/test_isnonzero
 
 	time ./bin/hashpreimage_cli genkeys zksnark_element/hpi.pk.raw zksnark_element/hpi.vk.json
 	ls -lah zksnark_element/hpi.pk.raw
