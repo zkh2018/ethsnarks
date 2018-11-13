@@ -11,4 +11,5 @@ add_library(ethsnarks_jubjub STATIC
   isoncurve.cpp
   commitment.cpp
   notloworder.cpp
+  validator.cpp
 )

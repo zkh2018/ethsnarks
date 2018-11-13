@@ -5,7 +5,7 @@
 namespace ethsnarks {
 
 
-bool test_jubjub_mul()
+bool test_jubjub_mul_fixed()
 {
     jubjub::Params params;
     ProtoboardT pb;
@@ -50,7 +50,7 @@ int main( int argc, char **argv )
     // Types for board 
     ethsnarks::ppT::init_public_params();
 
-    if( ! ethsnarks::test_jubjub_mul() )
+    if( ! ethsnarks::test_jubjub_mul_fixed() )
     {
         std::cerr << "FAIL\n";
         return 1;
