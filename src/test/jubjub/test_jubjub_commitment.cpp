@@ -6,7 +6,7 @@ using ethsnarks::FieldT;
 namespace ethsnarks {
     
 bool test_jubjub_commitment(
-    const std::vector<jubjub::CommitmentPoint> in_points,
+    const std::vector<jubjub::Point> in_points,
     const std::vector<FieldT> in_scalars,
     const FieldT in_expected_x,
     const FieldT in_expected_y

@@ -170,8 +170,8 @@ class Point(AbstractCurveOps, namedtuple('_Point', ('x', 'y'))):
 		"""
 		assert isinstance(entropy, bytes)
 		entropy = sha256(entropy).digest()
-
-		y = FQ(int.from_bytes(entropy, 'big'))
+		entropy_as_int = int.from_bytes(entropy, 'big')
+		y = FQ(entropy_as_int)
 		while True:
 			try:
 				p = cls.from_y(y)

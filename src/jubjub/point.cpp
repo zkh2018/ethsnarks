@@ -1,4 +1,7 @@
 #include "jubjub/point.hpp"
+#include <openssl/sha.h>
+
+using libff::bigint;
 
 
 namespace ethsnarks {
@@ -43,9 +46,69 @@ Point::Point(
 }
 
 
+const Point Point::infinity() const
+{
+    return Point(FieldT::zero(), FieldT::one());
+}
+
+
 const Point Point::neg() const
 {
     return Point(-x, y);
+}
+
+
+const Point Point::dbl() const
+{
+    return add(*this);
+}
+
+
+const Point Point::add(const Point& other) const
+{
+    const Params params;
+
+    const auto x3_rhs = FieldT::one() + params.d * x*other.x*y*other.y;
+    const auto x3_lhs = x*other.y + y*other.x;
+
+    const auto y3_lhs = y*other.y - params.a*x*other.x;
+    const auto y3_rhs = FieldT::one() - params.d * x*other.x*y*other.y;
+
+    return Point(x3_lhs * x3_rhs.inverse(), y3_lhs * y3_rhs.inverse());
+}
+
+
+const Point Point::from_hash( void *in_bytes, size_t n, const Params& params )
+{
+    // Hash input
+    SHA256_CTX ctx;
+    uint8_t output_digest[SHA256_DIGEST_LENGTH];
+    SHA256_Init(&ctx);
+    SHA256_Update(&ctx, in_bytes, n);
+    SHA256_Final(output_digest, &ctx);
+
+    // Convert output to MPZ
+    mpz_t output_as_mpz;
+    mpz_init(output_as_mpz);
+    mpz_import(
+        output_as_mpz,              // output
+        SHA256_DIGEST_LENGTH,       // count
+        1,                          // order
+        sizeof(output_digest[0]),   // size
+        1,                          // endian (1, MSB first)
+        0,                          // nails
+        output_digest);             // op
+
+    // Then convert to bigint
+    const bigint<FieldT::num_limbs> y_bigint(output_as_mpz);
+    const FieldT y(y_bigint);
+
+    // Finally derive point from that coordinate
+    const auto result = from_y_always(y, params);
+    mpz_clear(output_as_mpz);
+
+    // Multiply point by cofactor, ensures it's on the prime-order subgroup
+    return result.dbl().dbl().dbl();
 }
 
 

@@ -13,4 +13,7 @@ add_library(ethsnarks_jubjub STATIC
   notloworder.cpp
   validator.cpp
   point.cpp
+  pedersen_hash.cpp
 )
+
+target_link_libraries(ethsnarks_jubjub crypto)

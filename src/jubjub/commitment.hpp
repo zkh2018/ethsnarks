@@ -3,23 +3,13 @@
 
 #include "ethsnarks.hpp"
 #include "jubjub/adder.hpp"
+#include "jubjub/point.hpp"
 #include "jubjub/fixed_base_mul.hpp"
 
 
 namespace ethsnarks {
 
 namespace jubjub {
-
-
-/**
-* Fixed base point, used as part of the commitment
-* This makes passing in an array of points easier
-* e.g. {{FieldT("..."), FieldT("...")}, {...}}
-*/
-struct CommitmentPoint {
-	FieldT x;
-	FieldT y;
-};
 
 
 /**
@@ -50,7 +40,7 @@ struct CommitmentPoint {
 class Commitment : public GadgetT
 {
 public:
-	std::vector<CommitmentPoint> m_points;
+	std::vector<Point> m_points;
 	std::vector<VariableArrayT> m_scalars;
 	std::vector<fixed_base_mul> m_multipliers;
 	std::vector<PointAdder> m_adders;
@@ -58,7 +48,7 @@ public:
 	Commitment(
 		ProtoboardT& in_pb,
 		const Params& in_params,
-		const std::vector<CommitmentPoint> in_points,
+		const std::vector<Point> in_points,
 		const std::vector<VariableArrayT> in_scalars,
 		const std::string &annotation_prefix );
 
