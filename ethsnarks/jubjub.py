@@ -23,11 +23,25 @@ from .numbertheory import SquareRootError
 
 
 JUBJUB_Q = SNARK_SCALAR_FIELD
-JUBJUB_ORDER = 21888242871839275222246405745257275088614511777268538073601725287587578984328
+JUBJUB_E = 21888242871839275222246405745257275088614511777268538073601725287587578984328	# #E is the order of the curve E
 JUBJUB_C = 8		# Cofactor
-JUBJUB_L = JUBJUB_ORDER//JUBJUB_C
+JUBJUB_L = JUBJUB_E//JUBJUB_C	# L*B = 0, and (2^C)*L == #E
 JUBJUB_A = 168700	# Coefficient A
 JUBJUB_D = 168696	# Coefficient D
+
+
+# Verify JUBJUB_A is a non-zero square
+try:
+	FQ(JUBJUB_A).sqrt()
+except SquareRootError:
+	raise RuntimeError("JUBJUB_A is required to be a square")
+
+# Verify JUBJUB_D is non-square
+try:
+	FQ(JUBJUB_D).sqrt()
+	raise RuntimeError("JUBJUB_D is required to be a square")
+except SquareRootError:
+	pass
 
 
 """
@@ -49,6 +63,10 @@ assert JUBJUB_A == (MONT_A+2)/MONT_B
 assert JUBJUB_D == (MONT_A-2)/MONT_B
 
 
+def is_negative(v):
+	assert isinstance(v, FQ)
+	return v.n < (-v).n
+
 class AbstractCurveOps(object):
 	def __neg__(self):
 		return self.neg()
@@ -68,17 +86,25 @@ class AbstractCurveOps(object):
 	def rescale(self):
 		return self
 
+	def compress(self):
+		return self.as_point.compress()
+
+	@classmethod
+	def decompress(cls, point):
+		return Point.decompress(point).as_proj()
+
 	def is_negative(self):
-		p = self.as_point()
-		q = Point.from_y(p.y)
-		return p.x == -q.x
+		"""
+		The point is negative if the X coordinate is lower than its modulo negative
+		"""
+		return is_negative(self.as_point().x)
 
 	def sign(self):
 		return 1 if self.is_negative() else 0
 
 	def mult(self, scalar):
 		if isinstance(scalar, FQ):
-			if scalar.m not in [SNARK_SCALAR_FIELD, JUBJUB_ORDER, JUBJUB_L]:
+			if scalar.m not in [SNARK_SCALAR_FIELD, JUBJUB_E, JUBJUB_L]:
 				raise ValueError("Invalid field modulus")
 			scalar = scalar.n
 		p = self
@@ -95,15 +121,25 @@ class AbstractCurveOps(object):
 
 class Point(AbstractCurveOps, namedtuple('_Point', ('x', 'y'))):
 	@classmethod
-	def from_y(cls, y):
+	def from_y(cls, y, sign=None):
 		"""
 		x^2 = (y^2 - 1) / (d * y^2 - a)
 		"""
 		assert isinstance(y, FQ)
 		assert y.m == JUBJUB_Q
 		ysq = y * y
-		xx = (ysq - 1) / (JUBJUB_D * ysq - JUBJUB_A)
-		return cls(xx.sqrt(), y)
+		lhs = (ysq - 1)
+		rhs = (JUBJUB_D * ysq - JUBJUB_A)
+		xsq = lhs / rhs
+		x = xsq.sqrt()
+		if sign is not None:
+			# Used for compress & decompress
+			if (x.n & 1) != sign:
+				x = -x
+		else:
+			if is_negative(x):
+				x = -x
+		return cls(x, y)
 
 	@classmethod
 	def from_x(cls, x):
@@ -151,6 +187,38 @@ class Point(AbstractCurveOps, namedtuple('_Point', ('x', 'y'))):
 				raise RuntimeError("Point not on prime-ordered subgroup")
 
 			return p
+
+	def compress(self):
+		x = self.x.n
+		y = self.y.n
+		return int.to_bytes(y | ((x&1) << 255), 32, "little")
+
+	@classmethod
+	def decompress(cls, point):
+		"""
+		From: https://ed25519.cr.yp.to/eddsa-20150704.pdf
+
+		The encoding of F_q is used to define "negative" elements of F_q:
+		specifically, x is negative if the (b-1)-bit encoding of x is
+		lexiographically larger than the (b-1)-bit encoding of -x. In particular,
+		if q is prime and the (b-1)-bit encoding of F_q is the little-endian
+		encoding of {0, 1, ..., q-1}, then {1,3,5,...,q-2} are the negative element of F_q.
+
+		This encoding is also used to define a b-bit encoding of each element `(x,y) ∈ E`
+		as a b-bit string (x,y), namely the (b-1)-bit encoding of y followed by the sign bit.
+		the sign bit is 1 if and only if x is negative.
+
+		A parser recovers `(x,y)` from a b-bit string, while also verifying that `(x,y) ∈ E`,
+		as follows: parse the first b-1 bits as y, compute `xx = (y^2 - 1) / (dy^2 - a)`;
+		compute `x = [+ or -] sqrt(xx)` where the `[+ or -]` is chosen so that the sign of
+		`x` matches the `b`th bit of the string. if `xx` is not a square then parsing fails.
+		"""
+		if len(point) != 32:
+			raise ValueError("Invalid input length for decompression")
+		y = int.from_bytes(point, "little")
+		sign = y >> 255
+		y &= (1 << 255) - 1
+		return cls.from_y(FQ(y), sign)
 
 	def as_proj(self):
 		return ProjPoint(self.x, self.y, FQ(1))

@@ -3,7 +3,7 @@ import unittest
 from os import urandom
 
 from ethsnarks.field import FQ
-from ethsnarks.jubjub import Point, EtecPoint, ProjPoint, JUBJUB_L, JUBJUB_C, MONT_A, MONT_B, JUBJUB_ORDER
+from ethsnarks.jubjub import Point, EtecPoint, ProjPoint, JUBJUB_L, JUBJUB_C, MONT_A, MONT_B, JUBJUB_E
 from ethsnarks.numbertheory import SquareRootError
 
 
@@ -29,6 +29,13 @@ class TestJubjub(unittest.TestCase):
 			for i, r in enumerate(qoints):
 				self.assertTrue(r.valid())
 				self.assertEqual(r.rescale(), points[i].rescale(), "Conversion between %r, %r and %r" % (type(q), type(r), type(points[i])))
+
+	def test_serialise(self):
+		for _ in range(0, 10):
+			p = self._point_r()
+			s = p.compress()
+			q = Point.decompress(s)
+			self.assertEqual(p, q)
 
 	def test_3_validity(self):
 		"""
@@ -62,6 +69,25 @@ class TestJubjub(unittest.TestCase):
 			q = Point.from_x(p.x)
 			self.assertEqual(p.x, q.x)
 			self.assertTrue(p.y in [q.y, -q.y])
+
+		# These confirm compatibility across implementations
+		known_test_cases = [
+			(20616554786359396897066290204264220576319536076538991133935783866206841138898,
+			 10592275084648178561464128859907688344447649297734555224341876545305639835999),
+
+			(11610117029953798428826613242669939481045605849364609771767823351326159443609,
+			 3722409228507723418678713896319610332389736117851027921973860155000856891140),
+
+			(21680045038775759642189425577922609025982451102460978847266452551495203884482,
+			 6168854640927408084732268325506202000962285527703379133980054444068219727690),
+
+			(18879782252170350866370777185563748782908354718484814019474117245310535071541,
+			 2946855428411022359321514310392164228862398839132752152798293872913224129374)
+		]
+		for x, y in known_test_cases:
+			x, y = FQ(x), FQ(y)
+			q = Point.from_y(y)
+			self.assertEqual(q.x, x)
 
 	def test_7_negate(self):
 		"""
@@ -175,8 +201,8 @@ class TestJubjub(unittest.TestCase):
 
 	def test_negate_order(self):
 		p = self._point_r()
-		self.assertEqual(p * (JUBJUB_ORDER+1), p)
-		self.assertEqual(p * (JUBJUB_ORDER-1), p.neg())
+		self.assertEqual(p * (JUBJUB_E+1), p)
+		self.assertEqual(p * (JUBJUB_E-1), p.neg())
 		self.assertEqual(p - p - p, p.neg())
 
 	def test_multiplicative(self):
@@ -186,14 +212,14 @@ class TestJubjub(unittest.TestCase):
 		b = FQ.random()
 		B = G*b
 
-		ab = (a.n * b.n) % JUBJUB_ORDER
+		ab = (a.n * b.n) % JUBJUB_E
 		AB = G*ab
 		self.assertEqual(A*b, AB)
 		self.assertEqual(B*a, AB)
 
 	def test_cyclic(self):
 		G = self._point_r()
-		self.assertEqual(G * (JUBJUB_ORDER+1), G)
+		self.assertEqual(G * (JUBJUB_E+1), G)
 
 	def test_double_via_add(self):
 		a = self._point_a()

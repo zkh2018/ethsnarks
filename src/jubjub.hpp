@@ -10,6 +10,7 @@
 #include "jubjub/conditional_point.hpp"
 #include "jubjub/commitment.hpp"
 #include "jubjub/notloworder.hpp"
+#include "jubjub/pedersen_hash.hpp"
 
 // JUBJUB_HPP_
 #endif

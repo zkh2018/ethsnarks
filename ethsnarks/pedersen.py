@@ -27,19 +27,23 @@ To homomorphically hash the two points:
 
 	The result of the hash is the point:
 
-		BX*P1.x + BY.P1.y + BX.P2.x + BY.P2.y
+		BX*P1.x + BY*P1.y + BX*P2.x + BY*P2.y
 
 	The hash will be the same if either point is swapped
 	with the other, e.g. H(P1,P2) is the same as H(P2,P1).
+
+	This provides a basis for 'chemeleon hashes', or where
+	malleability is a feature rather than a defect.
 """
 
 import math
+from math import floor, log2
 from struct import pack
 
 from .jubjub import Point, JUBJUB_L
 
 
-MAX_SEGMENT_BITS = math.floor(math.log2(JUBJUB_L))
+MAX_SEGMENT_BITS = floor(log2(JUBJUB_L))
 MAX_SEGMENT_BYTES = MAX_SEGMENT_BITS // 8
 
 
@@ -50,7 +54,7 @@ def pedersen_hash_basepoint(name, i):
 	The name and sequence numbers are used a unique identifier.
 	Then HashToPoint is run on the name+seq to get the base point
 
-	XXX: Ethereum compatible
+	XXX: Does this need to be Ethereum compatible? Given that sqrt is too expensive
 	"""
 	seq = pack('>L', i)
 	max_name_len = MAX_SEGMENT_BYTES - len(seq)

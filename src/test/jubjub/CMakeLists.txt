@@ -21,3 +21,6 @@ target_link_libraries(test_jubjub_commitment ethsnarks_common ethsnarks_jubjub)
 
 add_executable(test_jubjub_notloworder test_jubjub_notloworder.cpp)
 target_link_libraries(test_jubjub_notloworder ethsnarks_common ethsnarks_jubjub)
+
+add_executable(test_jubjub_point test_jubjub_point.cpp)
+target_link_libraries(test_jubjub_point ethsnarks_common ethsnarks_jubjub)

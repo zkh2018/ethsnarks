@@ -12,4 +12,5 @@ add_library(ethsnarks_jubjub STATIC
   commitment.cpp
   notloworder.cpp
   validator.cpp
+  point.cpp
 )
