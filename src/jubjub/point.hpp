@@ -48,6 +48,16 @@ public:
     static const EdwardsPoint from_y_always (const FieldT in_y, const Params& params);
 
     static const EdwardsPoint from_hash( void *data, size_t n, const Params& params );
+
+    /**
+    * Determine the Y coordinate for a base point sequence
+    */
+    static const EdwardsPoint make_basepoint(const char *name, unsigned int sequence, const Params& in_params);
+
+    /**
+    * Return a sequence of base points for the given namespace
+    */
+    static const std::vector<EdwardsPoint> make_basepoints(const char *name, unsigned int n, const Params& in_params);
 };
 
 

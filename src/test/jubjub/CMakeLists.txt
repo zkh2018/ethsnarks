@@ -1,6 +1,3 @@
-add_executable(test_jubjub test_jubjub.cpp)
-target_link_libraries(test_jubjub ethsnarks_jubjub)
-
 add_executable(test_jubjub_add test_jubjub_add.cpp)
 target_link_libraries(test_jubjub_add ethsnarks_jubjub)
 

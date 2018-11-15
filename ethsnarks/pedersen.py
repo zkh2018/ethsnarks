@@ -56,14 +56,11 @@ def pedersen_hash_basepoint(name, i):
 
 	XXX: Does this need to be Ethereum compatible? Given that sqrt is too expensive
 	"""
-	seq = pack('>L', i)
-	max_name_len = MAX_SEGMENT_BYTES - len(seq)
 	if not isinstance(name, bytes):
 		raise TypeError("Name not bytes")
-	if len(name) > max_name_len:
+	if len(name) > 28:
 		raise ValueError("Name too long")
-	padding_needed = (max_name_len - len(name)) % max_name_len
-	data = bytes(padding_needed) + seq
+	data = b"%-28s%04X" % (name, i)
 	return Point.from_hash(data)
 
 

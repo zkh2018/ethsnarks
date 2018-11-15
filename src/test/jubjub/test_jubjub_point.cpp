@@ -38,6 +38,29 @@ bool test_point_from_hash( const char *data, size_t sz, const EdwardsPoint& expe
 }
 
 
+bool test_basepoint_expected( const char *name, unsigned int n, const EdwardsPoint expected )
+{
+    const jubjub::Params params;
+    const auto p = EdwardsPoint::make_basepoint(name, n, params);
+
+    if( p.y != expected.y ) {
+        std::cerr << "FAIL - expected y mismatch" << std::endl;
+        std::cerr << "Expected "; expected.y.print();
+        std::cerr << "Actual "; p.y.print();
+        return false;
+    }
+
+    if( p.x != expected.x ) {
+        std::cerr << "FAIL - expected x mismatch" << std::endl;
+        std::cerr << "Expected "; expected.x.print();
+        std::cerr << "Actual "; p.x.print();
+        return false;
+    }
+
+    return true;
+}
+
+
 // namespace ethsnarks
 }
 
@@ -111,13 +134,46 @@ static bool testcases_from_y ()
 }
 
 
+bool testcases_basepoint()
+{
+    struct TestcaseBasepoint {
+        const char *name;
+        unsigned int n;
+        EdwardsPoint expected;
+    };
+
+    std::vector<TestcaseBasepoint> test_cases = {
+        {"test", 3, {
+            FieldT("6325232514758476047657295329562397658895927829648225433723319142523734188126"),
+            FieldT("14815770185427470544334506238195577620110904285381068559206285331777725695895")}},
+        {"0123456789012345678912345678", 65534, {
+            FieldT("8763217421961576778406532484867718904583472092215613710660899805738458038487"),
+            FieldT("15658432742711332940634965710759465758177105318005110010402361107342563090103")
+        }}
+    };
+
+    int i = 0;
+    for( const auto& testcase : test_cases )
+    {
+        if( ! ethsnarks::test_basepoint_expected(testcase.name, testcase.n, testcase.expected) ) {
+            std::cerr << "FAIL testcases_basepoint " << i << std::endl;
+            return false;
+        }
+
+        i += 1;
+    }
+
+    return true;
+}
+
+
 int main( void )
 {
     ethsnarks::ppT::init_public_params();
 
     bool result = testcases_from_y();
-
     result &= testcases_from_hash();
+    result &= testcases_basepoint();
 
     if( result ) {
         std::cout << "OK" << std::endl;

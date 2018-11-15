@@ -31,16 +31,6 @@ public:
         std::vector<VariableArrayT> in_scalars,
         const std::string& annotation_prefix);
 
-    /**
-    * Determine the Y coordinate for a base point sequence
-    */
-    static const EdwardsPoint make_basepoint(const char *name, unsigned int sequence, const Params& in_params);
-
-    /**
-    * Return a sequence of base points for the given namespace
-    */
-    static const std::vector<EdwardsPoint> make_basepoints(const char *name, unsigned int n, const Params& in_params);
-
     const VariableT& result_x() const;
 
     const VariableT& result_y() const;

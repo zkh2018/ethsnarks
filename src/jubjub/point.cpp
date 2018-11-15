@@ -151,6 +151,34 @@ const MontgomeryPoint EdwardsPoint::as_montgomery(const Params& in_params) const
 }
 
 
+const EdwardsPoint EdwardsPoint::make_basepoint(const char *name, unsigned int sequence, const Params& in_params)
+{
+    unsigned int name_sz = ::strlen(name);
+    assert( name_sz <= 28 );
+    assert( sequence <= 0xFFFF );
+
+    // At most 28 characters of name
+    // Suffixed with the sequence number as a 16bit hexadecimal
+    char data[33];
+    ::sprintf(data, "%-28s%04X", name, sequence);
+
+    return EdwardsPoint::from_hash(data, 32, in_params);
+}
+
+
+const std::vector<EdwardsPoint> EdwardsPoint::make_basepoints(const char *name, unsigned int n, const Params& in_params)
+{
+    std::vector<EdwardsPoint> ret;
+
+    for( unsigned int i = 0; i < n; i++ )
+    {
+        ret.emplace_back(make_basepoint(name, i, in_params));
+    }
+
+    return ret;
+}
+
+
 // --------------------------------------------------------------------
 
 
