@@ -30,14 +30,14 @@ bool test_jubjub_mul()
         std::cerr << "x mismatch: ";
 		pb.val(the_gadget.result_x()).print();
 		std::cerr << std::endl;
-        //return false;
+        return false;
     }
 
     if( pb.val(the_gadget.result_y()) != expected_y ) {
         std::cerr << "y mismatch: ";
 		pb.val(the_gadget.result_y()).print();
 		std::cerr<< std::endl;
-        //return false;
+        return false;
     }
 
     std::cout << pb.num_constraints() << " constraints" << std::endl;

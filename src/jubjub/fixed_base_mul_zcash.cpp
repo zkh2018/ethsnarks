@@ -62,7 +62,8 @@ fixed_base_mul_zcash::fixed_base_mul_zcash(
 		m_windows_y.emplace_back(in_pb, lookup_y, window_bits_y, FMT(annotation_prefix, ".windows_y[%d]", i));
 
 		// current is at 2^2 * start, for next iteration start needs to be 2^4
-		start = current = current.dbl(in_params);
+		current = current.dbl(in_params);
+		start = current.dbl(in_params);
 	}
 
 	// Chain adders within one segment together via montgomery adders
