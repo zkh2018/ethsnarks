@@ -1,6 +1,9 @@
 #ifndef JUBJUB_SCALARMULT_HPP_
 #define JUBJUB_SCALARMULT_HPP_
 
+// Copyright (c) 2018 @HarryR
+// License: LGPL-3.0+
+
 #include "jubjub/adder.hpp"
 #include "jubjub/doubler.hpp"
 #include "jubjub/conditional_point.hpp"

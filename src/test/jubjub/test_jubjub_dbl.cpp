@@ -3,7 +3,7 @@
 
 namespace ethsnarks {
 	
-bool test_jubjub_add()
+bool test_jubjub_dbl()
 {
 	jubjub::Params params;
 
@@ -45,7 +45,7 @@ int main( int argc, char **argv )
     // Types for board 
     ethsnarks::ppT::init_public_params();
 
-    if( ! ethsnarks::test_jubjub_add() )
+    if( ! ethsnarks::test_jubjub_dbl() )
     {
         std::cerr << "FAIL\n";
         return 1;

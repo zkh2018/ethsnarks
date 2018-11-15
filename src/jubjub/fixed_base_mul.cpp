@@ -125,11 +125,11 @@ void fixed_base_mul::generate_r1cs_witness ()
 	}
 }
 
-const VariableT& fixed_base_mul::result_x() {
+const VariableT& fixed_base_mul::result_x() const {
 	return m_adders[ m_adders.size() - 1 ].result_x();
 }
 
-const VariableT& fixed_base_mul::result_y() {
+const VariableT& fixed_base_mul::result_y() const {
 	return m_adders[ m_adders.size() - 1 ].result_y();
 }
 

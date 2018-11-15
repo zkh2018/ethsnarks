@@ -27,19 +27,23 @@ To homomorphically hash the two points:
 
 	The result of the hash is the point:
 
-		BX*P1.x + BY.P1.y + BX.P2.x + BY.P2.y
+		BX*P1.x + BY*P1.y + BX*P2.x + BY*P2.y
 
 	The hash will be the same if either point is swapped
 	with the other, e.g. H(P1,P2) is the same as H(P2,P1).
+
+	This provides a basis for 'chemeleon hashes', or where
+	malleability is a feature rather than a defect.
 """
 
 import math
+from math import floor, log2
 from struct import pack
 
 from .jubjub import Point, JUBJUB_L
 
 
-MAX_SEGMENT_BITS = math.floor(math.log2(JUBJUB_L))
+MAX_SEGMENT_BITS = floor(log2(JUBJUB_L))
 MAX_SEGMENT_BYTES = MAX_SEGMENT_BITS // 8
 
 
@@ -48,18 +52,15 @@ def pedersen_hash_basepoint(name, i):
 	Create a base point for use with the windowed pedersen
 	hash function.
 	The name and sequence numbers are used a unique identifier.
-	Then HashToPoint is run on the name+seq to get the base point
-
-	XXX: Ethereum compatible
+	Then HashToPoint is run on the name+seq to get the base point.
 	"""
-	seq = pack('>L', i)
-	max_name_len = MAX_SEGMENT_BYTES - len(seq)
 	if not isinstance(name, bytes):
 		raise TypeError("Name not bytes")
-	if len(name) > max_name_len:
+	if i < 0 or i > 0xFFFF:
+		raise ValueError("Sequence number invalid")
+	if len(name) > 28:
 		raise ValueError("Name too long")
-	padding_needed = (max_name_len - len(name)) % max_name_len
-	data = bytes(padding_needed) + seq
+	data = b"%-28s%04X" % (name, i)
 	return Point.from_hash(data)
 
 
@@ -105,4 +106,40 @@ def pedersen_hash_bytes(name, *args):
 		base = pedersen_hash_basepoint(name, i)
 		scalar = int.from_bytes(segment, 'big')
 		result += base * scalar
+	return result
+
+
+def pedersen_hash_zcash_scalars(name, *scalars):
+	"""
+	Calculates a pedersen hash of scalars in the same way that zCash
+	is doing it according to: ... of their spec.
+	It is looking up 3bit chunks in a 2bit table (3rd bit denotes sign).
+	E.g:
+		(b2, b1, b0) = (1,0,1) would look up first element and negate it.
+	Row i of the lookup table contains:
+		[2**4i * base, 2 * 2**4i * base, 3 * 2**4i * base, 3 * 2**4i * base]
+	E.g:
+		row_0 = [base, 2*base, 3*base, 4*base]
+		row_1 = [16*base, 32*base, 48*base, 64*base]
+		row_2 = [256*base, 512*base, 768*base, 1024*base]
+	Following Theorem 5.4.1 of the zCash Sapling specification, for baby jub_jub
+	we need a new base point every 62 windows. We will therefore have multiple
+	tables with 62 rows each.
+	"""
+	result = Point.infinity()
+	windows = []
+	for i, s in enumerate(scalars):
+		windows += list((s >> i) & 0b111 for i in range(0,s.bit_length(),3))
+
+	base = Point.infinity()
+	for j, window in enumerate(windows):
+		if j % 62 == 0:
+			base = pedersen_hash_basepoint(name, j//62)
+		j = j % 62
+		segment_base =  base * 2**(4*j)
+		segment = segment_base * ((window & 0b11) + 1)
+		if window > 0b11:
+			segment = segment.neg()
+		result += segment
+
 	return result

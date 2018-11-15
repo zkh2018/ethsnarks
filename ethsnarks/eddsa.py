@@ -1,7 +1,7 @@
 import math
 from hashlib import sha256
-from .field import FQ
-from .jubjub import Point, JUBJUB_L, JUBJUB_Q, JUBJUB_ORDER
+from .field import FQ, SNARK_SCALAR_FIELD
+from .jubjub import Point, JUBJUB_L, JUBJUB_Q, JUBJUB_E
 
 """
 Implements EdDSA
@@ -11,7 +11,7 @@ The signer has two secret values:
 	* k = Secret key
 	* r = Per-(message,key) nonce
 
-The signer provides a signature consiting of two pars:
+The signer provides a signature consiting of two pairs:
 
 	* R = Point, image of `r*B`
 	* s = Image of `r + (k*t)`
@@ -26,13 +26,17 @@ Both the verifier and the signer calculate the common reference string:
 
 The nonce `r` is secret, and protects the value `s` from revealing the
 signers secret key.
+
+For further information see: https://ed2519.cr.yp.to/eddsa-20150704.pdf
 """
 
 
+EDDSA_B = math.floor(math.log2(SNARK_SCALAR_FIELD))
+
+
 def encodeint(y):
-	b = 253
-	bits = [(y >> i) & 1 for i in range(b)]
-	data = [bytes([sum([bits[i * 8 + j] << j for j in range(8)])]) for i in range(b//8)]
+	bits = [(y >> i) & 1 for i in range(EDDSA_B)]
+	data = [bytes([sum([bits[i * 8 + j] << j for j in range(8)])]) for i in range(EDDSA_B//8)]
 	return b''.join(data)
 
 
@@ -47,6 +51,7 @@ def make_bytes(arg):
 
 
 def HashToBytes(*args):
+	# XXX: The EdDSA spec requires the hash function outputs a 2b-bit output
 	return sha256(b''.join([make_bytes(_) for _ in args])).digest()
 
 
@@ -58,7 +63,7 @@ def HashToInt(*args):
 	assert math.ceil(math.log2(JUBJUB_L)) > 250
 	data = HashToBytes(*args)
 	value = int.from_bytes(data, 'big')
-	mask = (2<<249) - 1
+	mask = (1<<250) - 1
 	return value & mask
 
 
@@ -71,7 +76,6 @@ def eddsa_verify(A, R, s, m, B):
 	@param B base point
 	"""
 	assert isinstance(R, Point)
-	#assert isinstance(s, FQ)
 	A = A.as_point()
 
 	assert s < JUBJUB_Q
@@ -83,23 +87,29 @@ def eddsa_verify(A, R, s, m, B):
 	return lhs == rhs
 
 
-def eddsa_sign(m, k, B, A=None):
+def eddsa_sign(m, S, B, A=None):
 	"""
 	@param m Message being signed
 	@param k secret key
 	@param B base point
 	"""	
-	assert isinstance(k, FQ)
-	assert k.n < JUBJUB_L
-	assert k.n > 0
+	if not isinstance(S, FQ):
+		raise TypeError("Invalid type for parameter S")
+
+	# Strict parsing ensures key is in the prime-order group
+	if S.n >= JUBJUB_L or S.n <= 0:
+		raise RuntimeError("Strict parsing of S failed")
 
 	if A is None:
-		A = k * B
+		A = S * B
+
+	# XXX: secret scalars are multiples of 2^c (where c is the cofactor)
+	# TODO: verify the bottom `c` bits are always cleared
 
 	mhash = HashToBytes(m)
-	khash = HashToBytes(k)
+	khash = HashToBytes(S)
 	r = HashToInt(khash, mhash)
 	R = B * r
 	t = HashToInt(R, A, mhash)
-	s = ((k.n*t) + r) % JUBJUB_ORDER
+	s = ((S.n*t) + r) % JUBJUB_E
 	return [R, s]

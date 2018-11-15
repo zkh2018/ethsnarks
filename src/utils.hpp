@@ -65,6 +65,12 @@ inline const libsnark::pb_linear_combination<FieldT> make_linear_term( Protoboar
 }
 
 
+/**
+* Returns true if the value is less than its modulo negative
+*/
+bool is_negative( const FieldT& value );
+
+
 template<typename T>
 void writeToFile(std::string path, T& obj) {
     std::stringstream ss;

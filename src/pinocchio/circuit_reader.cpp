@@ -701,7 +701,7 @@ void CircuitReader::addPackConstraint(const InputWires& inputs, const OutputWire
 *
 * This is equivalent to satisfying the following two constraints:
 *
-*	(X * M) - Y = 0
+*	(X * M) = Y
 *
 * and:
 *

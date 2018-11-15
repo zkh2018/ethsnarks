@@ -73,7 +73,7 @@ test: pinocchio-test cxx-tests python-test truffle-test
 python-test:
 	$(COVERAGE) -m unittest discover test/
 
-cxx-tests: zksnark_element/miximus.vk.json
+cxx-tests-gadgets:
 	./bin/test_field_packing > /dev/null
 	./bin/test_hashpreimage
 	./bin/test_longsightl
@@ -88,13 +88,18 @@ cxx-tests: zksnark_element/miximus.vk.json
 	./bin/test_lookup_2bit
 	./bin/test_lookup_3bit
 	./bin/test_subadd > /dev/null
-	./bin/test_jubjub
+	./bin/test_isnonzero
+
+cxx-tests-jubjub:
 	./bin/test_jubjub_add
 	./bin/test_jubjub_dbl
 	./bin/test_jubjub_mul
 	./bin/test_jubjub_mul_fixed
+	./bin/test_jubjub_point
 	./bin/test_jubjub_isoncurve > /dev/null
+	./bin/test_jubjub_mul_fixed_zcash
 
+cxx-tests: zksnark_element/miximus.vk.json cxx-tests-gadgets cxx-tests-jubjub
 	time ./bin/hashpreimage_cli genkeys zksnark_element/hpi.pk.raw zksnark_element/hpi.vk.json
 	ls -lah zksnark_element/hpi.pk.raw
 	time ./bin/hashpreimage_cli prove zksnark_element/hpi.pk.raw 0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a089f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08 zksnark_element/hpi.proof.json

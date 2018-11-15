@@ -1,6 +1,9 @@
 #ifndef JUBJUB_DOUBLER_HPP_
 #define JUBJUB_DOUBLER_HPP_
 
+// Copyright (c) 2018 @HarryR
+// License: LGPL-3.0+
+
 #include "jubjub/params.hpp"
 
 

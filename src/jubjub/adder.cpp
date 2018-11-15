@@ -78,8 +78,6 @@ const VariableT& PointAdder::result_y() const
 
 void PointAdder::generate_r1cs_witness()
 {
-    auto one = FieldT("1");
-
     this->pb.val(m_beta) = this->pb.val(m_X1) * this->pb.val(m_Y2);
 
     this->pb.val(m_gamma) = this->pb.val(m_Y1) * this->pb.val(m_X2);
@@ -90,10 +88,10 @@ void PointAdder::generate_r1cs_witness()
 
     this->pb.val(m_tau) = this->pb.val(m_delta) * this->pb.val(m_epsilon);
 
-    auto x3_rhs = (one + (m_params.d * this->pb.val(m_tau))).inverse();
+    auto x3_rhs = (FieldT::one() + (m_params.d * this->pb.val(m_tau))).inverse();
     this->pb.val(m_X3) = (this->pb.val(m_beta)+this->pb.val(m_gamma)) * x3_rhs;
 
-    auto y3_rhs = (one - (m_params.d * this->pb.val(m_tau))).inverse();
+    auto y3_rhs = (FieldT::one() - (m_params.d * this->pb.val(m_tau))).inverse();
     this->pb.val(m_Y3) = (this->pb.val(m_delta)+( -m_params.a * this->pb.val(m_epsilon))) * y3_rhs;
 }
 
