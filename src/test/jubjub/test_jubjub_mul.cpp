@@ -27,8 +27,6 @@ bool test_jubjub_mul()
     the_gadget.generate_r1cs_witness();
     the_gadget.generate_r1cs_constraints();
 
-    std::cout << pb.num_constraints() << " constraints" << std::endl;
-
     if( pb.val(the_gadget.result_x()) != expected_x ) {
         std::cerr << "x mismatch" << std::endl;
         return false;
@@ -38,6 +36,9 @@ bool test_jubjub_mul()
         std::cerr << "y mismatch" << std::endl;
         return false;
     }
+
+    std::cout << pb.num_constraints() << " constraints" << std::endl;
+    std::cout << (pb.num_constraints() / float(scalar.size())) << " constraints per bit" << std::endl;
 
     return pb.is_satisfied();
 }

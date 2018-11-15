@@ -36,6 +36,7 @@ bool test_jubjub_mul_fixed()
     }
 
     std::cout << pb.num_constraints() << " constraints" << std::endl;
+    std::cout << (pb.num_constraints() / float(scalar.size())) << " constraints per bit" << std::endl;
 
     return pb.is_satisfied();
 }
