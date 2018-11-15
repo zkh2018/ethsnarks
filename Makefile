@@ -91,7 +91,6 @@ cxx-tests-gadgets:
 	./bin/test_isnonzero
 
 cxx-tests-jubjub:
-	./bin/test_jubjub
 	./bin/test_jubjub_add
 	./bin/test_jubjub_dbl
 	./bin/test_jubjub_mul

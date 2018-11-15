@@ -52,12 +52,12 @@ def pedersen_hash_basepoint(name, i):
 	Create a base point for use with the windowed pedersen
 	hash function.
 	The name and sequence numbers are used a unique identifier.
-	Then HashToPoint is run on the name+seq to get the base point
-
-	XXX: Does this need to be Ethereum compatible? Given that sqrt is too expensive
+	Then HashToPoint is run on the name+seq to get the base point.
 	"""
 	if not isinstance(name, bytes):
 		raise TypeError("Name not bytes")
+	if i < 0 or i > 0xFFFF:
+		raise ValueError("Sequence number invalid")
 	if len(name) > 28:
 		raise ValueError("Name too long")
 	data = b"%-28s%04X" % (name, i)
@@ -134,7 +134,7 @@ def pedersen_hash_zcash_scalars(name, *scalars):
 	base = Point.infinity()
 	for j, window in enumerate(windows):
 		if j % 62 == 0:
-			base = pedersen_hash_basepoint(name, int(j/62))
+			base = pedersen_hash_basepoint(name, j//62)
 		j = j % 62
 		segment_base =  base * 2**(4*j)
 		segment = segment_base * ((window & 0b11) + 1)
