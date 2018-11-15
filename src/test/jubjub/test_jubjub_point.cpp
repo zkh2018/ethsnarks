@@ -2,7 +2,7 @@
 
 
 using ethsnarks::FieldT;
-using ethsnarks::jubjub::Point;
+using ethsnarks::jubjub::EdwardsPoint;
 
 namespace ethsnarks {
 
@@ -10,15 +10,15 @@ namespace ethsnarks {
 bool test_point_from_y(const FieldT& expected_x, const FieldT& in_y)
 {
     const jubjub::Params params;
-    const auto p = jubjub::Point::from_y_always(in_y, params);
+    const auto p = EdwardsPoint::from_y_always(in_y, params);
     return expected_x == p.x;
 }
 
 
-bool test_point_from_hash( const char *data, size_t sz, const Point& expected )
+bool test_point_from_hash( const char *data, size_t sz, const EdwardsPoint& expected )
 {
     const jubjub::Params params;
-    const auto p = jubjub::Point::from_hash((void*)data, sz, params);
+    const auto p = EdwardsPoint::from_hash((void*)data, sz, params);
 
     if( p.y != expected.y ) {
         std::cerr << "FAIL - expected y mismatch" << std::endl;
@@ -47,7 +47,7 @@ bool testcases_from_hash ()
     struct PointFromHashTestCase {
         const char *data;
         size_t sz;
-        Point expected;
+        EdwardsPoint expected;
     };
 
     std::vector<PointFromHashTestCase> test_cases = {

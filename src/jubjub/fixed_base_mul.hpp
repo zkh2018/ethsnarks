@@ -1,6 +1,9 @@
 #ifndef JUBJUB_FIXEDMULT_HPP_
 #define JUBJUB_FIXEDMULT_HPP_
 
+// Copyright (c) 2018 @HarryR
+// License: LGPL-3.0+
+
 #include "gadgets/lookup_2bit.hpp"
 #include "jubjub/adder.hpp"
 

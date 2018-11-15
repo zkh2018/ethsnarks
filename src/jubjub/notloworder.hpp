@@ -1,6 +1,9 @@
 #ifndef JUBJUB_NOTLOWORDER_HPP_
 #define JUBJUB_NOTLOWORDER_HPP_
 
+// Copyright (c) 2018 @HarryR
+// License: LGPL-3.0+
+
 #include "ethsnarks.hpp"
 #include "gadgets/isnonzero.hpp"
 #include "jubjub/doubler.hpp"

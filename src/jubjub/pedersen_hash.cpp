@@ -23,7 +23,7 @@ PedersenHash::PedersenHash(
 }
 
 
-const Point PedersenHash::make_basepoint(const char *name, unsigned int sequence, const Params& in_params)
+const EdwardsPoint PedersenHash::make_basepoint(const char *name, unsigned int sequence, const Params& in_params)
 {
     unsigned int name_sz = ::strlen(name);
     assert( name_sz < 28 );
@@ -31,16 +31,16 @@ const Point PedersenHash::make_basepoint(const char *name, unsigned int sequence
 
     // At most 28 characters of name
     // Suffixed with the sequence number as a 16bit hexadecimal
-    char data[32];
-    ::sprintf(data, "%s%-*zu%04X", name, 28 - name_sz, sequence);
+    char data[33];
+    ::sprintf(data, "%-28s%04X", name, sequence);
 
-    return Point::from_hash(data, 32, in_params);
+    return EdwardsPoint::from_hash(data, 32, in_params);
 }
 
 
-const std::vector<Point> PedersenHash::make_basepoints(const char *name, unsigned int n, const Params& in_params)
+const std::vector<EdwardsPoint> PedersenHash::make_basepoints(const char *name, unsigned int n, const Params& in_params)
 {
-    std::vector<Point> ret;
+    std::vector<EdwardsPoint> ret;
 
     for( unsigned int i = 0; i < n; i++ )
     {

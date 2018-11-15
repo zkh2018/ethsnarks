@@ -1,4 +1,5 @@
 #include "jubjub/point.hpp"
+#include "utils.hpp"
 #include <openssl/sha.h>
 
 using libff::bigint;
@@ -9,33 +10,8 @@ namespace ethsnarks {
 namespace jubjub {
 
 
-/**
-* Returns true if the value is less than its modulo negative
-*/
-static bool is_negative( const FieldT& value )
-{
-    // XXX: why doesn't libsnark's bigint have a comparison operator...
 
-    mpz_t a;
-    mpz_init(a);
-    value.as_bigint().to_mpz(a);
-
-    mpz_t b;
-    mpz_init(b);
-    const auto negated_value = -value;
-    negated_value.as_bigint().to_mpz(b);
-
-    int res = mpz_cmp(a, b);
-
-    mpz_clear(a);
-    mpz_clear(b);
-
-    return res < 0;
-}
-
-
-
-Point::Point(
+EdwardsPoint::EdwardsPoint(
     const FieldT& in_x,
     const FieldT& in_y
 ) :
@@ -46,39 +22,37 @@ Point::Point(
 }
 
 
-const Point Point::infinity() const
+const EdwardsPoint EdwardsPoint::infinity() const
 {
-    return Point(FieldT::zero(), FieldT::one());
+    return EdwardsPoint(FieldT::zero(), FieldT::one());
 }
 
 
-const Point Point::neg() const
+const EdwardsPoint EdwardsPoint::neg() const
 {
-    return Point(-x, y);
+    return EdwardsPoint(-x, y);
 }
 
 
-const Point Point::dbl() const
+const EdwardsPoint EdwardsPoint::dbl(const Params& params) const
 {
-    return add(*this);
+    return add(*this, params);
 }
 
 
-const Point Point::add(const Point& other) const
+const EdwardsPoint EdwardsPoint::add(const EdwardsPoint& other, const Params& params) const
 {
-    const Params params;
-
     const auto x3_rhs = FieldT::one() + params.d * x*other.x*y*other.y;
     const auto x3_lhs = x*other.y + y*other.x;
 
     const auto y3_lhs = y*other.y - params.a*x*other.x;
     const auto y3_rhs = FieldT::one() - params.d * x*other.x*y*other.y;
 
-    return Point(x3_lhs * x3_rhs.inverse(), y3_lhs * y3_rhs.inverse());
+    return EdwardsPoint(x3_lhs * x3_rhs.inverse(), y3_lhs * y3_rhs.inverse());
 }
 
 
-const Point Point::from_hash( void *in_bytes, size_t n, const Params& params )
+const EdwardsPoint EdwardsPoint::from_hash( void *in_bytes, size_t n, const Params& params )
 {
     // Hash input
     SHA256_CTX ctx;
@@ -108,11 +82,11 @@ const Point Point::from_hash( void *in_bytes, size_t n, const Params& params )
     mpz_clear(output_as_mpz);
 
     // Multiply point by cofactor, ensures it's on the prime-order subgroup
-    return result.dbl().dbl().dbl();
+    return result.dbl(params).dbl(params).dbl(params);
 }
 
 
-const Point Point::from_y_always (const FieldT in_y, const Params& params)
+const EdwardsPoint EdwardsPoint::from_y_always (const FieldT in_y, const Params& params)
 {
     mpz_t modulus;
     mpz_init(modulus);
@@ -145,14 +119,54 @@ const Point Point::from_y_always (const FieldT in_y, const Params& params)
         // If the X value is considered negative, negate it
         const auto tmp_x = xx.sqrt();
         if( is_negative(tmp_x) ) {
-            return Point(-tmp_x, tmp_y);            
+            return EdwardsPoint(-tmp_x, tmp_y);
         }
-        return Point(tmp_x, tmp_y);
+        return EdwardsPoint(tmp_x, tmp_y);
     }
 
     assert(0);
     abort();
 }
+
+
+const MontgomeryPoint EdwardsPoint::as_montgomery(const Params& in_params) const
+{
+    if(y == FieldT::one())
+    {
+        return {FieldT::zero(), FieldT::zero()}; //This should be infinity
+    }
+    else if (x.is_zero())
+    {
+        return {FieldT::zero(), FieldT::zero()};
+    }
+    else {
+        // The mapping is defined as above.
+        //
+        // (x, y) -> (u, v) where
+        //      u = (1 + y) / (1 - y)
+        //      v = u / x
+        FieldT u = (FieldT::one() + y) * (FieldT::one() - y).inverse();
+        return {u, in_params.scale * u * x.inverse()};
+    }
+}
+
+
+// --------------------------------------------------------------------
+
+
+MontgomeryPoint::MontgomeryPoint(const FieldT& in_x, const FieldT& in_y)
+: x(in_x), y(in_y)
+{}
+
+
+const EdwardsPoint MontgomeryPoint::as_edwards(const Params& in_params) const
+{
+    return {
+        in_params.scale * x * y.inverse(),
+        (x - FieldT::one()) * (x + FieldT::one()).inverse()
+    };
+}
+
 
 // namespace jubjub
 }

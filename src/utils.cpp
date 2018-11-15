@@ -59,6 +59,31 @@ VariableArrayT VariableArray_from_bits(
 }
 
 
+/**
+* Returns true if the value is less than its modulo negative
+*/
+bool is_negative( const FieldT& value )
+{
+    // XXX: why doesn't libsnark's bigint have a comparison operator...
+
+    mpz_t a;
+    mpz_init(a);
+    value.as_bigint().to_mpz(a);
+
+    mpz_t b;
+    mpz_init(b);
+    const auto negated_value = -value;
+    negated_value.as_bigint().to_mpz(b);
+
+    int res = mpz_cmp(a, b);
+
+    mpz_clear(a);
+    mpz_clear(b);
+
+    return res < 0;
+}
+
+
 
 int char2int( const char input )
 {

@@ -1,6 +1,9 @@
 #ifndef JUBJUB_PEDERSEN_HASH_HPP_
 #define JUBJUB_PEDERSEN_HASH_HPP_
 
+// Copyright (c) 2018 @HarryR
+// License: LGPL-3.0+
+
 #include "jubjub/commitment.hpp"
 #include "jubjub/point.hpp"
 
@@ -31,12 +34,12 @@ public:
     /**
     * Determine the Y coordinate for a base point sequence
     */
-    static const Point make_basepoint(const char *name, unsigned int sequence, const Params& in_params);
+    static const EdwardsPoint make_basepoint(const char *name, unsigned int sequence, const Params& in_params);
 
     /**
     * Return a sequence of base points for the given namespace
     */
-    static const std::vector<Point> make_basepoints(const char *name, unsigned int n, const Params& in_params);
+    static const std::vector<EdwardsPoint> make_basepoints(const char *name, unsigned int n, const Params& in_params);
 
     const VariableT& result_x() const;
 

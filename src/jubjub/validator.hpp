@@ -1,6 +1,9 @@
 #ifndef JUBJUB_VALIDATOR_HPP_
 #define JUBJUB_VALIDATOR_HPP_
 
+// Copyright (c) 2018 @HarryR
+// License: LGPL-3.0+
+
 #include "ethsnarks.hpp"
 #include "jubjub/isoncurve.hpp"
 #include "jubjub/notloworder.hpp"

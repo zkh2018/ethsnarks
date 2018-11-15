@@ -1,6 +1,9 @@
 #ifndef JUBJUB_ADDER_HPP_
 #define JUBJUB_ADDER_HPP_
 
+// Copyright (c) 2018 @HarryR
+// License: LGPL-3.0+
+
 #include "jubjub/params.hpp"
 
 

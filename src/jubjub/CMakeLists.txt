@@ -14,6 +14,8 @@ add_library(ethsnarks_jubjub STATIC
   validator.cpp
   point.cpp
   pedersen_hash.cpp
+  fixed_base_mul_zcash.cpp
+  montgomery.cpp
 )
 
-target_link_libraries(ethsnarks_jubjub crypto)
+target_link_libraries(ethsnarks_jubjub ethsnarks_common crypto)

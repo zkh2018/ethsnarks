@@ -1,45 +1,66 @@
-#ifndef JUBJUB_POINT_HPP_
-#define JUBJUB_POINT_HPP_
+#ifndef JUBJUB_EDWARDS_POINT_HPP_
+#define JUBJUB_EDWARDS_POINT_HPP_
+
+// Copyright (c) 2018 @HarryR
+// Copyright (c) 2018 @fleupold
+// License: LGPL-3.0+
 
 #include "ethsnarks.hpp"
 #include "jubjub/params.hpp"
 
 
 namespace ethsnarks {
-	
+
 namespace jubjub {
+
+class MontgomeryPoint;
 
 
 /**
-* Affine point for performing calculations outside of zkSNARK circuits
+* Affine edwards point for performing calculations outside of zkSNARK circuits
 *
-* This also makes passing in an array of points easier
+* This also makes passing in an array of edwards points easier
 *
-* 	e.g. {{FieldT("..."), FieldT("...")}, {...}}
+*   e.g. {{FieldT("..."), FieldT("...")}, {...}}
 */
-class Point
+class EdwardsPoint
 {
 public:
-	FieldT x;
-	FieldT y;
+    FieldT x;
+    FieldT y;
 
-	Point(const FieldT& in_x, const FieldT& in_y);
+    EdwardsPoint(const FieldT& in_x, const FieldT& in_y);
 
-	const Point infinity() const;
+    const EdwardsPoint infinity() const;
 
-	const Point neg() const;
+    const EdwardsPoint neg() const;
 
-	const Point dbl() const;
+    const EdwardsPoint dbl(const Params& params) const;
 
-	const Point add(const Point& other) const;
+    const EdwardsPoint add(const EdwardsPoint& other, const Params& params) const;
 
-	/**
-	* Recover the X coordinate from the Y
-	* This will increment Y until X can be recovered
-	*/
-	static const Point from_y_always (const FieldT in_y, const Params& params);
+    const MontgomeryPoint as_montgomery(const Params& params) const;
 
-	static const Point from_hash( void *data, size_t n, const Params& params );
+    /**
+    * Recover the X coordinate from the Y
+    * This will increment Y until X can be recovered
+    */
+    static const EdwardsPoint from_y_always (const FieldT in_y, const Params& params);
+
+    static const EdwardsPoint from_hash( void *data, size_t n, const Params& params );
+};
+
+
+
+class MontgomeryPoint
+{
+public:
+    FieldT x;
+    FieldT y;
+
+    MontgomeryPoint(const FieldT& in_x, const FieldT& in_y);
+
+    const EdwardsPoint as_edwards(const Params& in_params) const;
 };
 
 
@@ -49,5 +70,5 @@ public:
 // namespace ethsnarks
 }
 
-// JUBJUB_POINT_HPP_
+// JUBJUB_EDWARDS_POINT_HPP_
 #endif

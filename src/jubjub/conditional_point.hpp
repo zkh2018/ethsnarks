@@ -1,6 +1,9 @@
 #ifndef JUBJUB_CONDITIONAL_POINT_HPP_
 #define JUBJUB_CONDITIONAL_POINT_HPP_
 
+// Copyright (c) 2018 @HarryR
+// License: LGPL-3.0+
+
 #include "ethsnarks.hpp"
 
 

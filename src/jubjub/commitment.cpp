@@ -8,7 +8,7 @@ namespace jubjub {
 Commitment::Commitment(
 	ProtoboardT& in_pb,
 	const Params& in_params,
-	const std::vector<Point> in_points,
+	const std::vector<EdwardsPoint> in_points,
 	const std::vector<VariableArrayT> in_scalars,
 	const std::string& annotation_prefix
 ) :

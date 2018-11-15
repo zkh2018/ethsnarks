@@ -1,6 +1,9 @@
 #ifndef JUBJUB_COMMITMENT_HPP_
 #define JUBJUB_COMMITMENT_HPP_
 
+// Copyright (c) 2018 @HarryR
+// License: LGPL-3.0+
+
 #include "ethsnarks.hpp"
 #include "jubjub/adder.hpp"
 #include "jubjub/point.hpp"
@@ -40,7 +43,7 @@ namespace jubjub {
 class Commitment : public GadgetT
 {
 public:
-	std::vector<Point> m_points;
+	std::vector<EdwardsPoint> m_points;
 	std::vector<VariableArrayT> m_scalars;
 	std::vector<fixed_base_mul> m_multipliers;
 	std::vector<PointAdder> m_adders;
@@ -48,7 +51,7 @@ public:
 	Commitment(
 		ProtoboardT& in_pb,
 		const Params& in_params,
-		const std::vector<Point> in_points,
+		const std::vector<EdwardsPoint> in_points,
 		const std::vector<VariableArrayT> in_scalars,
 		const std::string &annotation_prefix );
 
