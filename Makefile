@@ -89,6 +89,7 @@ cxx-tests-gadgets:
 	./bin/test_lookup_3bit
 	./bin/test_subadd > /dev/null
 	./bin/test_isnonzero
+	./bin/test_field2bits
 
 cxx-tests-jubjub:
 	./bin/test_jubjub_add

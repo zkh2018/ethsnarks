@@ -60,11 +60,9 @@ def HashToInt(*args):
 	Hashes arguments, returns first 250 least significant bits
 	"""
 	# Verify that any 250 bits will be less than `L`
-	assert math.ceil(math.log2(JUBJUB_L)) > 250
 	data = HashToBytes(*args)
 	value = int.from_bytes(data, 'big')
-	mask = (1<<250) - 1
-	return value & mask
+	return value % JUBJUB_L
 
 
 def eddsa_verify(A, R, s, m, B):
@@ -80,36 +78,35 @@ def eddsa_verify(A, R, s, m, B):
 
 	assert s < JUBJUB_Q
 
-	mhash = HashToBytes(m)
-	t = HashToInt(R, A, mhash)
+	M = HashToBytes(m)
+	t = HashToInt(R, A, M)
 	lhs = B * s
 	rhs = R + (A * t)
 	return lhs == rhs
 
 
-def eddsa_sign(m, S, B, A=None):
+def eddsa_sign(msg, k, B, A=None):
 	"""
-	@param m Message being signed
+	@param msg Message being signed
 	@param k secret key
 	@param B base point
+	@param A public key, k*B 
 	"""	
-	if not isinstance(S, FQ):
-		raise TypeError("Invalid type for parameter S")
+	if not isinstance(k, FQ):
+		raise TypeError("Invalid type for parameter k")
 
 	# Strict parsing ensures key is in the prime-order group
-	if S.n >= JUBJUB_L or S.n <= 0:
-		raise RuntimeError("Strict parsing of S failed")
+	if k.n >= JUBJUB_L or k.n <= 0:
+		raise RuntimeError("Strict parsing of k failed")
 
 	if A is None:
-		A = S * B
+		A = k * B
 
-	# XXX: secret scalars are multiples of 2^c (where c is the cofactor)
-	# TODO: verify the bottom `c` bits are always cleared
+	# Hash used to produce `M` and `t` must be in-circuit compatible
 
-	mhash = HashToBytes(m)
-	khash = HashToBytes(S)
-	r = HashToInt(khash, mhash)
-	R = B * r
-	t = HashToInt(R, A, mhash)
-	s = ((S.n*t) + r) % JUBJUB_E
-	return [R, s]
+	M = HashToBytes(msg)			# hash message: H(msg) -> M
+	r = HashToInt(k, M)				# message `M` under key `k`: H(k, M) -> r
+	R = B * r 						# 
+	t = HashToInt(R, A, M)			# Bind the message to the nonce, public key and message
+	S = (r + (k.n*t)) % JUBJUB_E	# S -> r + H(R,A,M)*s
+	return [R, S]

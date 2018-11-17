@@ -16,4 +16,5 @@ add_library(ethsnarks_gadgets STATIC
 
 	subadd.cpp
 	isnonzero.cpp
+	field2bits_strict.cpp
 )

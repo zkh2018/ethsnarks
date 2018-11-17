@@ -1,76 +1,16 @@
 add_subdirectory(jubjub)
+add_subdirectory(benchmark)
 
+file(GLOB test_sources "*.cpp")
 
-add_executable(benchmark_mpz_mul benchmark_mpz_mul.cpp)
-target_link_libraries(benchmark_mpz_mul ff)
+foreach(test_path ${test_sources})
+	get_filename_component(test_name ${test_path} NAME)
+	string(REPLACE ".cpp" "" test_executable ${test_name})
+	add_executable(${test_executable} ${test_name})
+	target_link_libraries(${test_executable} ethsnarks_common)
+endforeach()
 
-add_executable(benchmark_pairing benchmark_pairing.cpp)
-target_link_libraries(benchmark_pairing ff)
-
-add_executable(test_vk_raw2json test_vk_raw2json.cpp)
-target_link_libraries(test_vk_raw2json ethsnarks_common)
-
-
-add_executable(test_lookup_1bit test_lookup_1bit.cpp)
-target_link_libraries(test_lookup_1bit ethsnarks_common)
-
-
-add_executable(test_lookup_2bit test_lookup_2bit.cpp)
-target_link_libraries(test_lookup_2bit ethsnarks_common)
-
-
-add_executable(test_lookup_3bit test_lookup_3bit.cpp)
-target_link_libraries(test_lookup_3bit ethsnarks_common)
-
-
-add_executable(test_load_proofkey test_load_proofkey.cpp)
-target_link_libraries(test_load_proofkey ethsnarks_common)
-
-
-add_executable(test_shamir_poly test_shamir_poly.cpp)
-target_link_libraries(test_shamir_poly ethsnarks_common)
-
-
-add_executable(test_sha256_full_gadget test_sha256_full_gadget.cpp)
-target_link_libraries(test_sha256_full_gadget ethsnarks_common crypto)
-
-
-add_executable(test_sha256_many test_sha256_many.cpp)
-target_link_libraries(test_sha256_many ethsnarks_common crypto)
-
-
-add_executable(test_proof_raw2json test_proof_raw2json.cpp)
-target_link_libraries(test_proof_raw2json ethsnarks_common)
-
-
-add_executable(test_field_packing test_field_packing.cpp)
-target_link_libraries(test_field_packing ethsnarks_common crypto)
-
-
-add_executable(test_merkle_tree test_merkle_tree.cpp)
-target_link_libraries(test_merkle_tree ethsnarks_common)
-
-
-add_executable(test_hashpreimage test_hashpreimage.cpp)
-target_link_libraries(test_hashpreimage ethsnarks_common crypto)
-
-
-add_executable(test_one_of_n test_one_of_n.cpp)
-target_link_libraries(test_one_of_n ethsnarks_common)
-
-
-add_executable(test_longsightl test_longsightl.cpp)
-target_link_libraries(test_longsightl ethsnarks_common)
-
-
-add_executable(test_longsightl_hash_mp test_longsightl_hash_mp.cpp)
-target_link_libraries(test_longsightl_hash_mp ethsnarks_common)
-
-
-add_executable(test_subadd test_subadd.cpp)
-target_link_libraries(test_subadd ethsnarks_common)
-
-
-add_executable(test_isnonzero test_isnonzero.cpp)
-target_link_libraries(test_isnonzero ethsnarks_common)
-
+target_link_libraries(test_sha256_full_gadget crypto)
+target_link_libraries(test_sha256_many crypto)
+target_link_libraries(test_field_packing crypto)
+target_link_libraries(test_hashpreimage crypto)
