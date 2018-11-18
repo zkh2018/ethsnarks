@@ -84,6 +84,31 @@ bool is_negative( const FieldT& value )
 }
 
 
+/**
+* Convert an array of variable arrays into a flat contiguous array of variables
+*/
+const VariableArrayT flatten( const std::vector<VariableArrayT> &in_scalars )
+{
+    size_t total_sz = 0;
+    for( const auto& scalar : in_scalars )
+        total_sz += in_scalars.size();
+
+    VariableArrayT result;
+    result.resize(total_sz);
+
+    size_t offset = 0;
+    for( const auto& scalar : in_scalars )
+    {
+        for( size_t i = 0; i < scalar.size(); i++ )
+        {
+            result[offset].index = scalar[i].index;
+        }
+    }
+
+    return result;
+}
+
+
 
 int char2int( const char input )
 {

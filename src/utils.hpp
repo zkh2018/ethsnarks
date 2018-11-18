@@ -20,6 +20,8 @@ bool hex_to_bytes( const char *in_hex, uint8_t *out_bytes, size_t out_sz );
 
 int char2int( const char input );
 
+const VariableArrayT flatten( const std::vector<VariableArrayT> &in_scalars );
+
 std::vector<unsigned long> bit_list_to_ints(std::vector<bool> bit_list, const size_t wordsize);
 
 libff::bit_vector bytes_to_bv(const uint8_t *in_bytes, const size_t in_count);

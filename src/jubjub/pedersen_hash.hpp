@@ -4,8 +4,8 @@
 // Copyright (c) 2018 @HarryR
 // License: LGPL-3.0+
 
-#include "jubjub/commitment.hpp"
 #include "jubjub/point.hpp"
+#include "jubjub/fixed_base_mul_zcash.hpp"
 
 
 namespace ethsnarks {
@@ -22,18 +22,22 @@ namespace jubjub {
 class PedersenHash : public GadgetT
 {
 public:
-    Commitment m_commitment;
+    fixed_base_mul_zcash m_commitment;
 
     PedersenHash(
         ProtoboardT& in_pb,
         const Params& in_params,
         const char *name,
-        std::vector<VariableArrayT> in_scalars,
+        const VariableArrayT in_scalars,
         const std::string& annotation_prefix);
 
     const VariableT& result_x() const;
 
     const VariableT& result_y() const;
+
+    void generate_r1cs_constraints ();
+
+	void generate_r1cs_witness ();
 };
 
 

@@ -16,14 +16,14 @@ field2bits_strict::field2bits_strict(
 {
     // Constant bit is 0
     const std::vector<FieldT> table_cmp_0 = {
-        FieldT("0"),    // equal
-        FieldT("1"),    // greater
+        FieldT("0"),    // 0, equal
+        FieldT("1"),    // 1, greater
     };
 
     // Constant bit is 1
     const std::vector<FieldT> table_cmp_1 = {
-        FieldT("1"),    // equal
-        FieldT("1"),    // less
+        FieldT("1"),    // 0, less
+        FieldT("1"),    // 1, equal
     };
 
     const auto largest_value = (FieldT(FieldT::mod) - 1).as_bigint();

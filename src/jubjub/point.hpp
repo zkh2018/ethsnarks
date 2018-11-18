@@ -13,6 +13,18 @@ namespace ethsnarks {
 
 namespace jubjub {
 
+
+class VariablePointT {
+public:
+    VariableT x;
+    VariableT y;
+
+    VariablePointT(const VariableT in_x, const VariableT in_y)
+    : x(in_x), y(in_y)
+    {}
+};
+
+
 class MontgomeryPoint;
 
 

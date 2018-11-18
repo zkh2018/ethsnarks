@@ -177,11 +177,11 @@ void fixed_base_mul_zcash::generate_r1cs_witness ()
 	}
 }
 
-const VariableT& fixed_base_mul_zcash::result_x() {
+const VariableT& fixed_base_mul_zcash::result_x() const {
 	return edward_adders.back().result_x();
 }
 
-const VariableT& fixed_base_mul_zcash::result_y() {
+const VariableT& fixed_base_mul_zcash::result_y() const {
 	return edward_adders.back().result_y();
 }
 
