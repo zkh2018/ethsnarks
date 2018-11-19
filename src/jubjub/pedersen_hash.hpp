@@ -28,7 +28,7 @@ public:
         ProtoboardT& in_pb,
         const Params& in_params,
         const char *name,
-        const VariableArrayT in_scalars,
+        const VariableArrayT& in_bits,
         const std::string& annotation_prefix);
 
     const VariableT& result_x() const;

@@ -14,14 +14,15 @@ fixed_base_mul_zcash::fixed_base_mul_zcash(
 	ProtoboardT &in_pb,
 	const Params& in_params,
 	const std::vector<EdwardsPoint> base_points,
-	const VariableArrayT in_scalar,
+	const VariableArrayT& in_scalar,
 	const std::string &annotation_prefix
 ) :
 	GadgetT(in_pb, annotation_prefix)
 {
+	assert( in_scalar.size() > 0 );
 	assert( (in_scalar.size() % chunk_size_bits) == 0 );
 	assert( float(in_scalar.size()) / float(chunk_size_bits * chunks_per_base_point) <= base_points.size());
-	int window_size_items = 1 << lookup_size_bits;
+	const int window_size_items = 1 << lookup_size_bits;
 	int n_windows = in_scalar.size() / chunk_size_bits;
 
 	EdwardsPoint start = base_points[0];
@@ -108,7 +109,8 @@ fixed_base_mul_zcash::fixed_base_mul_zcash(
 	);
 
 	// Chain adders of converted segment tails together
-	for( size_t i = 1; i < point_converters.size(); i++ ) {
+	for( size_t i = 1; i < point_converters.size(); i++ )
+	{
 		if (i == 1) {
 			edward_adders.emplace_back(
 				in_pb, in_params,
@@ -118,7 +120,8 @@ fixed_base_mul_zcash::fixed_base_mul_zcash(
 				point_converters[i].result_y(),
 				FMT(this->annotation_prefix, ".edward_adder[%d]", i)
 			);
-		} else {
+		}
+		else {
 			edward_adders.emplace_back(
 				in_pb, in_params,
 				edward_adders[i-2].result_x(),

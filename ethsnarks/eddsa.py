@@ -2,6 +2,7 @@ import math
 from hashlib import sha256
 from .field import FQ, SNARK_SCALAR_FIELD
 from .jubjub import Point, JUBJUB_L, JUBJUB_Q, JUBJUB_E
+from .pedersen import pedersen_hash_zcash_scalars, pedersen_hash_zcash_windows, pedersen_hash_zcash_bytes
 
 """
 Implements EdDSA
@@ -65,6 +66,28 @@ def HashToInt(*args):
 	return value % JUBJUB_L
 
 
+def eddsa_hash_message(data):
+	pedersen_hash_zcash_bytes('EdDSA_Verify.M', data)
+
+
+def eddsa_hash_RAM(R, A, M):
+	"""
+	Hash R, A and M parameters.
+
+		t = H(R.x,R.y,A.x,A.y,M.x,M.y)
+
+	@param R Signature point
+	@param A Signers public key
+	@param M Hashed message (Point)
+	@returns Point
+	"""
+	assert isinstance(R, Point)
+	assert isinstance(A, Point)
+	assert isinstance(M, Point)
+	# TODO: encode each point coordinate into 254 bits, then concatenate them
+	return pedersen_hash_zcash_scalars("EdDSA_Verify.RAM", [R.x, R.y, A.x, A.y, M.x, M.y]).y
+
+
 def eddsa_verify(A, R, s, m, B):
 	"""
 	@param A public key
@@ -74,14 +97,14 @@ def eddsa_verify(A, R, s, m, B):
 	@param B base point
 	"""
 	assert isinstance(R, Point)
-	A = A.as_point()
+	assert isinstance(s, int)
+	assert s < JUBJUB_Q and s > 0
+	assert isinstance(A, Point)
 
-	assert s < JUBJUB_Q
-
-	M = HashToBytes(m)
-	t = HashToInt(R, A, M)
+	M = eddsa_hash_message(m)
+	hash_RAM = eddsa_hash_RAM(R, A, M)
 	lhs = B * s
-	rhs = R + (A * t)
+	rhs = R + (A * hash_RAM)
 	return lhs == rhs
 
 
@@ -104,9 +127,10 @@ def eddsa_sign(msg, k, B, A=None):
 
 	# Hash used to produce `M` and `t` must be in-circuit compatible
 
-	M = HashToBytes(msg)			# hash message: H(msg) -> M
+	M = eddsa_hash_message(msg)		# hash message: H(msg) -> M
 	r = HashToInt(k, M)				# message `M` under key `k`: H(k, M) -> r
 	R = B * r 						# 
-	t = HashToInt(R, A, M)			# Bind the message to the nonce, public key and message
+	t = eddsa_hash_RAM(R, A, M)		# Bind the message to the nonce, public key and message
+	# XXX: there is a small chance that #E doesn't fit into #Q
 	S = (r + (k.n*t)) % JUBJUB_E	# S -> r + H(R,A,M)*s
 	return [R, S]

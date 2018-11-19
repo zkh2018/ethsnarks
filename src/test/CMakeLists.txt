@@ -7,7 +7,7 @@ foreach(test_path ${test_sources})
 	get_filename_component(test_name ${test_path} NAME)
 	string(REPLACE ".cpp" "" test_executable ${test_name})
 	add_executable(${test_executable} ${test_name})
-	target_link_libraries(${test_executable} ethsnarks_common)
+	target_link_libraries(${test_executable} ethsnarks_gadgets)
 endforeach()
 
 target_link_libraries(test_sha256_full_gadget crypto)

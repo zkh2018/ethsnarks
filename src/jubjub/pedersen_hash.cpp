@@ -9,18 +9,16 @@ PedersenHash::PedersenHash(
     ProtoboardT& in_pb,
     const Params& in_params,
     const char *name,
-    const VariableArrayT in_scalar,
+    const VariableArrayT& in_bits,
     const std::string& annotation_prefix
 ) :
     GadgetT(in_pb, annotation_prefix),
     m_commitment(
         in_pb, in_params,
-        EdwardsPoint::make_basepoints(name, in_scalar.size(), in_params),
-        in_scalar,
+        EdwardsPoint::make_basepoints(name, in_bits.size(), in_params),
+        in_bits,
         FMT(annotation_prefix, ".commitment"))
-{
-
-}
+{}
 
 
 const VariableT& PedersenHash::result_x() const

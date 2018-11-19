@@ -17,8 +17,6 @@ namespace jubjub {
 
 class fixed_base_mul_zcash : public GadgetT {
 public:
-	const VariableArrayT m_scalar;
-
 	std::vector<MontgomeryAdder> montgomery_adders;
 	std::vector<MontgomeryToEdwards> point_converters;
 	std::vector<PointAdder> edward_adders;
@@ -29,7 +27,7 @@ public:
 		ProtoboardT &in_pb,
 		const Params& in_params,
 		const std::vector<EdwardsPoint> base_points,
-		const VariableArrayT in_scalar,
+		const VariableArrayT& in_scalar,
 		const std::string &annotation_prefix
 	);
 

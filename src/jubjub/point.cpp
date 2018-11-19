@@ -92,7 +92,7 @@ const EdwardsPoint EdwardsPoint::from_y_always (const FieldT in_y, const Params&
     mpz_init(modulus);
     in_y.mod.to_mpz(modulus);
 
-    for( int i = 0; i < 10; i++ )
+    for( int i = 0; i < 100; i++ )
     {
         const auto tmp_y = in_y + i;
         const auto ysq = tmp_y.squared();

@@ -1,6 +1,9 @@
 #ifndef JUBJUB_EDDSA_HPP_
 #define JUBJUB_EDDSA_HPP_
 
+// Copyright (c) 2018 @HarryR
+// License: LGPL-3.0+
+
 #include "ethsnarks.hpp"
 
 #include "gadgets/field2bits_strict.hpp"
@@ -24,23 +27,17 @@ namespace jubjub {
 class EdDSA_Verify : public GadgetT
 {
 public:
-    const EdwardsPoint& m_B;
-    const VariablePointT m_A;
-    const VariablePointT m_R;
-    const VariableArrayT m_s;
-    const VariableArrayT m_msg;
-
-    // Intermediate gadgets
     PointValidator m_validator_R;           // IsValid(R)
     PedersenHash m_msg_hashed;              // M = H(m)
-    field2bits_strict m_msg_hashed_bits;    // R_bits = BITS(R.y)
     fixed_base_mul m_lhs;                   // lhs = B*s
     field2bits_strict m_R_x_bits;           // R_x_bits = BITS(R.x)
     field2bits_strict m_R_y_bits;           // R_y_bits = BITS(R.y)
     field2bits_strict m_A_x_bits;           // A_x_bits = BITS(A.x)
     field2bits_strict m_A_y_bits;           // A_y_bits = BITS(A.y)
-    PedersenHash m_hash_t;                  // t = H(R, A, M)
-    field2bits_strict m_t_bits;             // t_bits = BITS(t)
+    field2bits_strict m_M_x_bits;           // M_x_bits = BITS(M.y)
+    field2bits_strict m_M_y_bits;           // M_y_bits = BITS(M.y)
+    PedersenHash m_hash_RAM;                // hash_RAM = H(R, A, M)
+    field2bits_strict m_hash_RAM_bits;      // hash_RAM_bits = BITS(hash_RAM)
     ScalarMult m_At;                        // A*t
     PointAdder m_rhs;                       // R + (A*t)
 
