@@ -38,7 +38,7 @@ clean: coverage-clean python-clean
 #######################################################################
 
 
-build:
+build: depends/libsnarks/CMakeLists.txt
 	mkdir -p build
 
 bin/miximus_genKeys: build/Makefile

@@ -38,6 +38,9 @@ const size_t MIXIMUS_TREE_DEPTH = 29;
 
 namespace ethsnarks {
 
+/**
+* 
+*/
 class mod_miximus : public GadgetT
 {
 public:
@@ -80,6 +83,9 @@ public:
         nullifier_var(make_variable(in_pb, FMT(annotation_prefix, ".nullifier_var"))),
         external_hash_var(make_variable(in_pb, FMT(annotation_prefix, ".external_hash_var"))),
 
+        // Initialisation vector for merkle tree
+        // Hard-coded constants
+        // Means that H('a', 'b') on level1 will have a different output than the same values on level2
         m_IVs(merkle_tree_IVs(in_pb)),
 
         // constant inputs

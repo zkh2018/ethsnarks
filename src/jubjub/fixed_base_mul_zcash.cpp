@@ -59,8 +59,18 @@ fixed_base_mul_zcash::fixed_base_mul_zcash(
 		const auto bits_begin = in_scalar.begin() + (i * chunk_size_bits);
 		const VariableArrayT window_bits_x( bits_begin, bits_begin + lookup_size_bits );
 		const VariableArrayT window_bits_y( bits_begin, bits_begin + chunk_size_bits );
-		m_windows_x.emplace_back(in_pb, lookup_x, window_bits_x, FMT(annotation_prefix, ".windows_x[%d]", i));
-		m_windows_y.emplace_back(in_pb, lookup_y, window_bits_y, FMT(annotation_prefix, ".windows_y[%d]", i));
+		m_windows_y.emplace_back(in_pb, lookup_y, window_bits_y, FMT(annotation_prefix, ".windows_y[%d]", i));		
+		
+		// Pass x lookup as a linear combination to avoid extra constraint.
+		// x_lc = c[0] + b[0] * (c[1]-c0) + b[1] * (c[2]-c[0]) + b[0]&b[1] * (c[3] - c[2] - c[1] + c[0])
+		LinearCombinationT x_lc;
+		x_lc.assign(in_pb,
+			LinearTermT(libsnark::ONE, lookup_x[0]) + 
+			LinearTermT(window_bits_x[0], (lookup_x[1] - lookup_x[0])) +
+			LinearTermT(window_bits_x[1], (lookup_x[2] - lookup_x[0])) +
+			LinearTermT(m_windows_y.back().b0b1, (lookup_x[3] - lookup_x[2] - lookup_x[1] + lookup_x[0]))
+		);
+		m_windows_x.emplace_back(x_lc);
 
 		// current is at 2^2 * start, for next iteration start needs to be 2^4
 		current = current.dbl(in_params);
@@ -73,9 +83,9 @@ fixed_base_mul_zcash::fixed_base_mul_zcash(
 		if( i % chunks_per_base_point == 1 ) {				
 			montgomery_adders.emplace_back(
 				in_pb, in_params,
-				m_windows_x[i-1].result(),
+				m_windows_x[i-1],
 				m_windows_y[i-1].result(),
-				m_windows_x[i].result(),
+				m_windows_x[i],
 				m_windows_y[i].result(),
 				FMT(this->annotation_prefix, ".mg_adders[%d]", i));
 		}
@@ -84,7 +94,7 @@ fixed_base_mul_zcash::fixed_base_mul_zcash(
 				in_pb, in_params,
 				montgomery_adders[i-2].result_x(),
 				montgomery_adders[i-2].result_y(),
-				m_windows_x[i].result(),
+				m_windows_x[i],
 				m_windows_y[i].result(),
 				FMT(this->annotation_prefix, ".mg_adders[%d]", i));
 		}
@@ -136,10 +146,6 @@ fixed_base_mul_zcash::fixed_base_mul_zcash(
 
 void fixed_base_mul_zcash::generate_r1cs_constraints ()
 {
-	for( auto& lut_x : m_windows_x ) {
-		lut_x.generate_r1cs_constraints();
-	}
-
 	for( auto& lut_y : m_windows_y ) {
 		lut_y.generate_r1cs_constraints();
 	}
@@ -159,12 +165,14 @@ void fixed_base_mul_zcash::generate_r1cs_constraints ()
 
 void fixed_base_mul_zcash::generate_r1cs_witness ()
 {
-	for( auto& lut_x : m_windows_x ) {
-		lut_x.generate_r1cs_witness();
-	}
-
+	// y lookups have to be solved first, because
+	// x depends on the `b0 && b1` constraint.
 	for( auto& lut_y : m_windows_y ) {
 		lut_y.generate_r1cs_witness();
+	}
+
+	for( auto& lut_x : m_windows_x ) {
+		lut_x.evaluate(this->pb);
 	}
 
 	for( auto& adder : montgomery_adders ) {
@@ -180,12 +188,21 @@ void fixed_base_mul_zcash::generate_r1cs_witness ()
 	}
 }
 
+<<<<<<< HEAD
 const VariableT& fixed_base_mul_zcash::result_x() const {
 	return edward_adders.back().result_x();
 }
 
 const VariableT& fixed_base_mul_zcash::result_y() const {
 	return edward_adders.back().result_y();
+=======
+const VariableT& fixed_base_mul_zcash::result_x() {
+	return edward_adders.size() ? edward_adders.back().result_x() : point_converters.back().result_x();
+}
+
+const VariableT& fixed_base_mul_zcash::result_y() {
+	return edward_adders.size() ? edward_adders.back().result_y() : point_converters.back().result_y();;
+>>>>>>> e2a1c40e9ba92a22b55e20225ebe61ce26431c5d
 }
 
 

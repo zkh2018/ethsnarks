@@ -131,23 +131,14 @@ const EdwardsPoint EdwardsPoint::from_y_always (const FieldT in_y, const Params&
 
 const MontgomeryPoint EdwardsPoint::as_montgomery(const Params& in_params) const
 {
-    if(y == FieldT::one())
-    {
-        return {FieldT::zero(), FieldT::zero()}; //This should be infinity
-    }
-    else if (x.is_zero())
-    {
-        return {FieldT::zero(), FieldT::zero()};
-    }
-    else {
-        // The mapping is defined as above.
-        //
-        // (x, y) -> (u, v) where
-        //      u = (1 + y) / (1 - y)
-        //      v = u / x
-        FieldT u = (FieldT::one() + y) * (FieldT::one() - y).inverse();
-        return {u, in_params.scale * u * x.inverse()};
-    }
+    // The only points on the curve with x=0 or y=1 (for which birational equivalence is not valid), 
+    // are (0,1) and (0,-1), both of which are of low order, and should therefore not occur.
+    assert(!x.is_zero() && y != FieldT::one());
+    // (x, y) -> (u, v) where
+    //      u = (1 + y) / (1 - y)
+    //      v = u / x
+    FieldT u = (FieldT::one() + y) * (FieldT::one() - y).inverse();
+    return {u, in_params.scale * u * x.inverse()};
 }
 
 
