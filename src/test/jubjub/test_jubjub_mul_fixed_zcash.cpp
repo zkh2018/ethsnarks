@@ -3,13 +3,9 @@
 
 namespace ethsnarks {
 
-<<<<<<< HEAD
-bool test_jubjub_mul_fixed_zcash()
-=======
 using namespace jubjub;
 
-bool test_jubjub_mul(const FieldT& s, size_t size, const EdwardsPoint& expectedResult)
->>>>>>> e2a1c40e9ba92a22b55e20225ebe61ce26431c5d
+bool test_jubjub_mul_fixed_zcash(const FieldT& s, size_t size, const EdwardsPoint& expectedResult)
 {
     jubjub::Params params;
     ProtoboardT pb;
@@ -52,7 +48,8 @@ bool test_jubjub_mul(const FieldT& s, size_t size, const EdwardsPoint& expectedR
     return pb.is_satisfied();
 }
 
-bool test_jubjub_mul()
+
+bool testcases_jubjub_mul_fixed_zcash()
 {
     std::cout << "Test 252bit point" << std::endl;
     FieldT scalar("6453482891510615431577168724743356132495662554103773572771861111634748265227");
@@ -60,7 +57,7 @@ bool test_jubjub_mul()
         FieldT("6545697115159207040330446958704617656199928059562637738348733874272425400594"),
         FieldT("16414097465381367987194277536478439232201417933379523927469515207544654431390")
     };
-    if (!test_jubjub_mul(scalar, 252, expected)) {
+    if (!test_jubjub_mul_fixed_zcash(scalar, 252, expected)) {
         return false;
     }
 
@@ -70,7 +67,7 @@ bool test_jubjub_mul()
         FieldT("6790798216812059804926342266703617627640027902964190490794793207272357201212"),
         FieldT("2522797517250455013248440571887865304858084343310097011302610004060289809689")
     };
-    if (!test_jubjub_mul(scalar, 9, expected)) {
+    if (!test_jubjub_mul_fixed_zcash(scalar, 9, expected)) {
         return false;
     }
 
@@ -80,7 +77,7 @@ bool test_jubjub_mul()
         FieldT("16322787121012335146141962340685388833598805940095898416175167744309692564601"),
         FieldT("7671892447502767424995649701270280747270481283542925053047237428072257876309")
     };
-    if (!test_jubjub_mul(scalar, 255, expected)) {
+    if (!test_jubjub_mul_fixed_zcash(scalar, 255, expected)) {
         return false;
     }
 
@@ -95,7 +92,7 @@ int main( int argc, char **argv )
     // Types for board 
     ethsnarks::ppT::init_public_params();
 
-    if( ! ethsnarks::test_jubjub_mul_fixed_zcash() )
+    if( ! ethsnarks::testcases_jubjub_mul_fixed_zcash() )
     {
         std::cerr << "FAIL\n";
         return 1;

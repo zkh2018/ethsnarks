@@ -27,7 +27,7 @@ public:
 		const Params& in_params,
 		const std::vector<EdwardsPoint> base_points,
 		const VariableArrayT& in_scalar,
-		const std::string &annotation_prefix
+		const std::string& annotation_prefix
 	);
 
 	void generate_r1cs_constraints ();

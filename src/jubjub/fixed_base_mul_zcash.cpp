@@ -188,21 +188,12 @@ void fixed_base_mul_zcash::generate_r1cs_witness ()
 	}
 }
 
-<<<<<<< HEAD
 const VariableT& fixed_base_mul_zcash::result_x() const {
-	return edward_adders.back().result_x();
-}
-
-const VariableT& fixed_base_mul_zcash::result_y() const {
-	return edward_adders.back().result_y();
-=======
-const VariableT& fixed_base_mul_zcash::result_x() {
 	return edward_adders.size() ? edward_adders.back().result_x() : point_converters.back().result_x();
 }
 
-const VariableT& fixed_base_mul_zcash::result_y() {
-	return edward_adders.size() ? edward_adders.back().result_y() : point_converters.back().result_y();;
->>>>>>> e2a1c40e9ba92a22b55e20225ebe61ce26431c5d
+const VariableT& fixed_base_mul_zcash::result_y() const {
+	return edward_adders.size() ? edward_adders.back().result_y() : point_converters.back().result_y();
 }
 
 
