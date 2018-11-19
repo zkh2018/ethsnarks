@@ -4,7 +4,6 @@
 // Copyright (c) 2018 fleupold
 // License: LGPL-3.0+
 
-#include "gadgets/lookup_2bit.hpp"
 #include "gadgets/lookup_signed_3bit.hpp"
 #include "jubjub/adder.hpp"
 #include "jubjub/point.hpp"
@@ -22,7 +21,7 @@ public:
 	std::vector<MontgomeryAdder> montgomery_adders;
 	std::vector<MontgomeryToEdwards> point_converters;
 	std::vector<PointAdder> edward_adders;
-	std::vector<lookup_2bit_gadget> m_windows_x;
+	std::vector<LinearCombinationT> m_windows_x;
 	std::vector<lookup_signed_3bit_gadget> m_windows_y;
 
 	fixed_base_mul_zcash(
