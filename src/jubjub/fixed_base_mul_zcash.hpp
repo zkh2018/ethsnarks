@@ -37,6 +37,8 @@ public:
 	const VariableT& result_x() const;
 
 	const VariableT& result_y() const;
+
+	static size_t basepoints_required(size_t n_bits);
 };
 
 

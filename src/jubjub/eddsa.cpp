@@ -29,17 +29,14 @@ EdDSA_Verify::EdDSA_Verify(
 
 	// Convert X & Y coords to bits for hash function
 	m_R_x_bits(in_pb, in_R.x, FMT(this->annotation_prefix, ".R_x_bits")),
-	m_R_y_bits(in_pb, in_R.y, FMT(this->annotation_prefix, ".R_y_bits")),
 	m_A_x_bits(in_pb, in_A.x, FMT(this->annotation_prefix, ".A_x_bits")),
-	m_A_y_bits(in_pb, in_A.y, FMT(this->annotation_prefix, ".A_y_bits")),
 	m_M_x_bits(in_pb, m_msg_hashed.result_x(), FMT(this->annotation_prefix, ".M_x_bits")),
-	m_M_y_bits(in_pb, m_msg_hashed.result_y(), FMT(this->annotation_prefix, ".M_y_bits")),
 
 	// hash_RAM = H(R.x,R.y,A.x,A.y,M.x,M.y)
 	m_hash_RAM(in_pb, in_params, "EdDSA_Verify.RAM", flatten({
-		m_R_x_bits.result(), m_R_y_bits.result(),
-		m_A_x_bits.result(), m_A_y_bits.result(),
-		m_M_x_bits.result(), m_M_y_bits.result()
+		m_R_x_bits.result(),
+		m_A_x_bits.result(),
+		m_M_x_bits.result(),
 	}), FMT(this->annotation_prefix, ".hash_RAM")),
 
 	// hash_RAM_bits = BITS(hash_RAM.y)
@@ -59,11 +56,8 @@ void EdDSA_Verify::generate_r1cs_constraints()
 	m_msg_hashed.generate_r1cs_constraints();
 	m_lhs.generate_r1cs_constraints();
 	m_R_x_bits.generate_r1cs_constraints();
-	m_R_y_bits.generate_r1cs_constraints();
 	m_A_x_bits.generate_r1cs_constraints();
-	m_A_y_bits.generate_r1cs_constraints();
 	m_M_x_bits.generate_r1cs_constraints();
-	m_M_y_bits.generate_r1cs_constraints();
 	m_hash_RAM.generate_r1cs_constraints();
 	m_hash_RAM_bits.generate_r1cs_constraints();
 	m_At.generate_r1cs_constraints();
@@ -77,11 +71,8 @@ void EdDSA_Verify::generate_r1cs_witness()
 	m_msg_hashed.generate_r1cs_witness();
 	m_lhs.generate_r1cs_witness();
 	m_R_x_bits.generate_r1cs_witness();
-	m_R_y_bits.generate_r1cs_witness();
 	m_A_x_bits.generate_r1cs_witness();
-	m_A_y_bits.generate_r1cs_witness();
 	m_M_x_bits.generate_r1cs_witness();
-	m_M_y_bits.generate_r1cs_witness();
 	m_hash_RAM.generate_r1cs_witness();
 	m_hash_RAM_bits.generate_r1cs_witness();
 	m_At.generate_r1cs_witness();

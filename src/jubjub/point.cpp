@@ -17,9 +17,7 @@ EdwardsPoint::EdwardsPoint(
 ) :
     x(in_x),
     y(in_y)
-{
-
-}
+{ }
 
 
 const EdwardsPoint EdwardsPoint::infinity() const

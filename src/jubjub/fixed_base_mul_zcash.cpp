@@ -5,9 +5,16 @@ namespace ethsnarks {
 
 namespace jubjub {
 
-const static char chunk_size_bits = 3;
-const static char lookup_size_bits = 2;
-const static char chunks_per_base_point = 62;
+// TODO: calculate these programmatically?
+const static size_t CHUNK_SIZE_BITS = 3;
+const static size_t LOOKUP_SIZE_BITS = 2;
+const static size_t CHUNKS_PER_BASE_POINT = 62;
+
+
+size_t fixed_base_mul_zcash::basepoints_required(size_t n_bits)
+{
+	return ceilf(n_bits / float(CHUNK_SIZE_BITS * CHUNKS_PER_BASE_POINT));
+}
 
 
 fixed_base_mul_zcash::fixed_base_mul_zcash(
@@ -20,10 +27,10 @@ fixed_base_mul_zcash::fixed_base_mul_zcash(
 	GadgetT(in_pb, annotation_prefix)
 {
 	assert( in_scalar.size() > 0 );
-	assert( (in_scalar.size() % chunk_size_bits) == 0 );
-	assert( float(in_scalar.size()) / float(chunk_size_bits * chunks_per_base_point) <= base_points.size());
-	const int window_size_items = 1 << lookup_size_bits;
-	int n_windows = in_scalar.size() / chunk_size_bits;
+	assert( (in_scalar.size() % CHUNK_SIZE_BITS) == 0 );
+	assert( basepoints_required(in_scalar.size()) <= base_points.size());
+	const int window_size_items = 1 << LOOKUP_SIZE_BITS;
+	int n_windows = in_scalar.size() / CHUNK_SIZE_BITS;
 
 	EdwardsPoint start = base_points[0];
 	// Precompute values for all lookup window tables
@@ -32,8 +39,8 @@ fixed_base_mul_zcash::fixed_base_mul_zcash(
 		std::vector<FieldT> lookup_x;
 		std::vector<FieldT> lookup_y;
 
-		if (i % chunks_per_base_point == 0) {
-			start = base_points[i/chunks_per_base_point];
+		if (i % CHUNKS_PER_BASE_POINT == 0) {
+			start = base_points[ i / CHUNKS_PER_BASE_POINT ];
 		}
 
 		// For each window, generate 4 points, in little endian:
@@ -56,9 +63,9 @@ fixed_base_mul_zcash::fixed_base_mul_zcash(
 			assert (edward.y == current.y);
 		}
 
-		const auto bits_begin = in_scalar.begin() + (i * chunk_size_bits);
-		const VariableArrayT window_bits_x( bits_begin, bits_begin + lookup_size_bits );
-		const VariableArrayT window_bits_y( bits_begin, bits_begin + chunk_size_bits );
+		const auto bits_begin = in_scalar.begin() + (i * CHUNK_SIZE_BITS);
+		const VariableArrayT window_bits_x( bits_begin, bits_begin + LOOKUP_SIZE_BITS );
+		const VariableArrayT window_bits_y( bits_begin, bits_begin + CHUNK_SIZE_BITS );
 		m_windows_y.emplace_back(in_pb, lookup_y, window_bits_y, FMT(annotation_prefix, ".windows_y[%d]", i));		
 		
 		// Pass x lookup as a linear combination to avoid extra constraint.
@@ -80,7 +87,7 @@ fixed_base_mul_zcash::fixed_base_mul_zcash(
 	// Chain adders within one segment together via montgomery adders
 	for( int i = 1; i < n_windows; i++ )
 	{
-		if( i % chunks_per_base_point == 1 ) {				
+		if( i % CHUNKS_PER_BASE_POINT == 1 ) {
 			montgomery_adders.emplace_back(
 				in_pb, in_params,
 				m_windows_x[i-1],
@@ -101,7 +108,7 @@ fixed_base_mul_zcash::fixed_base_mul_zcash(
 	}
 
 	// Convert every point at the end of a segment back to edwards format
-	size_t segment_width = chunks_per_base_point - 1;
+	size_t segment_width = CHUNKS_PER_BASE_POINT - 1;
 	for(size_t i = segment_width; i < montgomery_adders.size() - 1 /*we deal with the last one at the end*/; i += segment_width ) {
 		point_converters.emplace_back(
 			in_pb, in_params,
@@ -121,7 +128,8 @@ fixed_base_mul_zcash::fixed_base_mul_zcash(
 	// Chain adders of converted segment tails together
 	for( size_t i = 1; i < point_converters.size(); i++ )
 	{
-		if (i == 1) {
+		if (i == 1)
+		{
 			edward_adders.emplace_back(
 				in_pb, in_params,
 				point_converters[i-1].result_x(),

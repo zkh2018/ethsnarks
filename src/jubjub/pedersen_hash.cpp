@@ -15,7 +15,7 @@ PedersenHash::PedersenHash(
     GadgetT(in_pb, annotation_prefix),
     m_commitment(
         in_pb, in_params,
-        EdwardsPoint::make_basepoints(name, in_bits.size(), in_params),
+        EdwardsPoint::make_basepoints(name, fixed_base_mul_zcash::basepoints_required(in_bits.size()), in_params),
         in_bits,
         FMT(annotation_prefix, ".commitment"))
 {}

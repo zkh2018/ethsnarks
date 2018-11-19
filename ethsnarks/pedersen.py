@@ -55,7 +55,10 @@ def pedersen_hash_basepoint(name, i):
 	Then HashToPoint is run on the name+seq to get the base point.
 	"""
 	if not isinstance(name, bytes):
-		raise TypeError("Name not bytes")
+		if isinstance(name, str):
+			name = name.encode('ascii')
+		else:
+			raise TypeError("Name not bytes")
 	if i < 0 or i > 0xFFFF:
 		raise ValueError("Sequence number invalid")
 	if len(name) > 28:
@@ -111,6 +114,8 @@ def pedersen_hash_bytes(name, *args):
 
 def pedersen_hash_zcash_windows(name, windows):
 	# TODO: define `62`
+	# Debug windows:
+	# print("Windows", windows, [bin(_) for _ in windows])
 	base = Point.infinity()
 	result = Point.infinity()
 	for j, window in enumerate(windows):
@@ -123,6 +128,15 @@ def pedersen_hash_zcash_windows(name, windows):
 			segment = segment.neg()
 		result += segment
 	return result
+
+
+def pedersen_hash_zcash_bits(name, bits):
+	# Split into 3 bit windows
+	windows = [int(bits[i:i+3], 2) for i in range(0, len(bits), 3)]
+	assert len(windows) > 0
+
+	# Hash resulting windows
+	return pedersen_hash_zcash_windows(name, windows)
 
 
 def pedersen_hash_zcash_bytes(name, data):
@@ -142,12 +156,7 @@ def pedersen_hash_zcash_bytes(name, data):
 	bits = bits + ('0' * (3 - (len(bits) % 3)))
 	assert len(bits) % 3 == 0
 
-	# Split into 3 bit windows
-	windows = [int(bits[i:i+3], 2) for i in range(0, len(bits), 3)]
-	assert len(windows) > 0
-
-	# Hash resulting windows
-	return pedersen_hash_zcash_windows(name, windows)
+	return pedersen_hash_zcash_bits(name, bits)
 
 
 def pedersen_hash_zcash_scalars(name, *scalars):
