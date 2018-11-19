@@ -12,7 +12,7 @@ void lookup_signed_3bit_constraints( ProtoboardT& pb, const std::vector<FieldT> 
 	// b0b1 = b[0] * b[1]
 	pb.add_r1cs_constraint(
         ConstraintT(b[0], b[1], b0b1),
-            FMT(annotation_prefix, ".result"));
+            FMT(annotation_prefix, ".b0&b1"));
 
 	// y_lc = c[0] + b[0] * (c[1]-c0) + b[1] * (c[2]-c[0]) + b[0]&b[1] * (c[3] - c[2] - c[1] + c[0])
 	LinearCombinationT y_lc;

@@ -18,11 +18,11 @@ public:
     const Params& m_params;
 
     // First input point
-    const VariableT m_X1;
+    const LinearCombinationT m_X1;
     const VariableT m_Y1;
 
     // Second input point
-    const VariableT m_X2;
+    const LinearCombinationT m_X2;
     const VariableT m_Y2;
 
     // Intermediate variables
@@ -33,9 +33,9 @@ public:
     MontgomeryAdder(
         ProtoboardT& in_pb,
         const Params& in_params,
-        const VariableT in_X1,
+        const LinearCombinationT in_X1,
         const VariableT in_Y1,
-        const VariableT in_X2,
+        const LinearCombinationT in_X2,
         const VariableT in_Y2,
         const std::string& annotation_prefix
     );
