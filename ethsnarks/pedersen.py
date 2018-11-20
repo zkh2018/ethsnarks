@@ -129,7 +129,7 @@ def pedersen_hash_zcash_windows(name, windows):
 	return result
 
 
-def _pedersen_hash_zcash_bits(name, bits):
+def pedersen_hash_zcash_bits(name, bits):
 	# Split into 3 bit windows
 	windows = [int(bits[i:i+3][::-1], 2) for i in range(0, len(bits), 3)]
 	assert len(windows) > 0
@@ -151,7 +151,7 @@ def pedersen_hash_zcash_bytes(name, data):
 	# Decode bytes to octets of binary bits
 	bits = ''.join([bin(_)[2:].rjust(8, '0') for _ in data])
 
-	return _pedersen_hash_zcash_bits(name, bits)
+	return pedersen_hash_zcash_bits(name, bits)
 
 
 def pedersen_hash_zcash_scalars(name, *scalars):

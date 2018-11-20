@@ -24,26 +24,48 @@ namespace ethsnarks {
 namespace jubjub {
 
 
+class EdDSA_HashRAM_gadget : public GadgetT
+{
+public:
+    field2bits_strict m_R_x_bits;           // R_x_bits = BITS(R.x)
+    field2bits_strict m_A_x_bits;           // A_x_bits = BITS(A.x)
+    PedersenHashToBits m_hash_RAM;          // hash_RAM = H(R, A, M)
+
+    EdDSA_HashRAM_gadget(
+        ProtoboardT& in_pb,
+        const Params& in_params,
+        const VariablePointT& in_R,
+        const VariablePointT& in_A,
+        const VariableArrayT& in_M,
+        const std::string& annotation_prefix
+    );
+
+    void generate_r1cs_constraints();
+
+    void generate_r1cs_witness();
+
+    const VariableArrayT& result();
+};
+
+
 class EdDSA_Verify : public GadgetT
 {
 public:
     PointValidator m_validator_R;           // IsValid(R)
-    PedersenHashToBits m_msg_hashed;        // M = H(m)
     fixed_base_mul m_lhs;                   // lhs = B*s
-    field2bits_strict m_R_x_bits;           // R_x_bits = BITS(R.x)
-    field2bits_strict m_A_x_bits;           // A_x_bits = BITS(A.x)
-    PedersenHashToBits m_hash_RAM;          // hash_RAM = H(R, A, M)
-    ScalarMult m_At;                        // A*t
-    PointAdder m_rhs;                       // R + (A*t)
+    PedersenHashToBits m_msg_hashed;        // M = H(m)
+    EdDSA_HashRAM_gadget m_hash_RAM;        // hash_RAM = H(R,A,M)
+    ScalarMult m_At;                        // A*hash_RAM
+    PointAdder m_rhs;                       // rhs = R + (A*hash_RAM)
 
     EdDSA_Verify(
         ProtoboardT& in_pb,
         const Params& in_params,
         const EdwardsPoint& in_base,    // B
-        VariablePointT in_A,            // A
-        VariablePointT in_R,            // R
-        VariableArrayT in_s,            // s
-        VariableArrayT in_msg,          // m
+        const VariablePointT in_A,      // A
+        const VariablePointT in_R,      // R
+        const VariableArrayT in_s,      // s
+        const VariableArrayT in_msg,    // m
         const std::string& annotation_prefix);
 
     void generate_r1cs_constraints();
