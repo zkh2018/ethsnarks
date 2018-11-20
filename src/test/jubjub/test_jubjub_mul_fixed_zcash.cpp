@@ -8,11 +8,11 @@ using jubjub::fixed_base_mul_zcash;
 using jubjub::Params;
 
 
-static bool test_jubjub_mul_fixed_zcash(ProtoboardT& pb, const VariableArrayT& bits, const EdwardsPoint& expectedResult)
+static bool test_jubjub_mul_fixed_zcash(ProtoboardT& pb, const VariableArrayT& in_bits, const EdwardsPoint& expectedResult)
 {
     const Params params;
-    const auto basepoints = EdwardsPoint::make_basepoints("test", 2, params);
-    fixed_base_mul_zcash the_gadget(pb, params, basepoints, bits, "the_gadget");
+    const auto basepoints = EdwardsPoint::make_basepoints("test", fixed_base_mul_zcash::basepoints_required(in_bits.size()), params);
+    fixed_base_mul_zcash the_gadget(pb, params, basepoints, in_bits, "the_gadget");
 
     the_gadget.generate_r1cs_witness();
     the_gadget.generate_r1cs_constraints();
@@ -32,7 +32,7 @@ static bool test_jubjub_mul_fixed_zcash(ProtoboardT& pb, const VariableArrayT& b
     }
 
     std::cout << "\t" << pb.num_constraints() << " constraints" << std::endl;
-    std::cout << "\t" << (pb.num_constraints() / float(bits.size())) << " constraints per bit" << std::endl;
+    std::cout << "\t" << (pb.num_constraints() / float(in_bits.size())) << " constraints per bit" << std::endl;
 
     return pb.is_satisfied();
 }
@@ -94,6 +94,36 @@ static bool testcases_jubjub_mul_fixed_zcash()
         FieldT("7671892447502767424995649701270280747270481283542925053047237428072257876309")
     };
     if (!test_jubjub_mul_fixed_zcash(scalar, 255, expected)) {
+        return false;
+    }
+
+    std::cout << "Test bytes 'abc'" << std::endl;
+    auto bits = bytes_to_bv((const uint8_t*)"abc", 3);
+    expected = {
+        FieldT("9869277320722751484529016080276887338184240285836102740267608137843906399765"),
+        FieldT("19790690237145851554496394080496962351633528315779989340140084430077208474328")
+    };
+    if (!test_jubjub_mul_fixed_zcash(bits, expected)) {
+        return false;
+    }
+
+    std::cout << "Test bytes 'abcdef'" << std::endl;
+    bits = bytes_to_bv((const uint8_t*)"abcdef", 6);
+    expected = {
+        FieldT("3152592107782913127811973383449327981421816164636305446433885391611437772003"),
+        FieldT("21757413191206167432148830329017031919270024158827230996476733729375089049175")
+    };
+    if (!test_jubjub_mul_fixed_zcash(bits, expected)) {
+        return false;
+    }
+
+    std::cout << "Test bytes 'abcdefghijklmnopqrstuvwx'" << std::endl;
+    bits = bytes_to_bv((const uint8_t*)"abcdefghijklmnopqrstuvwx", 24);
+    expected = {
+        FieldT("3966548799068703226441887746390766667253943354008248106643296790753369303077"),
+        FieldT("12849086395963202120677663823933219043387904870880733726805962981354278512988")
+    };
+    if (!test_jubjub_mul_fixed_zcash(bits, expected)) {
         return false;
     }
 

@@ -66,6 +66,8 @@ fixed_base_mul_zcash::fixed_base_mul_zcash(
 		const auto bits_begin = in_scalar.begin() + (i * CHUNK_SIZE_BITS);
 		const VariableArrayT window_bits_x( bits_begin, bits_begin + LOOKUP_SIZE_BITS );
 		const VariableArrayT window_bits_y( bits_begin, bits_begin + CHUNK_SIZE_BITS );
+		// Debugging statement
+		//std::cout << "window " << i << " = "; window_bits_y.get_field_element_from_bits(in_pb).print();
 		m_windows_y.emplace_back(in_pb, lookup_y, window_bits_y, FMT(annotation_prefix, ".windows_y[%d]", i));		
 		
 		// Pass x lookup as a linear combination to avoid extra constraint.

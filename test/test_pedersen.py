@@ -3,7 +3,7 @@ from os import urandom
 from random import randint
 
 from ethsnarks.jubjub import Point, FQ
-from ethsnarks.pedersen import pedersen_hash_points, pedersen_hash_scalars, pedersen_hash_bytes, pedersen_hash_zcash_scalars
+from ethsnarks.pedersen import pedersen_hash_points, pedersen_hash_scalars, pedersen_hash_bytes, pedersen_hash_zcash_scalars, pedersen_hash_zcash_bytes
 
 
 class TestPedersenHash(unittest.TestCase):
@@ -46,6 +46,16 @@ class TestPedersenHash(unittest.TestCase):
             pedersen_hash_zcash_scalars(b'test', 21888242871839275222246405745257275088548364400416034343698204186575808495616),
             Point(FQ(16322787121012335146141962340685388833598805940095898416175167744309692564601),
                   FQ(7671892447502767424995649701270280747270481283542925053047237428072257876309)))
+
+        self.assertEqual(
+            pedersen_hash_zcash_bytes(b'test', b"abc"),
+            Point(FQ(9869277320722751484529016080276887338184240285836102740267608137843906399765),
+                  FQ(19790690237145851554496394080496962351633528315779989340140084430077208474328)))
+
+        self.assertEqual(
+            pedersen_hash_zcash_bytes(b'test', b"abcdefghijklmnopqrstuvwx"),
+            Point(FQ(3966548799068703226441887746390766667253943354008248106643296790753369303077),
+                  FQ(12849086395963202120677663823933219043387904870880733726805962981354278512988)))
 
 
 if __name__ == "__main__":
