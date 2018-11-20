@@ -88,7 +88,7 @@ const EdwardsPoint EdwardsPoint::from_y_always (const FieldT in_y, const Params&
 {
     mpz_t modulus;
     mpz_init(modulus);
-    in_y.mod.to_mpz(modulus);
+    FieldT::field_char().to_mpz(modulus);
 
     for( int i = 0; i < 100; i++ )
     {

@@ -95,7 +95,7 @@ void field2bits_strict::generate_r1cs_witness ()
 }
 
 
-const VariableArrayT& field2bits_strict::result()
+const VariableArrayT& field2bits_strict::result() const
 {
     return m_bits;
 }

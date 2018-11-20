@@ -2,7 +2,7 @@ import math
 from hashlib import sha256
 from .field import FQ, SNARK_SCALAR_FIELD
 from .jubjub import Point, JUBJUB_L, JUBJUB_Q, JUBJUB_E
-from .pedersen import pedersen_hash_zcash_scalars, pedersen_hash_zcash_windows, pedersen_hash_zcash_bytes
+from .pedersen import pedersen_hash_zcash_bytes
 
 """
 Implements EdDSA

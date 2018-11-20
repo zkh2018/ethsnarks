@@ -6,6 +6,7 @@
 
 #include "jubjub/point.hpp"
 #include "jubjub/fixed_base_mul_zcash.hpp"
+#include "gadgets/field2bits_strict.hpp"
 
 
 namespace ethsnarks {
@@ -37,7 +38,34 @@ public:
 
     void generate_r1cs_constraints ();
 
-	void generate_r1cs_witness ();
+    void generate_r1cs_witness ();
+};
+
+
+/**
+* The X coordinate is distinct
+*/
+class PedersenHashToBits : public GadgetT
+{
+public:
+    PedersenHash m_hash;
+    field2bits_strict m_tobits;
+
+    PedersenHashToBits(
+        ProtoboardT& in_pb,
+        const Params& in_params,
+        const char *name,
+        const VariableArrayT& in_bits,
+        const std::string& annotation_prefix);
+
+    /**
+    * Resulting bits
+    */
+    const VariableArrayT& result() const;
+
+    void generate_r1cs_constraints ();
+
+    void generate_r1cs_witness ();
 };
 
 

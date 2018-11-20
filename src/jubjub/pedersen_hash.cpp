@@ -45,6 +45,45 @@ void PedersenHash::generate_r1cs_witness ()
 }
 
 
+// --------------------------------------------------------------------
+
+
+PedersenHashToBits::PedersenHashToBits(
+    ProtoboardT& in_pb,
+    const Params& in_params,
+    const char *name,
+    const VariableArrayT& in_bits,
+    const std::string& annotation_prefix
+) :
+    GadgetT(in_pb, annotation_prefix),
+    m_hash(in_pb, in_params, name, in_bits, FMT(this->annotation_prefix, ".hash")),
+    m_tobits(in_pb, m_hash.result_x(), FMT(this->annotation_prefix, ".tobits"))
+{ }
+
+
+/**
+* Resulting bits
+*/
+const VariableArrayT& PedersenHashToBits::result() const
+{
+    return m_tobits.result();
+}
+
+
+void PedersenHashToBits::generate_r1cs_constraints ()
+{
+    m_hash.generate_r1cs_constraints();
+    m_tobits.generate_r1cs_constraints();
+}
+
+
+void PedersenHashToBits::generate_r1cs_witness ()
+{
+    m_hash.generate_r1cs_witness();
+    m_tobits.generate_r1cs_witness();
+}
+
+
 // namespace jubjub
 }
 

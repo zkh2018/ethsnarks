@@ -96,9 +96,9 @@ cxx-tests-jubjub:
 	./bin/test_jubjub_dbl
 	./bin/test_jubjub_mul
 	./bin/test_jubjub_mul_fixed
+	./bin/test_jubjub_mul_fixed_zcash
 	./bin/test_jubjub_point
 	./bin/test_jubjub_isoncurve > /dev/null
-	./bin/test_jubjub_mul_fixed_zcash
 	./bin/test_jubjub_hash
 
 cxx-tests: zksnark_element/miximus.vk.json cxx-tests-gadgets cxx-tests-jubjub

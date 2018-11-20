@@ -83,7 +83,7 @@ public:
     /**
     * Bits of the field element
     */
-    const VariableArrayT& result();
+    const VariableArrayT& result() const;
 };
 
 
