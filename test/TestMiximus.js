@@ -121,8 +121,8 @@ contract("TestableMiximus", () => {
 
             // Re-verify proof using native library
             // XXX: node-ffi on OSX will not null-terminate strings returned from `readFileSync` !
-            let vk_json = fs.readFileSync("zksnark_element/miximus.vk.json") + '\0';
-            let proof_valid_native = libmiximus.miximus_verify(vk_json, proof_json);
+            let vk_json = fs.readFileSync("zksnark_element/miximus.vk.json");
+            let proof_valid_native = libmiximus.miximus_verify(vk_json + '\0', proof_json);
             assert.strictEqual(proof_valid_native, true);
             let vk = JSON.parse(vk_json);
 
