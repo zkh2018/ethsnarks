@@ -16,7 +16,7 @@ set_property(TARGET miximus PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 
 add_library(hashpreimage SHARED mod/hashpreimage.cpp)
-target_link_libraries(hashpreimage ethsnarks_gadgets crypto)
+target_link_libraries(hashpreimage ethsnarks_gadgets)
 set_property(TARGET hashpreimage PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 
@@ -25,7 +25,7 @@ target_link_libraries(miximus_cli miximus_static)
 
 
 add_executable(hashpreimage_cli hashpreimage_cli.cpp)
-target_link_libraries(hashpreimage_cli ethsnarks_gadgets crypto)
+target_link_libraries(hashpreimage_cli ethsnarks_gadgets)
 
 
 add_executable(verify verify.cpp)

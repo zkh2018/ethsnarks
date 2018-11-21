@@ -17,4 +17,4 @@ add_library(ethsnarks_jubjub STATIC
   eddsa.cpp
 )
 
-target_link_libraries(ethsnarks_jubjub ethsnarks_gadgets crypto)
+target_link_libraries(ethsnarks_jubjub ethsnarks_gadgets)
