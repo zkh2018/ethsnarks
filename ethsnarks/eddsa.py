@@ -90,9 +90,9 @@ def eddsa_verify(A, R, s, m, B):
     return lhs == rhs
 
 
-def eddsa_sign(msg, k, B, A=None):
+def eddsa_sign(msg, k, B):
     """
-    @param msg Message being signed
+    @param msg Message being signed, bytes, (len(msg)*8)%3 == 0
     @param k secret key
     @param B base point
     @param A public key, k*B
@@ -104,13 +104,10 @@ def eddsa_sign(msg, k, B, A=None):
     if k.n >= JUBJUB_L or k.n <= 0:
         raise RuntimeError("Strict parsing of k failed")
 
-    if A is None:
-        A = k * B
-
     M = eddsa_hash_message(msg)     # hash message: H(msg) -> M
     r = eddsa_hash_kM(k, M)         # r = H(k,M) mod L
     R = B * r                       #
     t = eddsa_hash_RAM(R, A, M)     # Bind the message to the nonce, public key and message
     # XXX: there is a small chance that #E doesn't fit into #Q
     S = (r + (k.n*t)) % JUBJUB_E    # S -> r + H(R,A,M)*s
-    return [R, S]
+    return [R, S, A]

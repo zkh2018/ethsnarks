@@ -174,7 +174,7 @@ const VariableArrayT flatten( const std::vector<VariableArrayT> &in_scalars )
 {
     size_t total_sz = 0;
     for( const auto& scalar : in_scalars )
-        total_sz += in_scalars.size();
+        total_sz += scalar.size();
 
     VariableArrayT result;
     result.resize(total_sz);
@@ -184,7 +184,7 @@ const VariableArrayT flatten( const std::vector<VariableArrayT> &in_scalars )
     {
         for( size_t i = 0; i < scalar.size(); i++ )
         {
-            result[offset].index = scalar[i].index;
+            result[offset++].index = scalar[i].index;
         }
     }
 

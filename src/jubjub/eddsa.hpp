@@ -29,6 +29,7 @@ class EdDSA_HashRAM_gadget : public GadgetT
 public:
     field2bits_strict m_R_x_bits;           // R_x_bits = BITS(R.x)
     field2bits_strict m_A_x_bits;           // A_x_bits = BITS(A.x)
+    const VariableArrayT m_RAM_bits;
     PedersenHashToBits m_hash_RAM;          // hash_RAM = H(R, A, M)
 
     EdDSA_HashRAM_gadget(
@@ -62,10 +63,10 @@ public:
         ProtoboardT& in_pb,
         const Params& in_params,
         const EdwardsPoint& in_base,    // B
-        const VariablePointT in_A,      // A
-        const VariablePointT in_R,      // R
-        const VariableArrayT in_s,      // s
-        const VariableArrayT in_msg,    // m
+        const VariablePointT& in_A,      // A
+        const VariablePointT& in_R,      // R
+        const VariableArrayT& in_s,      // s
+        const VariableArrayT& in_msg,    // m
         const std::string& annotation_prefix);
 
     void generate_r1cs_constraints();

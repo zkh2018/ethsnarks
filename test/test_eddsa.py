@@ -10,11 +10,10 @@ class TestEdDSA(unittest.TestCase):
 	def test_signverify(self):
 		B = Point.from_hash(b'eddsa_base')
 		k = FQ.random(JUBJUB_L)
-		A = B * k
 		m = urandom(32)
-		R, s = eddsa_sign(m, k, B, A)
+		R, S, A = eddsa_sign(m, k, B)
 
-		self.assertTrue(eddsa_verify(A, R, s, m, B))
+		self.assertTrue(eddsa_verify(A, R, S, m, B))
 
 
 if __name__ == "__main__":

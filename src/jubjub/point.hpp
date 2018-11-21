@@ -70,6 +70,11 @@ public:
     * Return a sequence of base points for the given namespace
     */
     static const std::vector<EdwardsPoint> make_basepoints(const char *name, unsigned int n, const Params& in_params);
+
+    /**
+    * Convert to a VariablePoint - allocates two new variables for its X and Y coordinates
+    */
+    const VariablePointT as_VariablePointT (ProtoboardT& pb, const std::string& annotation_prefix) const;
 };
 
 

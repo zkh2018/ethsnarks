@@ -25,7 +25,7 @@ public:
 	fixed_base_mul_zcash(
 		ProtoboardT &in_pb,
 		const Params& in_params,
-		const std::vector<EdwardsPoint> base_points,
+		const std::vector<EdwardsPoint>& base_points,
 		const VariableArrayT& in_scalar,
 		const std::string& annotation_prefix
 	);

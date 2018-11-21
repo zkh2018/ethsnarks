@@ -20,7 +20,7 @@ size_t fixed_base_mul_zcash::basepoints_required(size_t n_bits)
 fixed_base_mul_zcash::fixed_base_mul_zcash(
 	ProtoboardT &in_pb,
 	const Params& in_params,
-	const std::vector<EdwardsPoint> base_points,
+	const std::vector<EdwardsPoint>& base_points,
 	const VariableArrayT& in_scalar,
 	const std::string &annotation_prefix
 ) :
@@ -30,7 +30,7 @@ fixed_base_mul_zcash::fixed_base_mul_zcash(
 	assert( (in_scalar.size() % CHUNK_SIZE_BITS) == 0 );
 	assert( basepoints_required(in_scalar.size()) <= base_points.size());
 	const int window_size_items = 1 << LOOKUP_SIZE_BITS;
-	int n_windows = in_scalar.size() / CHUNK_SIZE_BITS;
+	const int n_windows = in_scalar.size() / CHUNK_SIZE_BITS;
 
 	EdwardsPoint start = base_points[0];
 	// Precompute values for all lookup window tables
@@ -58,9 +58,11 @@ fixed_base_mul_zcash::fixed_base_mul_zcash(
 			lookup_x.emplace_back(montgomery.x);
 			lookup_y.emplace_back(montgomery.y);
 
+#ifdef DEBUG
 			const auto edward = montgomery.as_edwards(in_params);
 			assert (edward.x == current.x);
 			assert (edward.y == current.y);
+#endif
 		}
 
 		const auto bits_begin = in_scalar.begin() + (i * CHUNK_SIZE_BITS);
@@ -82,8 +84,7 @@ fixed_base_mul_zcash::fixed_base_mul_zcash(
 		m_windows_x.emplace_back(x_lc);
 
 		// current is at 2^2 * start, for next iteration start needs to be 2^4
-		current = current.dbl(in_params);
-		start = current.dbl(in_params);
+		start = current.dbl(in_params).dbl(in_params);
 	}
 
 	// Chain adders within one segment together via montgomery adders
@@ -110,7 +111,7 @@ fixed_base_mul_zcash::fixed_base_mul_zcash(
 	}
 
 	// Convert every point at the end of a segment back to edwards format
-	size_t segment_width = CHUNKS_PER_BASE_POINT - 1;
+	const size_t segment_width = CHUNKS_PER_BASE_POINT - 1;
 	for(size_t i = segment_width; i < montgomery_adders.size() - 1 /*we deal with the last one at the end*/; i += segment_width ) {
 		point_converters.emplace_back(
 			in_pb, in_params,

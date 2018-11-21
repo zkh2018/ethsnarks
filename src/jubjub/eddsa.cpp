@@ -19,12 +19,14 @@ EdDSA_HashRAM_gadget::EdDSA_HashRAM_gadget(
     m_R_x_bits(in_pb, in_R.x, FMT(this->annotation_prefix, ".R_x_bits")),
     m_A_x_bits(in_pb, in_A.x, FMT(this->annotation_prefix, ".A_x_bits")),
 
-    // hash_RAM = H(R.x,A.x,M.x)
-    m_hash_RAM(in_pb, in_params, "EdDSA_Verify.RAM", flatten({
+    m_RAM_bits(flatten({
         m_R_x_bits.result(),
         m_A_x_bits.result(),
         in_M,
-    }), FMT(this->annotation_prefix, ".hash_RAM"))
+    })),
+
+    // hash_RAM = H(R.x,A.x,M.x)
+    m_hash_RAM(in_pb, in_params, "EdDSA_Verify.RAM", m_RAM_bits, FMT(this->annotation_prefix, ".hash_RAM"))
 {
 }
 
@@ -58,10 +60,10 @@ EdDSA_Verify::EdDSA_Verify(
     ProtoboardT& in_pb,
     const Params& in_params,
     const EdwardsPoint& in_base,    // B
-    const VariablePointT in_A,      // A
-    const VariablePointT in_R,      // R
-    const VariableArrayT in_s,      // s
-    const VariableArrayT in_msg,    // m
+    const VariablePointT& in_A,     // A
+    const VariablePointT& in_R,     // R
+    const VariableArrayT& in_s,     // s
+    const VariableArrayT& in_msg,   // m
     const std::string& annotation_prefix
 ) :
     GadgetT(in_pb, annotation_prefix),
@@ -89,19 +91,28 @@ EdDSA_Verify::EdDSA_Verify(
 void EdDSA_Verify::generate_r1cs_constraints()
 {
     m_validator_R.generate_r1cs_constraints();
-    m_msg_hashed.generate_r1cs_constraints();
     m_lhs.generate_r1cs_constraints();
+    m_msg_hashed.generate_r1cs_constraints();
     m_hash_RAM.generate_r1cs_constraints();
     m_At.generate_r1cs_constraints();
     m_rhs.generate_r1cs_constraints();
+
+    // Verify the two points are equal
+    this->pb.add_r1cs_constraint(
+        ConstraintT(m_lhs.result_x(), FieldT::one(), m_rhs.result_x()),
+        FMT(this->annotation_prefix, "lhs.x == rhs.x"));
+
+    this->pb.add_r1cs_constraint(
+        ConstraintT(m_lhs.result_y(), FieldT::one(), m_rhs.result_y()),
+        FMT(this->annotation_prefix, "lhs.y == rhs.y"));
 }
 
 
 void EdDSA_Verify::generate_r1cs_witness()
 {
     m_validator_R.generate_r1cs_witness();
-    m_msg_hashed.generate_r1cs_witness();
     m_lhs.generate_r1cs_witness();
+    m_msg_hashed.generate_r1cs_witness();
     m_hash_RAM.generate_r1cs_witness();
     m_At.generate_r1cs_witness();
     m_rhs.generate_r1cs_witness();

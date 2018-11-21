@@ -168,6 +168,15 @@ const std::vector<EdwardsPoint> EdwardsPoint::make_basepoints(const char *name, 
 }
 
 
+const VariablePointT EdwardsPoint::as_VariablePointT (ProtoboardT& pb, const std::string& annotation_prefix) const
+{
+    return {
+        make_variable(pb, x, FMT(annotation_prefix, ".x")),
+        make_variable(pb, y, FMT(annotation_prefix, ".y"))
+    };
+}
+
+
 // --------------------------------------------------------------------
 
 
