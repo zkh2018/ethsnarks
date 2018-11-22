@@ -100,6 +100,7 @@ cxx-tests-jubjub:
 	./bin/test_jubjub_point
 	./bin/test_jubjub_isoncurve > /dev/null
 	./bin/test_jubjub_hash
+	./bin/test_jubjub_eddsa
 
 cxx-tests: zksnark_element/miximus.vk.json cxx-tests-gadgets cxx-tests-jubjub
 	time ./bin/hashpreimage_cli genkeys zksnark_element/hpi.pk.raw zksnark_element/hpi.vk.json
