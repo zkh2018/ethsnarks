@@ -59,7 +59,7 @@ public:
     const Params& m_params;
     
     // Input point
-    const VariableT m_X1;
+    const LinearCombinationT m_X1;
     const VariableT m_Y1;
 
     // Output point
@@ -69,7 +69,7 @@ public:
     MontgomeryToEdwards(
         ProtoboardT &in_pb,
         const Params& in_params,
-        const VariableT in_X,
+        const LinearCombinationT in_X,
         const VariableT in_Y,
         const std::string &annotation_prefix
     );

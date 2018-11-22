@@ -265,5 +265,12 @@ class TestJubjub(unittest.TestCase):
 		self.assertEqual(q.x, 6317123931401941284657971611369077243307682877199795030160588338302336995127)
 		self.assertEqual(q.y, 17705894757276775630165779951991641206660307982595100429224895554788146104270)
 
+	def test_loworder(self):
+		for p in Point.all_loworder_points():
+			if p != Point.infinity():
+				q = p * JUBJUB_L
+				self.assertEqual(q, p)
+				self.assertNotEqual(q, Point.infinity())
+
 if __name__ == "__main__":
 	unittest.main()

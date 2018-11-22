@@ -1,0 +1,5 @@
+add_executable(benchmark_mpz_mul benchmark_mpz_mul.cpp)
+target_link_libraries(benchmark_mpz_mul ff)
+
+add_executable(benchmark_pairing benchmark_pairing.cpp)
+target_link_libraries(benchmark_pairing ff)

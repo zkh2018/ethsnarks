@@ -61,13 +61,13 @@ Commitment::Commitment(
 
 const VariableT& Commitment::result_x() const
 {
-	return m_adders[m_adders.size() - 1].result_x();
+	return m_adders.back().result_x();
 }
 
 
 const VariableT& Commitment::result_y() const
 {
-	return m_adders[m_adders.size() - 1].result_y();
+	return m_adders.back().result_y();
 }
 
 

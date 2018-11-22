@@ -150,6 +150,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 endif()
 
 
+# Locate the gmp library and its includes
 find_path(GMP_INCLUDE_DIR NAMES gmp.h)
 find_library(GMP_LIBRARY gmp)
 if(GMP_LIBRARY MATCHES ${CMAKE_SHARED_LIBRARY_SUFFIX})
@@ -164,7 +165,23 @@ set_target_properties(
   IMPORTED_LOCATION ${GMP_LIBRARY}
   INTERFACE_INCLUDE_DIRECTORIES ${GMP_INCLUDE_DIR}
 )
-find_library(GMPXX_LIBRARIES NAMES gmpxx libgmpxx)
+
+
+# Locate the gmpxx library and its includes
+find_path(GMPXX_INCLUDE_DIR gmpxx.h)
+find_library(GMPXX_LIBRARY gmpxx)
+if(GMPXX_LIBRARY MATCHES ${CMAKE_SHARED_LIBRARY_SUFFIX})
+  set(gmpxx_library_type SHARED)
+else()
+  set(gmpxx_library_type STATIC)
+endif()
+add_library(GMP::gmpxx ${gmpxx_library_type} IMPORTED)
+message(STATUS "GMPxx: ${GMPXX_LIBRARY}, ${GMPXX_INCLUDE_DIR}")
+set_target_properties(
+  GMP::gmpxx PROPERTIES
+  IMPORTED_LOCATION ${GMPXX_LIBRARY}
+  INTERFACE_INCLUDE_DIRECTORIES ${GMPXX_INCLUDE_DIR}
+)
 
 
 add_compile_options(-fPIC)
@@ -177,6 +194,8 @@ if("${WITH_PROCPS}")
 else()
   add_definitions(-DNO_PROCPS)
 endif()
+
+find_package(OpenSSL REQUIRED)
 
 include_directories(
   ${DEPENDS_DIR}/libsnark
@@ -198,6 +217,6 @@ add_library(
   ${DEPENDS_DIR_LIBFF}/libff/common/utils.cpp
 )
 
-target_link_libraries(ff GMP::gmp gmpxx ${PROCPS_LIBRARIES})
+target_link_libraries(ff GMP::gmp ${PROCPS_LIBRARIES})
 
 add_subdirectory(src)

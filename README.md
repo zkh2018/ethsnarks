@@ -35,7 +35,13 @@ The zkSNARK prover is built as a native library which can plug-in to your applic
 
 [![Build Status](https://travis-ci.org/HarryR/ethsnarks.svg?branch=master)](https://travis-ci.org/HarryR/ethsnarks) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/137909bd889347728818d0aa5570fa9a)](https://www.codacy.com/project/HarryR/ethsnarks/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=HarryR/ethsnarks&amp;utm_campaign=Badge_Grade_Dashboard) [![BCH compliance](https://bettercodehub.com/edge/badge/HarryR/ethsnarks?branch=master)](https://bettercodehub.com/)
 
-Type `make` - the first time you run it will retrieve submodules, setup cmake and build everything, for more information about the build process see the [Travis-CI build logs](https://travis-ci.org/HarryR/ethsnarks). The following dependencies (for Linux) are needed:
+Type `make` - the first time you run it will retrieve submodules, setup cmake and build everything, for more information about the build process see the [Travis-CI build logs](https://travis-ci.org/HarryR/ethsnarks).
+
+Before building, you may need to retrieve the source code for the dependencies:
+
+	git submodule update --init --recursive
+
+The following dependencies (for Linux) are needed:
 
  * cmake
  * g++ or clang++

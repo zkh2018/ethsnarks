@@ -16,8 +16,6 @@ namespace jubjub {
 
 class fixed_base_mul_zcash : public GadgetT {
 public:
-	const VariableArrayT m_scalar;
-
 	std::vector<MontgomeryAdder> montgomery_adders;
 	std::vector<MontgomeryToEdwards> point_converters;
 	std::vector<PointAdder> edward_adders;
@@ -27,18 +25,20 @@ public:
 	fixed_base_mul_zcash(
 		ProtoboardT &in_pb,
 		const Params& in_params,
-		const std::vector<EdwardsPoint> base_points,
-		const VariableArrayT in_scalar,
-		const std::string &annotation_prefix
+		const std::vector<EdwardsPoint>& base_points,
+		const VariableArrayT& in_scalar,
+		const std::string& annotation_prefix
 	);
 
 	void generate_r1cs_constraints ();
 
 	void generate_r1cs_witness ();
 
-	const VariableT& result_x();
+	const VariableT& result_x() const;
 
-	const VariableT& result_y();
+	const VariableT& result_y() const;
+
+	static size_t basepoints_required(size_t n_bits);
 };
 
 

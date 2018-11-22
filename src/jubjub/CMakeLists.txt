@@ -14,6 +14,7 @@ add_library(ethsnarks_jubjub STATIC
   pedersen_hash.cpp
   fixed_base_mul_zcash.cpp
   montgomery.cpp
+  eddsa.cpp
 )
 
-target_link_libraries(ethsnarks_jubjub ethsnarks_common crypto)
+target_link_libraries(ethsnarks_jubjub ethsnarks_gadgets)

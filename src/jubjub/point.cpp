@@ -17,9 +17,7 @@ EdwardsPoint::EdwardsPoint(
 ) :
     x(in_x),
     y(in_y)
-{
-
-}
+{ }
 
 
 const EdwardsPoint EdwardsPoint::infinity() const
@@ -90,9 +88,9 @@ const EdwardsPoint EdwardsPoint::from_y_always (const FieldT in_y, const Params&
 {
     mpz_t modulus;
     mpz_init(modulus);
-    in_y.mod.to_mpz(modulus);
+    FieldT::field_char().to_mpz(modulus);
 
-    for( int i = 0; i < 10; i++ )
+    for( int i = 0; i < 100; i++ )
     {
         const auto tmp_y = in_y + i;
         const auto ysq = tmp_y.squared();
@@ -167,6 +165,15 @@ const std::vector<EdwardsPoint> EdwardsPoint::make_basepoints(const char *name, 
     }
 
     return ret;
+}
+
+
+const VariablePointT EdwardsPoint::as_VariablePointT (ProtoboardT& pb, const std::string& annotation_prefix) const
+{
+    return {
+        make_variable(pb, x, FMT(annotation_prefix, ".x")),
+        make_variable(pb, y, FMT(annotation_prefix, ".y"))
+    };
 }
 
 

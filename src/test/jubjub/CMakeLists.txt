@@ -1,26 +1,8 @@
-add_executable(test_jubjub_add test_jubjub_add.cpp)
-target_link_libraries(test_jubjub_add ethsnarks_jubjub)
+file(GLOB test_sources "*.cpp")
 
-add_executable(test_jubjub_mul test_jubjub_mul.cpp)
-target_link_libraries(test_jubjub_mul ethsnarks_jubjub)
-
-add_executable(test_jubjub_dbl test_jubjub_dbl.cpp)
-target_link_libraries(test_jubjub_dbl ethsnarks_jubjub)
-
-add_executable(test_jubjub_mul_fixed test_jubjub_mul_fixed.cpp)
-target_link_libraries(test_jubjub_mul_fixed ethsnarks_jubjub)
-
-add_executable(test_jubjub_isoncurve test_jubjub_isoncurve.cpp)
-target_link_libraries(test_jubjub_isoncurve ethsnarks_jubjub)
-
-add_executable(test_jubjub_commitment test_jubjub_commitment.cpp)
-target_link_libraries(test_jubjub_commitment ethsnarks_jubjub)
-
-add_executable(test_jubjub_notloworder test_jubjub_notloworder.cpp)
-target_link_libraries(test_jubjub_notloworder ethsnarks_jubjub)
-
-add_executable(test_jubjub_point test_jubjub_point.cpp)
-target_link_libraries(test_jubjub_point ethsnarks_jubjub)
-
-add_executable(test_jubjub_mul_fixed_zcash test_jubjub_mul_fixed_zcash.cpp)
-target_link_libraries(test_jubjub_mul_fixed_zcash ethsnarks_jubjub)
+foreach(test_path ${test_sources})
+	get_filename_component(test_name ${test_path} NAME)
+	string(REPLACE ".cpp" "" test_executable ${test_name})
+	add_executable(${test_executable} ${test_name})
+	target_link_libraries(${test_executable} ethsnarks_jubjub)
+endforeach()

@@ -38,7 +38,7 @@ clean: coverage-clean python-clean
 #######################################################################
 
 
-build:
+build: depends/libsnarks/CMakeLists.txt
 	mkdir -p build
 
 bin/miximus_genKeys: build/Makefile
@@ -89,15 +89,18 @@ cxx-tests-gadgets:
 	./bin/test_lookup_3bit
 	./bin/test_subadd > /dev/null
 	./bin/test_isnonzero
+	./bin/test_field2bits
 
 cxx-tests-jubjub:
 	./bin/test_jubjub_add
 	./bin/test_jubjub_dbl
 	./bin/test_jubjub_mul
 	./bin/test_jubjub_mul_fixed
+	./bin/test_jubjub_mul_fixed_zcash
 	./bin/test_jubjub_point
 	./bin/test_jubjub_isoncurve > /dev/null
-	./bin/test_jubjub_mul_fixed_zcash
+	./bin/test_jubjub_hash
+	./bin/test_jubjub_eddsa
 
 cxx-tests: zksnark_element/miximus.vk.json cxx-tests-gadgets cxx-tests-jubjub
 	time ./bin/hashpreimage_cli genkeys zksnark_element/hpi.pk.raw zksnark_element/hpi.vk.json

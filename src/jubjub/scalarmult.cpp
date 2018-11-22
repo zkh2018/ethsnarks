@@ -33,14 +33,14 @@ ScalarMult::ScalarMult(
 				FMT(this->annotation_prefix, ".doublers[%u]", i));
 		}
 		else {
-			const auto& prev_dbl = doublers[ doublers.size() - 1 ];
+			const auto& prev_dbl = doublers.back();
 			doublers.emplace_back(
 				in_pb, in_params,
 				prev_dbl.result_x(), prev_dbl.result_y(),
 				FMT(this->annotation_prefix, ".doublers[%u]", i));
 		}
 
-		const auto& cur_dbl = doublers[ doublers.size() - 1 ];
+		const auto& cur_dbl = doublers.back();
 		conditionals.emplace_back(
 			in_pb,
 			cur_dbl.result_x(), cur_dbl.result_y(),
@@ -59,7 +59,7 @@ ScalarMult::ScalarMult(
 		}
 		else {
 			const auto& cond = conditionals[i];
-			const auto& adder = adders[i-2];
+			const auto& adder = adders.back();
 			adders.emplace_back(
 				in_pb, in_params,
 				adder.result_x(), adder.result_y(),
@@ -72,13 +72,13 @@ ScalarMult::ScalarMult(
 
 const VariableT& ScalarMult::result_x() const
 {
-	return adders[ adders.size() - 1 ].result_x();
+	return adders.back().result_x();
 }
 
 
 const VariableT& ScalarMult::result_y() const
 {
-	return adders[ adders.size() - 1 ].result_y();
+	return adders.back().result_y();
 }
 
 
