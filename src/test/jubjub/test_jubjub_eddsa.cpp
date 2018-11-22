@@ -36,25 +36,6 @@ bool test_jubjub_eddsa(
     the_gadget.generate_r1cs_witness();
     the_gadget.generate_r1cs_constraints();
 
-    /*
-    const char* expected_bits = "101100110011111001100100101100010100011010100100001011101001000100100000001111101101111001001010111011101101011010010101101101101000000010000000101010110100011110101110111100111100011110110011100101011000000000110101111001110000101011011110100100011110010000110111010011000001000100101100101111001100100010110101100010001000000101111011011010010011110001110111101011110001111111100010010000110101000001010111000111011110111010010010000101110000011001111000101010001101100000110111111110011001110101011000110010111111000101001100010001011011101010101011101010110000111100101000000110011000011001101000001010110110010000110101011111100010111011100110111101110111011001001110100100110010100111001000001010101010010100010100101101000010100010000111110101111000101110";
-    size_t i = 0;
-    for( const auto& window : the_gadget.m_hash_RAM.m_hash_RAM.m_hash.m_commitment.m_windows_y )
-    {
-        for( const auto& var : window.b ) {
-            char actual = pb.val(var) == FieldT::one() ? '1' : '0';
-            if( expected_bits[i] != actual ) {
-                std::cerr << "RAM mismatch at " << i << " expected=" << expected_bits[i] << " actual=" << actual << std::endl;
-            }
-            i += 1;
-        }
-    }
-    */
-
-    std::cout << "M = "; pb.val(the_gadget.m_msg_hashed.m_hash.result_x()).print();
-    std::cout << "hash_RAM.x = "; pb.val(the_gadget.m_hash_RAM.m_hash_RAM.m_hash.m_commitment.result_x()).print();
-    std::cout << "At.x = "; pb.val(the_gadget.m_At.result_x()).print();
-
     std::cout << "Num constraints: " << pb.num_constraints() << std::endl;
 
     return pb.is_satisfied();

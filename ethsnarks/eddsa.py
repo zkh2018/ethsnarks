@@ -104,6 +104,8 @@ def eddsa_sign(msg, k, B):
     if k.n >= JUBJUB_L or k.n <= 0:
         raise RuntimeError("Strict parsing of k failed")
 
+    A = B * k
+
     M = eddsa_hash_message(msg)     # hash message: H(msg) -> M
     r = eddsa_hash_kM(k, M)         # r = H(k,M) mod L
     R = B * r                       #
