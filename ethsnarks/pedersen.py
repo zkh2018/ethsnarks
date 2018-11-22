@@ -78,18 +78,6 @@ def pedersen_hash_points(name, *points):
 	return result
 
 
-def pedersen_hash_scalars(name, *scalars):
-	result = Point.infinity()
-	for i, s in enumerate(scalars):
-		if s >= JUBJUB_L:
-			raise ValueError("Scalar must be below L")
-		if s <= 0:
-			raise ValueError("Scalar must be above zero")
-		base = pedersen_hash_basepoint(name, i)
-		result += base * s
-	return result
-
-
 def pedersen_hash_bytes(name, *args):
 	"""
 	Split the message data into segments, then hash each segment
@@ -114,15 +102,14 @@ def pedersen_hash_bytes(name, *args):
 
 def pedersen_hash_zcash_windows(name, windows):
 	# TODO: define `62`
-
-	base = Point.infinity()
 	result = Point.infinity()
 	for j, window in enumerate(windows):
 		if j % 62 == 0:
-			base = pedersen_hash_basepoint(name, j//62)
+			current = pedersen_hash_basepoint(name, j//62)
 		j = j % 62
-		segment_base = base * 2**(4*j)
-		segment = segment_base * ((window & 0b11) + 1)
+		if j != 0:
+			current = current.double().double().double().double()
+		segment = current * ((window & 0b11) + 1)
 		if window > 0b11:
 			segment = segment.neg()
 		result += segment

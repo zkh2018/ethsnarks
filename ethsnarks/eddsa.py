@@ -72,6 +72,22 @@ def eddsa_hash_RAM(R, A, M):
 
 def eddsa_verify(A, R, s, m, B):
     """
+    Verifies an EdDSA signature
+
+    Potential vulnerabilities:
+
+        A is Infinity
+            - When `A` is infinity, the signature for *every* message will be the same
+            - All that's validated is `s` is the secret for `R`
+
+        A is a low-order point
+            - Forging a signature requires knowledge of the scalar value of the low-order point
+            - There is a 1/# (where # is order of the point A) probability of passing validation
+            - e.g. when A is of order 1 (Infinity), there is a 1/1 probability (100%)
+
+        A, B or R are not of prime-order
+            - TBD?
+
     @param A public key
     @param R Signature point
     @param s Signature scalar
