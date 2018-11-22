@@ -90,7 +90,22 @@ fixed_base_mul_zcash::fixed_base_mul_zcash(
 	// Chain adders within one segment together via montgomery adders
 	for( int i = 1; i < n_windows; i++ )
 	{
-		if( i % CHUNKS_PER_BASE_POINT == 1 ) {
+		if (i % CHUNKS_PER_BASE_POINT == 0) {
+			if (i + 1 < n_windows) {
+				// 0th lookup will be used in the next iteration to connect
+				// the first two adders of a new base point.
+				continue;
+			} else {
+				// This is the last point. No need to add it to anything in its 
+				// montgomery form, but we have to make sure it will be part of 
+				// the final edwards addition at the end
+				point_converters.emplace_back(
+					in_pb, in_params,
+					m_windows_x[i],
+					m_windows_y[i].result(),
+					FMT(this->annotation_prefix, ".point_conversion_segment_with_single_triplet"));
+			}
+		} else if( i % CHUNKS_PER_BASE_POINT == 1 ) {
 			montgomery_adders.emplace_back(
 				in_pb, in_params,
 				m_windows_x[i-1],
@@ -102,8 +117,8 @@ fixed_base_mul_zcash::fixed_base_mul_zcash(
 		else {
 			montgomery_adders.emplace_back(
 				in_pb, in_params,
-				montgomery_adders[i-2].result_x(),
-				montgomery_adders[i-2].result_y(),
+				montgomery_adders.back().result_x(),
+				montgomery_adders.back().result_y(),
 				m_windows_x[i],
 				m_windows_y[i].result(),
 				FMT(this->annotation_prefix, ".mg_adders[%d]", i));
@@ -112,7 +127,7 @@ fixed_base_mul_zcash::fixed_base_mul_zcash(
 
 	// Convert every point at the end of a segment back to edwards format
 	const size_t segment_width = CHUNKS_PER_BASE_POINT - 1;
-	for(size_t i = segment_width; i < montgomery_adders.size() - 1 /*we deal with the last one at the end*/; i += segment_width ) {
+	for(size_t i = segment_width; i < montgomery_adders.size(); i += segment_width ) {
 		point_converters.emplace_back(
 			in_pb, in_params,
 			montgomery_adders[i-1].result_x(),

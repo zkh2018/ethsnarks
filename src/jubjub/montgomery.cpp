@@ -62,7 +62,7 @@ void MontgomeryAdder::generate_r1cs_witness()
 MontgomeryToEdwards::MontgomeryToEdwards(
     ProtoboardT &in_pb,
     const Params& in_params,
-    const VariableT in_X,
+    const LinearCombinationT in_X,
     const VariableT in_Y,
     const std::string &annotation_prefix
 ) :
@@ -85,8 +85,8 @@ void MontgomeryToEdwards::generate_r1cs_constraints()
 
 void MontgomeryToEdwards::generate_r1cs_witness()
 {
-    this->pb.val(m_X2) = m_params.scale * this->pb.val(m_X1) * this->pb.val(m_Y1).inverse();
-    this->pb.val(m_Y2) = (this->pb.val(m_X1) - FieldT::one()) * (this->pb.val(m_X1) + FieldT::one()).inverse();
+    this->pb.val(m_X2) = m_params.scale * this->pb.lc_val(m_X1) * this->pb.val(m_Y1).inverse();
+    this->pb.val(m_Y2) = (this->pb.lc_val(m_X1) - FieldT::one()) * (this->pb.lc_val(m_X1) + FieldT::one()).inverse();
 }
 
 const VariableT& MontgomeryToEdwards::result_x() const
