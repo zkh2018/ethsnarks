@@ -1,29 +1,8 @@
-/*    
-    copyright 2018 to the Semaphore Authors
-
-    This file is part of Semaphore.
-
-    Semaphore is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    Semaphore is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with Semaphore.  If not, see <https://www.gnu.org/licenses/>.
-*/
-
 #include <fstream>
 #include <iostream>
 #include <cassert>
 #include <iomanip>
 
-
-#include <libsnark/gadgetlib1/gadget.hpp>
 
 #include "ethsnarks.hpp"
 
@@ -46,18 +25,15 @@ std::string HexStringFromBigint(libff::bigint<libff::alt_bn128_r_limbs> _x){
 }
 
 
-std::string outputPointG1AffineAsHex(libff::alt_bn128_G1 _p)
+std::string outputPointG1AffineAsHex(G1T _p)
 {
-        G1T aff = _p;
+        auto aff = _p;
         aff.to_affine_coordinates();
-        //std::stringstream ss; 
-        //ss << "0x"  << aff.X.as_bigint() << "," << aff.Y.as_bigint() << "," << aff.Z.as_bigint();
-
         return "\"0x" +  HexStringFromBigint(aff.X.as_bigint()) + "\", \"0x" + HexStringFromBigint(aff.Y.as_bigint()) + "\""; 
 }
 
 
-std::string outputPointG2AffineAsHex(libff::alt_bn128_G2 _p)
+std::string outputPointG2AffineAsHex(G2T _p)
 {
         G2T aff = _p;
 

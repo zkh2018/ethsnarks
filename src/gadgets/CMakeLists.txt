@@ -18,4 +18,5 @@ add_library(ethsnarks_gadgets STATIC
 	isnonzero.cpp
 	field2bits_strict.cpp
 )
-target_link_libraries(ethsnarks_gadgets ethsnarks_common ${OPENSSL_CRYPTO_LIBRARY})
+target_link_libraries(ethsnarks_gadgets ethsnarks_common OpenSSL::Crypto)
+target_compile_features(ethsnarks_gadgets PUBLIC cxx_std_11)

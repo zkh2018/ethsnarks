@@ -1,9 +1,10 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.8)
 
 project(ethsnarks)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 
+include(CTest)
+enable_testing()
 
 
 set(
@@ -33,6 +34,14 @@ set(
 set(
   DEPENDS_DIR_LIBFF
   "${DEPENDS_DIR_LIBSNARK}/depends/libff/"
+  CACHE
+  STRING
+  "Optionally specify the dependency installation directory relative to the source directory (default: inside dependency folder)"
+)
+
+set(
+  DEPENDS_DIR_LIBFQFFT
+  "${DEPENDS_DIR_LIBSNARK}/depends/libfqfft/"
   CACHE
   STRING
   "Optionally specify the dependency installation directory relative to the source directory (default: inside dependency folder)"
@@ -142,7 +151,7 @@ endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   # Common compilation flags and warning configuration
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wfatal-errors -Wno-unused-variable")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wfatal-errors -Wno-unused-variable")
    if("${MULTICORE}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
   endif()
@@ -195,12 +204,8 @@ else()
   add_definitions(-DNO_PROCPS)
 endif()
 
+set(OPENSSL_ROOT_DIR /usr/local/opt/openssl/)
 find_package(OpenSSL REQUIRED)
-
-include_directories(
-  ${DEPENDS_DIR}/libsnark
-  ${DEPENDS_DIR}/libsnark/depends/libff
-  ${DEPENDS_DIR}/libsnark/depends/libfqfft)
 
 
 add_library(
@@ -216,6 +221,14 @@ add_library(
   ${DEPENDS_DIR_LIBFF}/libff/common/profiling.cpp
   ${DEPENDS_DIR_LIBFF}/libff/common/utils.cpp
 )
+
+target_include_directories(ff PUBLIC
+  ${DEPENDS_DIR_LIBSNARK} ${DEPENDS_DIR_LIBFF} ${DEPENDS_DIR_LIBFQFFT})
+target_compile_features(ff PUBLIC cxx_std_11)
+
+target_include_directories(ff INTERFACE
+  ${DEPENDS_DIR_LIBSNARK} ${DEPENDS_DIR_LIBFF} ${DEPENDS_DIR_LIBFQFFT})
+target_compile_features(ff INTERFACE cxx_std_11)
 
 target_link_libraries(ff GMP::gmp ${PROCPS_LIBRARIES})
 

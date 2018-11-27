@@ -1,5 +1,8 @@
-add_executable(benchmark_mpz_mul benchmark_mpz_mul.cpp)
-target_link_libraries(benchmark_mpz_mul ff)
+file(GLOB test_sources "*.cpp")
 
-add_executable(benchmark_pairing benchmark_pairing.cpp)
-target_link_libraries(benchmark_pairing ff)
+foreach(test_path ${test_sources})
+	get_filename_component(test_name ${test_path} NAME)
+	string(REPLACE ".cpp" "" test_executable ${test_name})
+	add_executable(${test_executable} ${test_name})
+	target_link_libraries(${test_executable} ff)
+endforeach()
