@@ -1,5 +1,7 @@
 # EthSnarks
 
+[![Join the chat at https://gitter.im/ethsnarks](https://badges.gitter.im/ethsnarks.png)](https://gitter.im/ethsnarks?utm_source=share-link&utm_medium=link&utm_campaign=share-link)
+
 Zero-Knowledge proofs are coming to Ethereum and Dapps in 2018/2019!
 
 EthSnarks is a collection of zkSNARK circuits and supporting libraries to use them with Ethereum smart contracts, it aims to help solve one of the biggest problems facing zkSNARKS on Ethereum - cross-platform on desktop, mobile and in-browser, cheap enough to run on-chain, and with algorithms that significantly reduces the time it takes to run the prover.
