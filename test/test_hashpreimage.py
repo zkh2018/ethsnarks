@@ -7,8 +7,8 @@ from ethsnarks.mod.hashpreimage import HashPreimage
 from ethsnarks.utils import libsnark2python, native_lib_path
 
 
-VK_FILENAME = 'zksnark_element/hpi.vk.json'
-PK_FILENAME = 'zksnark_element/hpi.pk.raw'
+VK_FILENAME = '.keys/hpi.vk.json'
+PK_FILENAME = '.keys/hpi.pk.raw'
 SO_FILENAME = native_lib_path('build/src/libhashpreimage')
 
 
