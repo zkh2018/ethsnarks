@@ -4,7 +4,7 @@ import time
 import random
 
 from ethsnarks.verifier import VerifyingKey, Proof
-from ethsnarks.mod.miximus import Miximus
+from ethsnarks.mod.hashpreimage import HashPreimage
 from ethsnarks.utils import native_lib_path
 
 
@@ -24,7 +24,7 @@ class VerifyTests(unittest.TestCase):
         """Verify using fast native library"""
         vk = VerifyingKey.from_dict(VK_STATIC)
         proof = Proof.from_dict(PROOF_STATIC)
-        wrapper = Miximus(native_lib_path('build/src/libmiximus'), vk)
+        wrapper = HashPreimage(native_lib_path('build/src/libhashpreimage'), vk)
         self.assertTrue(wrapper.verify(proof))
 
     def test_verify_python(self):

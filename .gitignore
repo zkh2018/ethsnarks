@@ -1,5 +1,6 @@
 build/
 bin/
+.keys/
 *.pyc
 *.swp
 *.swo

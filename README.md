@@ -1,5 +1,7 @@
 # EthSnarks
 
+[![Join the chat at https://gitter.im/ethsnarks](https://badges.gitter.im/ethsnarks.png)](https://gitter.im/ethsnarks?utm_source=share-link&utm_medium=link&utm_campaign=share-link)
+
 Zero-Knowledge proofs are coming to Ethereum and Dapps in 2018/2019!
 
 EthSnarks is a collection of zkSNARK circuits and supporting libraries to use them with Ethereum smart contracts, it aims to help solve one of the biggest problems facing zkSNARKS on Ethereum - cross-platform on desktop, mobile and in-browser, cheap enough to run on-chain, and with algorithms that significantly reduces the time it takes to run the prover.
@@ -18,22 +20,11 @@ EthSnarks is participating in the Ethereum Foundation's grants program Wave 4, o
 
 ## Examples
 
-### Miximus
-
-Miximus is a self-service coin mixer and anonymous transfer method for Ethereum, it accepts deposits of 1 ETH, then allows you to withdraw coins by providing a zkSNARK proof that proves you know the spend key for one unspent coin without revealing which one it is.
-
-For more information, see:
-
- * [Miximus.sol](contracts/Miximus.sol)
- * [miximus.py](ethsnarks/mod/miximus.py)
- * [test_miximus.py](test/test_miximus.py)
- * [miximus.cpp](src/mod/miximus.cpp)
-
-The zkSNARK prover is built as a native library which can plug-in to your application, when provided with the correct arguments it returns the zkSNARK proof as JSON. While you may think of zkSNARKs as being slow - the algorithms chosen for Miximus mean proofs can be made in 5 seconds, however we're still studying their security properties.
+ * [Miximus - a self-service coin mixer and anonymous transfer method for Ethereum](https://github.com/HarryR/ethsnarks-miximus)
 
 ## Building
 
-[![Build Status](https://travis-ci.org/HarryR/ethsnarks.svg?branch=master)](https://travis-ci.org/HarryR/ethsnarks) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/137909bd889347728818d0aa5570fa9a)](https://www.codacy.com/project/HarryR/ethsnarks/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=HarryR/ethsnarks&amp;utm_campaign=Badge_Grade_Dashboard) [![BCH compliance](https://bettercodehub.com/edge/badge/HarryR/ethsnarks?branch=master)](https://bettercodehub.com/)
+[![Build Status](https://travis-ci.org/HarryR/ethsnarks.svg?branch=master)](https://travis-ci.org/HarryR/ethsnarks) [![BCH compliance](https://bettercodehub.com/edge/badge/HarryR/ethsnarks?branch=master)](https://bettercodehub.com/)
 
 Type `make` - the first time you run it will retrieve submodules, setup cmake and build everything, for more information about the build process see the [Travis-CI build logs](https://travis-ci.org/HarryR/ethsnarks).
 

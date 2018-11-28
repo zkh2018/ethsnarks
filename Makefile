@@ -19,17 +19,19 @@ PIP_ARGS ?= --user
 PYTHON ?= python3
 NAME ?= ethsnarks
 NPM ?= npm
+
 GANACHE ?= $(ROOT_DIR)/node_modules/.bin/ganache-cli
 TRUFFLE ?= $(ROOT_DIR)/node_modules/.bin/truffle
 COVERAGE = $(PYTHON) -mcoverage run --source=$(NAME) -p
 
+PINOCCHIO = build/src/pinocchio/pinocchio
 PINOCCHIO_TESTS=$(wildcard test/pinocchio/*.circuit)
 
 
 #######################################################################
 
 
-all: build/src/libmiximus.$(DLL_EXT) truffle-compile
+all: node_modules build/src/verify truffle-compile
 
 clean: coverage-clean python-clean
 	rm -rf build
@@ -41,12 +43,6 @@ clean: coverage-clean python-clean
 build: depends/libsnarks/CMakeLists.txt
 	mkdir -p build
 
-bin/miximus_genKeys: build/Makefile
-	make -C build
-
-build/src/libmiximus.$(DLL_EXT): build/Makefile
-	make -C build
-
 cmake-debug: build
 	cd build && cmake -DCMAKE_BUILD_TYPE=Debug ..
 
@@ -56,6 +52,9 @@ cmake-release: build
 release: cmake-release all
 
 debug: cmake-debug all
+
+build/src/verify: build/Makefile
+	make -C build
 
 build/Makefile: build CMakeLists.txt
 	cd build && cmake ..
@@ -68,49 +67,23 @@ depends/libsnarks/CMakeLists.txt:
 
 
 .PHONY: test
-test: pinocchio-test cxx-tests python-test truffle-test
+test: pinocchio-test cxx-tests hashpreimage-tests python-test truffle-test
 
 python-test:
 	$(COVERAGE) -m unittest discover test/
 
-cxx-tests-gadgets:
-	./bin/test_field_packing > /dev/null
-	./bin/test_hashpreimage
-	./bin/test_longsightl
-	./bin/test_longsightl_hash_mp
-	./bin/test_merkle_tree
-	./bin/test_one_of_n
-	./bin/test_r1cs_gg_ppzksnark_zok
-	./bin/test_shamir_poly
-	./bin/test_sha256_full_gadget
-	./bin/test_sha256_many > /dev/null
-	./bin/test_lookup_1bit
-	./bin/test_lookup_2bit
-	./bin/test_lookup_3bit
-	./bin/test_subadd > /dev/null
-	./bin/test_isnonzero
-	./bin/test_field2bits
+cxx-tests:
+	make -C build test
 
-cxx-tests-jubjub:
-	./bin/test_jubjub_add
-	./bin/test_jubjub_dbl
-	./bin/test_jubjub_mul
-	./bin/test_jubjub_mul_fixed
-	./bin/test_jubjub_mul_fixed_zcash
-	./bin/test_jubjub_point
-	./bin/test_jubjub_isoncurve > /dev/null
-	./bin/test_jubjub_hash
-	./bin/test_jubjub_eddsa
+.keys:
+	mkdir -p $@
 
-cxx-tests: zksnark_element/miximus.vk.json cxx-tests-gadgets cxx-tests-jubjub
-	time ./bin/hashpreimage_cli genkeys zksnark_element/hpi.pk.raw zksnark_element/hpi.vk.json
-	ls -lah zksnark_element/hpi.pk.raw
-	time ./bin/hashpreimage_cli prove zksnark_element/hpi.pk.raw 0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a089f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08 zksnark_element/hpi.proof.json
-	time ./bin/hashpreimage_cli verify zksnark_element/hpi.vk.json zksnark_element/hpi.proof.json
-	time ./bin/test_load_proofkey zksnark_element/hpi.pk.raw
-
-zksnark_element/miximus.vk.json:
-	time ./bin/miximus_cli genkeys zksnark_element/miximus.pk.raw zksnark_element/miximus.vk.json
+hashpreimage-tests: .keys
+	time ./build/src/hashpreimage_cli genkeys .keys/hpi.pk.raw .keys/hpi.vk.json
+	ls -lah .keys/hpi.pk.raw
+	time ./build/src/hashpreimage_cli prove .keys/hpi.pk.raw 0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a089f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08 .keys/hpi.proof.json
+	time ./build/src/hashpreimage_cli verify .keys/hpi.vk.json .keys/hpi.proof.json
+	time ./build/src/test/benchmark/benchmark_load_proofkey .keys/hpi.pk.raw
 
 
 #######################################################################
@@ -122,8 +95,8 @@ pinocchio-test: $(addsuffix .result, $(basename $(PINOCCHIO_TESTS)))
 pinocchio-clean:
 	rm -f test/pinocchio/*.result
 
-test/pinocchio/%.result: test/pinocchio/%.circuit test/pinocchio/%.test test/pinocchio/%.input ./bin/pinocchio
-	./bin/pinocchio $< eval $(basename $<).input > $@
+test/pinocchio/%.result: test/pinocchio/%.circuit test/pinocchio/%.test test/pinocchio/%.input $(PINOCCHIO)
+	$(PINOCCHIO) $< eval $(basename $<).input > $@
 	diff -ru $(basename $<).test $@ || rm $@
 
 
@@ -182,7 +155,7 @@ ubuntu-dependencies:
 	apt-get install cmake make g++ libgmp-dev libboost-all-dev libprocps-dev python3-pip
 
 mac-dependencies:
-	brew install pkg-config boost cmake gmp openssl || true
+	brew install python3 pkg-config boost cmake gmp openssl || true
 
 
 #######################################################################
@@ -202,12 +175,8 @@ nvm-install:
 node_modules:
 	$(NPM) install
 
-$(TRUFFLE): node_modules
-
-$(GANACHE): node_modules
-
 .PHONY: truffle-test
-truffle-test: $(TRUFFLE) zksnark_element/miximus.vk.json
+truffle-test: $(TRUFFLE)
 	$(NPM) run test
 
 truffle-migrate: $(TRUFFLE)

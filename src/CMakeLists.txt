@@ -3,26 +3,11 @@ include_directories(.)
 
 add_library(ethsnarks_common STATIC export.cpp import.cpp stubs.cpp utils.cpp)
 target_link_libraries(ethsnarks_common ff)
-
-add_library(miximus_objs OBJECT mod/miximus.cpp)
-
-add_library(miximus_static STATIC $<TARGET_OBJECTS:miximus_objs>)
-target_link_libraries(miximus_static ethsnarks_gadgets)
-
-
-add_library(miximus SHARED $<TARGET_OBJECTS:miximus_objs>)
-target_link_libraries(miximus ethsnarks_gadgets)
-set_property(TARGET miximus PROPERTY POSITION_INDEPENDENT_CODE ON)
-
+target_include_directories(ethsnarks_common PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library(hashpreimage SHARED mod/hashpreimage.cpp)
 target_link_libraries(hashpreimage ethsnarks_gadgets)
 set_property(TARGET hashpreimage PROPERTY POSITION_INDEPENDENT_CODE ON)
-
-
-add_executable(miximus_cli miximus_cli.cpp)
-target_link_libraries(miximus_cli miximus_static)
-
 
 add_executable(hashpreimage_cli hashpreimage_cli.cpp)
 target_link_libraries(hashpreimage_cli ethsnarks_gadgets)
