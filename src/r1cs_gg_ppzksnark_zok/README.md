@@ -78,6 +78,9 @@ e(A, B) * e(-x, vk.gamma) * e(C, vk.delta) * e(minus_alpha, beta) = 1
 ```
 
 ## References
-Groth16 paper https://eprint.iacr.org/2016/260.pdf
-Groth16 implementation in libsnark https://github.com/scipr-lab/libsnark/tree/master/libsnark/zk_proof_systems/ppzksnark/r1cs_gg_ppzksnark
-Specification for ALT_BN128 pairing checks on Ethereum https://github.com/ethereum/EIPs/blob/master/EIPS/eip-197.md
+
+ * Groth16 paper https://eprint.iacr.org/2016/260.pdf
+
+ * Groth16 implementation in libsnark https://github.com/scipr-lab/libsnark/tree/master/libsnark/zk_proof_systems/ppzksnark/r1cs_gg_ppzksnark
+
+ * Specification for ALT_BN128 pairing checks on Ethereum https://github.com/ethereum/EIPs/blob/master/EIPS/eip-197.md

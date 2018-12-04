@@ -41,7 +41,7 @@ except SquareRootError:
 # Verify JUBJUB_D is non-square
 try:
 	FQ(JUBJUB_D).sqrt()
-	raise RuntimeError("JUBJUB_D is required to be a square")
+	raise RuntimeError("JUBJUB_D is required to be non-square")
 except SquareRootError:
 	pass
 
