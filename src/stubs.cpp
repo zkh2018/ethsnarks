@@ -43,7 +43,8 @@ std::string stub_prove_from_pb( ProtoboardT& pb, const char *pk_file )
 
 int stub_genkeys_from_pb( ProtoboardT& pb, const char *pk_file, const char *vk_file )
 {
-    auto keypair = libsnark::r1cs_gg_ppzksnark_zok_generator<ppT>(pb.get_constraint_system());
+    const auto constraints = pb.get_constraint_system();
+    auto keypair = libsnark::r1cs_gg_ppzksnark_zok_generator<ppT>(constraints);
     vk2json_file(keypair.vk, vk_file);
     writeToFile<decltype(keypair.pk)>(pk_file, keypair.pk);
 
