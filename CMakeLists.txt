@@ -95,7 +95,7 @@ option(
 option(
   CPPDEBUG
   "Enable debugging of C++ STL (does not imply DEBUG)"
-  ON
+  OFF
 )
 
 
