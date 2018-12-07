@@ -49,6 +49,12 @@ cmake-debug: build
 cmake-release: build
 	cd build && cmake -DCMAKE_BUILD_TYPE=Release ..
 
+cmake-openmp-debug: build
+	cd build && cmake -DCMAKE_BUILD_TYPE=Debug -DMULTICORE=1 ..
+
+cmake-openmp-release: build
+	cd build && cmake -DCMAKE_BUILD_TYPE=Release -DMULTICORE=1 ..
+
 release: cmake-release all
 
 debug: cmake-debug all
