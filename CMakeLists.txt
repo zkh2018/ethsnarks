@@ -122,10 +122,6 @@ if("${MULTICORE}")
   add_definitions(-DMULTICORE=1)
 endif()
 
-if("${DEBUG}" OR "${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-  add_definitions(-DDEBUG=1)
-endif()
-
 if("${USE_ASM}")
   add_definitions(-DUSE_ASM)
 endif()
@@ -244,6 +240,11 @@ target_include_directories(ff PUBLIC
   ${DEPENDS_DIR_LIBSNARK} ${DEPENDS_DIR_LIBFF} ${DEPENDS_DIR_LIBFQFFT})
 target_compile_features(ff PUBLIC cxx_std_11)
 
+
+if("${DEBUG}" OR "${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+  add_definitions(-DDEBUG=1)
+  target_compile_definitions(ff PUBLIC DEBUG=1)
+endif()
 
 target_include_directories(ff INTERFACE
   ${DEPENDS_DIR_LIBSNARK} ${DEPENDS_DIR_LIBFF} ${DEPENDS_DIR_LIBFQFFT})
