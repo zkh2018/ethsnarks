@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.9)
 
 project(ethsnarks)
 
@@ -79,6 +79,18 @@ option(
   ON
 )
 
+option(
+  USE_ASM
+  "Use architecture-specific optimized assembly code"
+  ON
+)
+
+
+option(
+  PERFORMANCE
+  "Enable link-time and aggressive optimizations"
+  OFF
+)
 
 option(
   WITH_PROCPS
@@ -114,6 +126,9 @@ if("${DEBUG}" OR "${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
   add_definitions(-DDEBUG=1)
 endif()
 
+if("${USE_ASM}")
+  add_definitions(-DUSE_ASM)
+endif()
 
 if("${BINARY_OUTPUT}")
   add_definitions(-DBINARY_OUTPUT)
@@ -127,6 +142,11 @@ if(NOT "${USE_PT_COMPRESSION}")
   add_definitions(-DNO_PT_COMPRESSION=1)
 endif()
 
+if("${PERFORMANCE}")
+  include(CheckIPOSupported)
+  check_ipo_supported()
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
 
 if("${USE_MIXED_ADDITION}")
   add_definitions(-DUSE_MIXED_ADDITION=1)
