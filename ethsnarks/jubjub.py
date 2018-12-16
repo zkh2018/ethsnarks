@@ -181,11 +181,21 @@ class Point(AbstractCurveOps, namedtuple('_Point', ('x', 'y'))):
 		"""
 		HashToPoint (or Point.from_hash)
 
-		Hashes the input entropy repeatedly, and interprets it as the Y
-		coordinate then recovers the X coordinate, if no valid point can be
-		recovered Y is incremented until a matching X coordinate is found.
+		Hashes the input entropy and interprets the result as the Y coordinate
+		then recovers the X coordinate, if no valid point can be recovered
+		Y is incremented until a matching X coordinate is found.
 
-		The point is guaranteed to be prime order and not the identity
+		The point is guaranteed to be prime order and not the identity.
+
+		From: https://datatracker.ietf.org/doc/draft-irtf-cfrg-hash-to-curve/?include_text=1
+
+		Page 6:
+
+		   o  HashToBase(x, i).  This method is parametrized by p and H, where p
+      		  is the prime order of the base field Fp, and H is a cryptographic
+      		  hash function which outputs at least floor(log2(p)) + 2 bits.  The
+ 			  function first hashes x, converts the result to an integer, and
+      		  reduces modulo p to give an element of Fp.
 		"""
 		assert isinstance(entropy, bytes)
 		entropy = sha256(entropy).digest()
@@ -253,6 +263,13 @@ class Point(AbstractCurveOps, namedtuple('_Point', ('x', 'y'))):
 		Twisted Edwards Curves, BBJLP-2008, section 2 pg 2
 		"""
 		return Point(-self.x, self.y)
+
+	@classmethod
+	def generator(cls):
+		x = 16540640123574156134436876038791482806971768689494387082833631921987005038935
+		y = 20819045374670962167435360035096875258406992893633759881276124905556507972311
+		return Point(FQ(x), FQ(y))
+
 
 	def valid(self):
 		"""

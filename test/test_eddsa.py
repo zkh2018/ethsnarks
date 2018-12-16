@@ -3,7 +3,7 @@ from os import urandom
 
 
 from ethsnarks.jubjub import JUBJUB_L, Point, FQ
-from ethsnarks.eddsa import eddsa_sign, eddsa_verify
+from ethsnarks.eddsa import eddsa_sign, eddsa_verify, pureeddsa_verify
 
 
 class TestEdDSA(unittest.TestCase):
@@ -11,12 +11,31 @@ class TestEdDSA(unittest.TestCase):
 		B = Point.from_hash(b'eddsa_base')
 		k = FQ.random(JUBJUB_L)
 		m = urandom(32)
+
 		R, S, A = eddsa_sign(m, k, B)
 		self.assertTrue(eddsa_verify(A, R, S, m, B))
 
-	def test_fixedcase_1(self):
+		R, S, A = pureeddsa_sign(m, k, B)
+		self.assertTrue(pureeddsa_verify(A, R, S, m, B))
+
+	def test_pure_eddsa(self):
 		"""
-		Used in test_jubjub_eddsa.cpp
+		Used to verify compatibility with test_jubjub_eddsa.cpp
+		"""
+		B = Point(FQ(16117159321177103813813294286550615556837550473658220567209763364611339839115),
+				  FQ(11465736382824868633493204496205282307637286781164666440541087834417561817657))
+		A = Point(FQ(15828554626322066188420314860938355552795580308523040642875386479597908014390),
+				  FQ(18684356777842735094529690599378163165397310831298286146573879905929938220003))
+		R = Point(FQ(18922148515462764136100292085978639451757790673455914206617133160365534842472),
+				  FQ(224606138707918024075915840338566894888624755367921836032007778556829203632))
+		s = 202746956173088395830712718139190257569367924896449272961699539183504363491
+		m = b'\x0c\x035\x96\xe25t\x8fI"\xf9\xf2\x08$V\xf1\xb5\xcc\xcb\xfa\xb3>1@\xe9\xe2$B\xa3w\xec\xa5'
+		self.assertTrue(pureeddsa_verify(A, R, s, m, B))
+		self.falseTrue(eddsa_verify(A, R, s, m, B))
+
+	def test_hash_eddsa(self):
+		"""
+		Used to verify compatibility with test_jubjub_eddsa.cpp
 		"""
 		B = Point(FQ(21609035313031231356478892405209584931807557563713540183143349090940105307553),
 				  FQ(845281570263603011277359323511710394920357596931617398831207691379369851278))
@@ -27,6 +46,7 @@ class TestEdDSA(unittest.TestCase):
 		s = 9920504625278683304895036460477595239370241328717115039061027107077120437288
 		m = b'abc'
 		self.assertTrue(eddsa_verify(A, R, s, m, B))
+		self.falseTrue(pureeddsa_verify(A, R, s, m, B))
 
 
 if __name__ == "__main__":

@@ -41,6 +41,8 @@ public:
     FieldT x;
     FieldT y;
 
+    EdwardsPoint() {}
+
     EdwardsPoint(const FieldT& in_x, const FieldT& in_y);
 
     const EdwardsPoint infinity() const;
