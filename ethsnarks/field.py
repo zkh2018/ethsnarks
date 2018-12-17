@@ -39,22 +39,6 @@ else:
 SNARK_SCALAR_FIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617
 
 
-
-# Extended euclidean algorithm to find modular inverses for
-# integers
-# equivalent to pow(a, n-2, n)
-def inv(a, n):
-    if a == 0:
-        return 0
-    lm, hm = 1, 0
-    low, high = a % n, n
-    while low > 1:
-        r = high // low
-        nm, new = hm - lm * r, high - low * r
-        lm, low, hm, high = nm, new, lm, low
-    return lm % n
-
-
 # A class for field elements in FQ. Wrap a number in this class,
 # and it becomes a field element.
 class FQ(object):
@@ -92,6 +76,12 @@ class FQ(object):
                 raise ValueError("Invalid modulus type")
             self.m = field_modulus
             self.n = n % self.m
+
+    def __int__(self):
+        return self.n
+
+    def __hash__(self):
+        return hash((self.n, self.m))
 
     def _other_n(self, other):
         if isinstance(other, FQ):
@@ -145,7 +135,7 @@ class FQ(object):
     def __div__(self, other):
         on = self._other_n(other)
         self._count('inv')
-        return FQ(self.n * inv(on, self.m) % self.m, self.m)
+        return FQ((self.n * pow(on, self.m-2, self.m)) % self.m, self.m)
 
     def __floordiv__(self, other):
         return self.__div__(other)
@@ -157,7 +147,7 @@ class FQ(object):
         on = self._other_n(other)
         self._count('inv')
         self._count('mul')
-        return FQ(inv(self.n, self.m) * on % self.m, self.m)
+        return FQ((pow(self.n, self.m-2, self.m) * on) % self.m, self.m)
 
     def __rtruediv__(self, other):
         return self.__rdiv__(other)

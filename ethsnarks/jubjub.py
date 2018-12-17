@@ -217,6 +217,12 @@ class Point(AbstractCurveOps, namedtuple('_Point', ('x', 'y'))):
 
 			return p
 
+	def __eq__(self, other):
+		return self.x == other.x and self.y == other.y
+
+	def __hash__(self):
+		return hash((self.x, self.y))
+
 	def compress(self):
 		x = self.x.n
 		y = self.y.n
@@ -302,6 +308,12 @@ class ProjPoint(AbstractCurveOps, namedtuple('_ProjPoint', ('x', 'y', 'z'))):
 
 	def as_proj(self):
 		return self
+
+	def __eq__(self, other):
+		return self.x == other.x and self.y == other.y and self.z == other.z
+
+	def __hash__(self):
+		return hash((self.x, self.y, self.z))
 
 	def as_etec(self):
 		"""
@@ -391,6 +403,12 @@ class ProjPoint(AbstractCurveOps, namedtuple('_ProjPoint', ('x', 'y', 'z'))):
 class EtecPoint(AbstractCurveOps, namedtuple('_EtecPoint', ('x', 'y', 't', 'z'))):
 	def as_etec(self):
 		return self
+
+	def __eq__(self, other):
+		return self.x == other.x and self.y == other.y and self.t == other.t and self.z == other.z
+
+	def __hash__(self):
+		return hash((self.x, self.y, self.t, self.z))
 
 	def as_point(self):
 		"""

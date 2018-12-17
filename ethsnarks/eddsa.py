@@ -56,7 +56,8 @@ def eddsa_hash_kM(k, M):
     if isinstance(M, Point):
         M = M.x.n.to_bytes(32, 'little')
     elif not isinstance(M, bytes):
-        raise TypeError("!Bad type for M: " + str(type(M)))
+        raise TypeError("Bad type for M: " + str(type(M)))
+
     khash = sha512(k.n.to_bytes(32, 'little')).digest()
     data = b''.join([khash, M])
     return int.from_bytes(sha512(data).digest(), 'little') % JUBJUB_L
@@ -87,14 +88,14 @@ def eddsa_hash_RAM(R, A, M):
     elif isinstance(M, bytes):
         M = BitArray(M).bin.zfill(8)
     else:
-        raise TypeError("!Bad type for M: " + str(type(M)))
+        raise TypeError("Bad type for M: " + str(type(M)))
 
     # Encode each point coordinate into 254 bits, then concatenate them
     bits = ''.join([_point_x_to_bits(R.x), _point_x_to_bits(A.x), M])
     return pedersen_hash_zcash_bits("EdDSA_Verify.RAM", bits).x.n
 
 
-def pureeddsa_verify(A, R, s, m, B):
+def pureeddsa_verify(A, R, s, M, B):
     """
     Verifies an EdDSA signature
 
@@ -135,8 +136,7 @@ def eddsa_verify(A, R, s, m, B):
     """
     For HashEdDSA, where the message is compressed first
     """
-    M = eddsa_hash_message(m)
-    return pureeddsa_verify(A, R, s, m, B)
+    return pureeddsa_verify(A, R, s, eddsa_hash_message(m), B)
 
 
 def pureeddsa_sign(M, k, B):
@@ -165,5 +165,4 @@ def eddsa_sign(msg, k, B):
     """
     For HashEdDSA, where the message is compressed first
     """
-    M = eddsa_hash_message(msg)     # hash message: H(msg) -> M
-    return pureeddsa_sign(M, k, B)
+    return pureeddsa_sign(eddsa_hash_message(msg), k, B)

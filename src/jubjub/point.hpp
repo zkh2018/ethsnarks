@@ -77,6 +77,19 @@ public:
     * Convert to a VariablePoint - allocates two new variables for its X and Y coordinates
     */
     const VariablePointT as_VariablePointT (ProtoboardT& pb, const std::string& annotation_prefix) const;
+
+    friend std::istream& operator>> (std::istream& is, EdwardsPoint& self)
+    {
+        std::string read_str;
+
+        is >> read_str;
+        self.x = decltype(self.x)(read_str.c_str());
+
+        is >> read_str;
+        self.y = decltype(self.y)(read_str.c_str());
+
+        return is;
+    }
 };
 
 
