@@ -1,5 +1,5 @@
 #include "stubs.hpp"
-#include "gadgets/merkle_tree.cpp"
+#include "gadgets/merkle_tree.hpp"
 #include "gadgets/longsightl.hpp"
 
 namespace ethsnarks {
@@ -77,7 +77,8 @@ bool test_merkle_path_authenticator() {
 	merkle_path_authenticator<LongsightL12p5_MP_gadget> auth(
 		pb, tree_depth, address_bits,
 		merkle_tree_IVs(pb),
-		leaf, expected_root, path);
+		leaf, expected_root, path,
+		"authenticator");
 
 	auth.generate_r1cs_witness();
 	auth.generate_r1cs_constraints();

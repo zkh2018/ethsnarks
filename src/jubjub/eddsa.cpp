@@ -19,13 +19,13 @@ EdDSA_HashRAM_gadget::EdDSA_HashRAM_gadget(
     m_R_x_bits(in_pb, in_R.x, FMT(this->annotation_prefix, ".R_x_bits")),
     m_A_x_bits(in_pb, in_A.x, FMT(this->annotation_prefix, ".A_x_bits")),
 
+    // Prefix the message with R and A.
     m_RAM_bits(flatten({
         m_R_x_bits.result(),
         m_A_x_bits.result(),
         in_M,
     })),
 
-    // hash_RAM = H(R.x,A.x,M.x)
     m_hash_RAM(in_pb, in_params, "EdDSA_Verify.RAM", m_RAM_bits, FMT(this->annotation_prefix, ".hash_RAM"))
 {
 }

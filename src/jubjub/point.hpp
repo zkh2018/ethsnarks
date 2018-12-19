@@ -6,6 +6,7 @@
 // License: LGPL-3.0+
 
 #include "ethsnarks.hpp"
+#include "utils.hpp"
 #include "jubjub/params.hpp"
 
 
@@ -21,6 +22,14 @@ public:
 
     VariablePointT(const VariableT in_x, const VariableT in_y)
     : x(in_x), y(in_y)
+    {}
+
+    VariablePointT(
+        ProtoboardT &in_pb,
+        const std::string& annotation_prefix
+    ) :
+        x(make_variable(in_pb, FMT(annotation_prefix, ".x"))),
+        y(make_variable(in_pb, FMT(annotation_prefix, ".y")))
     {}
 };
 

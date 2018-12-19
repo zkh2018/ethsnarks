@@ -10,7 +10,7 @@ fixed_base_mul::fixed_base_mul(
 	const Params& in_params,
 	const FieldT& in_base_x,
 	const FieldT& in_base_y,
-	const VariableArrayT in_scalar,
+	const VariableArrayT& in_scalar,
 	const std::string &annotation_prefix
 ) :
 	GadgetT(in_pb, annotation_prefix)
