@@ -1,6 +1,6 @@
 import math
 from hashlib import sha256, sha512
-from bitstring import BitArray
+import bitstring
 from .field import FQ, SNARK_SCALAR_FIELD
 from .jubjub import Point, JUBJUB_L, JUBJUB_Q, JUBJUB_E
 from .pedersen import pedersen_hash_zcash_bytes, pedersen_hash_zcash_bits
@@ -55,6 +55,8 @@ def eddsa_hash_kM(k, M):
     assert isinstance(k, FQ)
     if isinstance(M, Point):
         M = M.x.n.to_bytes(32, 'little')
+    elif isinstance(M, bitstring.BitArray):
+        M = M.tobytes()
     elif not isinstance(M, bytes):
         raise TypeError("Bad type for M: " + str(type(M)))
 
@@ -63,15 +65,24 @@ def eddsa_hash_kM(k, M):
     return int.from_bytes(sha512(data).digest(), 'little') % JUBJUB_L
 
 
-def _point_x_to_bits(p):
-    return bin(p.n)[2:][::-1].ljust(254, '0')
+def eddsa_tobits(M):
+    if isinstance(M, Point):
+        return M.x.bits()
+    elif isinstance(M, FQ):
+        return M.bits()
+    elif isinstance(M, bytes):
+        return bitstring.BitArray(M).bin.zfill(8)
+    elif isinstance(M, bitstring.BitArray):
+        return M.bin
+    else:
+        raise TypeError("Bad type for M: " + str(type(M)))
 
 
 def eddsa_hash_RAM(R, A, M):
     """
     Hash R, A and M parameters.
 
-        hash_RAM = H(R.x,A.x,M.x)
+        hash_RAM = H(R.x,A.x,M)
 
     # XXX: need to hash both X and Y coordinates
 
@@ -83,15 +94,10 @@ def eddsa_hash_RAM(R, A, M):
     assert isinstance(R, Point)
     assert isinstance(A, Point)
 
-    if isinstance(M, Point):
-        M = _point_x_to_bits(M.x)
-    elif isinstance(M, bytes):
-        M = BitArray(M).bin.zfill(8)
-    else:
-        raise TypeError("Bad type for M: " + str(type(M)))
+    msg_parts = [R.x, A.x, M]
 
-    # Encode each point coordinate into 254 bits, then concatenate them
-    bits = ''.join([_point_x_to_bits(R.x), _point_x_to_bits(A.x), M])
+    bits = ''.join([eddsa_tobits(_) for _ in msg_parts])
+    print('# bits is', bits)
     return pedersen_hash_zcash_bits("EdDSA_Verify.RAM", bits).x.n
 
 

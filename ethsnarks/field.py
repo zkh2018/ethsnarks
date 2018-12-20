@@ -24,7 +24,8 @@
 #
 
 import sys
-from random import randint
+from math import ceil, log2
+from os import urandom
 from collections import defaultdict
 from .numbertheory import square_root_mod_prime
 
@@ -121,15 +122,21 @@ class FQ(object):
         self._count('sub')
         return FQ((self.n - on) % self.m, self.m)
 
+    def bits(self):
+        nbits = ceil(log2(self.m))
+        return bin(self.n)[2:][::-1].ljust(nbits, '0')
+
     def inv(self):
         self._count('inv')
         return FQ(pow(self.n, self.m - 2, self.m), self.m)
 
     def sqrt(self):
+        self._count('sqrt')
         return FQ(square_root_mod_prime(self.n, self.m), self.m)
 
     def exp(self, e):
         e = self._other_n(e)
+        self._count('exp')
         return FQ(pow(self.n, e, self.m), self.m)
 
     def __div__(self, other):
@@ -168,9 +175,9 @@ class FQ(object):
 
     @classmethod
     def random(cls, modulus=SNARK_SCALAR_FIELD):
-        # XXX: use stronger random source of data
-        # e.g. int.from_bytes(urandom(int(ceil(log2(n)))), 'little')
-        return FQ(randint(1, modulus - 1), modulus)
+        nbytes = ceil(ceil(log2(modulus)) / 8) + 1
+        rand_n = int.from_bytes(urandom(nbytes), 'little')
+        return FQ(rand_n, modulus)
 
     @classmethod
     def one(self, modulus=SNARK_SCALAR_FIELD):
