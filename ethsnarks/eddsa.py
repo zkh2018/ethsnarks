@@ -41,16 +41,17 @@ P13N_EDDSA_VERIFY_RAM = 'EdDSA_Verify.RAM'
 
 
 class Signature(object):
-    __slots__ = ('R', 'S')
-    def __init__(self, R, S):
-        R = R if isinstance(R, Point) else Point(*R)
-        S = S if isinstance(S, FQ) else FQ(S)
-        assert S.n < JUBJUB_Q and S.n > 0
-        self.R = R
-        self.S = S
+    __slots__ = ('R', 's')
+    def __init__(self, R, s):
+        self.R = R if isinstance(R, Point) else Point(*R)
+        self.s = s if isinstance(s, FQ) else FQ(s)
+        assert self.s.m == JUBJUB_Q
 
     def __iter__(self):
-        return iter([self.R, self.S])
+        return iter([self.R, self.s])
+
+    def __str__(self):
+        return ' '.join(str(_) for _ in [self.R.x, self.R.y, self.s])
 
 
 class SignedMessage(namedtuple('_SignedMessage', ('A', 'sig', 'msg'))):
@@ -78,18 +79,19 @@ class _SignatureScheme(object):
 
     @classmethod
     def to_bits(cls, *args):
-        result = ''
+        result = bitstring.BitArray()
         for M in args:
             if isinstance(M, list):
-                result += ''.join(cls.to_bits(_) for _ in M)
+                for _ in cls.to_bits(M):
+                    result.append(_)
             if isinstance(M, Point):
-                result += M.x.bits()
+                result.append(M.x.bits())
             elif isinstance(M, FQ):
-                result += M.bits()
+                result.append(M.bits())
             elif isinstance(M, bytes):
-                result += bitstring.BitArray(M).bin.zfill(8)
+                result.append(M)
             elif isinstance(M, bitstring.BitArray):
-                result += M.bin
+                result.append(M)
             else:
                 raise TypeError("Bad type for M: " + str(type(M)))
         return result
