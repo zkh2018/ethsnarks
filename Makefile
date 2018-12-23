@@ -60,7 +60,7 @@ release: cmake-release all
 debug: cmake-debug all
 
 build/src/verify: build/Makefile
-	make -C build
+	$(MAKE) -C build
 
 build/Makefile: build CMakeLists.txt
 	cd build && cmake ..
@@ -79,7 +79,7 @@ python-test:
 	$(COVERAGE) -m unittest discover test/
 
 cxx-tests:
-	make -C build test
+	$(MAKE) -C build test
 
 .keys:
 	mkdir -p $@
