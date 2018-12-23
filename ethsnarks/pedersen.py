@@ -37,6 +37,7 @@ To homomorphically hash the two points:
 """
 
 import math
+import bitstring
 from math import floor, log2
 from struct import pack
 
@@ -118,6 +119,8 @@ def pedersen_hash_zcash_windows(name, windows):
 
 def pedersen_hash_zcash_bits(name, bits):
 	# Split into 3 bit windows
+	if isinstance(bits, bitstring.BitArray):
+		bits = bits.bin
 	windows = [int(bits[i:i+3][::-1], 2) for i in range(0, len(bits), 3)]
 	assert len(windows) > 0
 

@@ -24,6 +24,7 @@
 #
 
 import sys
+import bitstring
 from math import ceil, log2
 from os import urandom
 from collections import defaultdict
@@ -72,9 +73,9 @@ class FQ(object):
             self.n = n.n
         else:
             if not isinstance(n, int_types):
-                raise ValueError("Invalid number type")
+                raise ValueError("Invalid number type: " + str(type(n)))
             if not isinstance(field_modulus, int_types):
-                raise ValueError("Invalid modulus type")
+                raise ValueError("Invalid modulus type: " + str(type(field_modulus)))
             self.m = field_modulus
             self.n = n % self.m
 
@@ -124,7 +125,7 @@ class FQ(object):
 
     def bits(self):
         nbits = ceil(log2(self.m))
-        return bin(self.n)[2:][::-1].ljust(nbits, '0')
+        return bitstring.BitArray('0b' + bin(self.n)[2:][::-1].ljust(nbits, '0'))
 
     def inv(self):
         self._count('inv')
