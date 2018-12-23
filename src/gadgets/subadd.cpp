@@ -31,7 +31,7 @@ subadd_gadget::subadd_gadget(
 	// B+N overflow check, B+N < (1<<n_bits)
 	Y_overflow_lt(make_variable(in_pb, FMT(this->annotation_prefix, ".Y < (1<<%zu)", n_bits))),
 	Y_overflow_leq(make_variable(in_pb, FMT(this->annotation_prefix, ".Y <= (1<<%zu)", n_bits))),
-	cmp_Y_overflow(in_pb, n_bits+1, Y, make_linear_term(in_pb, libsnark::ONE, (1<<n_bits)), Y_overflow_lt, Y_overflow_leq, FMT(this->annotation_prefix, ".cmp_Y_overflow"))
+	cmp_Y_overflow(in_pb, n_bits+1, Y, make_linear_term(in_pb, libsnark::ONE, FieldT("2")^n_bits), Y_overflow_lt, Y_overflow_leq, FMT(this->annotation_prefix, ".cmp_Y_overflow"))
 {
 	assert( (n_bits+1) <= FieldT::capacity() );
 }

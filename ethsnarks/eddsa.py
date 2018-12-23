@@ -61,6 +61,7 @@ class SignedMessage(namedtuple('_SignedMessage', ('A', 'sig', 'msg'))):
 class _SignatureScheme(object):
     @classmethod
     def to_bytes(cls, *args):
+        # TODO: move to ethsnarks.utils ?
         result = b''
         for M in args:
             if isinstance(M, list):
@@ -79,6 +80,7 @@ class _SignatureScheme(object):
 
     @classmethod
     def to_bits(cls, *args):
+        # TODO: move to ethsnarks.utils ?
         result = bitstring.BitArray()
         for M in args:
             if isinstance(M, list):
