@@ -59,28 +59,40 @@ class SignedMessage(namedtuple('_SignedMessage', ('A', 'sig', 'msg'))):
 
 class _SignatureScheme(object):
     @classmethod
-    def to_bytes(cls, M):
-        if isinstance(M, Point):
-            return M.x.n.to_bytes(32, 'little')
-        elif isinstance(M, FQ):
-            return M.n.to_bytes(32, 'little')
-        elif isinstance(M, bitstring.BitArray):
-            return M.tobytes()
-        elif not isinstance(M, bytes):
-            raise TypeError("Bad type for M: " + str(type(M)))
-        return M
+    def to_bytes(cls, *args):
+        result = b''
+        for M in args:
+            if isinstance(M, list):
+                result += b''.join(cls.to_bytes(_) for _ in M)
+            if isinstance(M, Point):
+                result += M.x.n.to_bytes(32, 'little')
+            elif isinstance(M, FQ):
+                result += M.n.to_bytes(32, 'little')
+            elif isinstance(M, bitstring.BitArray):
+                result += M.tobytes()
+            elif isinstance(M, bytes):
+                result += M
+            else:
+                raise TypeError("Bad type for M: " + str(type(M)))
+        return result
 
     @classmethod
-    def to_bits(cls, M):
-        if isinstance(M, Point):
-            return M.x.bits()
-        elif isinstance(M, FQ):
-            return M.bits()
-        elif isinstance(M, bytes):
-            return bitstring.BitArray(M).bin.zfill(8)
-        elif isinstance(M, bitstring.BitArray):
-            return M.bin
-        raise TypeError("Bad type for M: " + str(type(M)))
+    def to_bits(cls, *args):
+        result = ''
+        for M in args:
+            if isinstance(M, list):
+                result += ''.join(cls.to_bits(_) for _ in M)
+            if isinstance(M, Point):
+                result += M.x.bits()
+            elif isinstance(M, FQ):
+                result += M.bits()
+            elif isinstance(M, bytes):
+                result += bitstring.BitArray(M).bin.zfill(8)
+            elif isinstance(M, bitstring.BitArray):
+                result += M.bin
+            else:
+                raise TypeError("Bad type for M: " + str(type(M)))
+        return result
 
     @classmethod
     def prehash_message(cls, M):
@@ -133,32 +145,6 @@ class _SignatureScheme(object):
         return k, A
 
     @classmethod
-    def sign(cls, M, k, B=None):
-        raise NotImplementedError()
-
-    @classmethod
-    def verify(cls, A, sig, M, B=None):
-        raise NotImplementedError()
-
-
-class PureEdDSA(_SignatureScheme):
-    @classmethod
-    def hash_public(cls, *args, p13n=P13N_EDDSA_VERIFY_RAM):
-        """
-        Hash used for the public parameters.
-
-            hash_RAM = H(R,A,M)
-
-        @param R Signature point
-        @param A Signers public key
-        @param M Hashed message (Point)
-        @param p13n Personalisation string
-        @returns Point
-        """
-        bits = ''.join([cls.to_bits(_) for _ in args])
-        return pedersen_hash_zcash_bits(p13n, bits).x.n
-
-    @classmethod
     def sign(cls, msg, key, B=None):
         if not isinstance(key, FQ):
             raise TypeError("Invalid type for parameter k")
@@ -166,13 +152,16 @@ class PureEdDSA(_SignatureScheme):
         if key.n >= JUBJUB_L or key.n <= 0:
             raise RuntimeError("Strict parsing of k failed")
 
-        M = cls.prehash_message(msg)
         B = B or cls.B()
-        A = B * key
+        A = B * key                       # A = kB
+
+        M = cls.prehash_message(msg)
         r = cls.hash_secret(key, M)       # r = H(k,M) mod L
-        R = B * r                         # rB
+        R = B * r                         # R = rB
+
         t = cls.hash_public(R, A, M)      # Bind the message to the nonce, public key and message
-        S = (r + (key.n*t)) % JUBJUB_E    # S -> r + H(R,A,M)*k
+        S = (r + (key.n*t)) % JUBJUB_E    # r + (H(R,A,M) * k)
+
         return SignedMessage(A, Signature(R, S), msg)
 
     @classmethod
@@ -184,17 +173,39 @@ class PureEdDSA(_SignatureScheme):
             sig = Signature(*sig)
 
         R, S = sig
-        M = cls.prehash_message(msg)
         B = B or cls.B()
         lhs = B * S
+
+        M = cls.prehash_message(msg)
         rhs = R + (A * cls.hash_public(R, A, M))
         return lhs == rhs
+
+
+class PureEdDSA(_SignatureScheme):
+    @classmethod
+    def hash_public(cls, *args, p13n=P13N_EDDSA_VERIFY_RAM):
+        """
+        Hash used for the public parameters.
+
+            hash_RAM = H(R,A,M)
+
+        @returns X coordinate of point
+        """
+        return pedersen_hash_zcash_bits(p13n, cls.to_bits(*args)).x.n
 
 
 class EdDSA(PureEdDSA):
     @classmethod
     def prehash_message(cls, M, p13n=P13N_EDDSA_VERIFY_M):
         return pedersen_hash_zcash_bytes(p13n, M)
+
+
+def eddsa_tobits(*args):
+    return PureEdDSA.to_bits(*args)
+
+
+def eddsa_tobytes(*args):
+    return PureEdDSA.to_bytes(*args)
 
 
 def eddsa_random_keypair():
