@@ -1,5 +1,6 @@
 import math
 import bitstring
+from collections import namedtuple
 from hashlib import sha512
 from .field import FQ, SNARK_SCALAR_FIELD
 from .jubjub import Point, JUBJUB_L, JUBJUB_Q, JUBJUB_E
@@ -35,153 +36,182 @@ For further information see: https://ed2519.cr.yp.to/eddsa-20150704.pdf
 """
 
 
+P13N_EDDSA_VERIFY_M = 'EdDSA_Verify.M'
+P13N_EDDSA_VERIFY_RAM = 'EdDSA_Verify.RAM'
+
+
+class Signature(object):
+    __slots__ = ('R', 'S')
+    def __init__(self, R, S):
+        R = R if isinstance(R, Point) else Point(*R)
+        S = S if isinstance(S, FQ) else FQ(S)
+        assert S.n < JUBJUB_Q and S.n > 0
+        self.R = R
+        self.S = S
+
+    def __iter__(self):
+        return iter([self.R, self.S])
+
+
+class SignedMessage(namedtuple('_SignedMessage', ('A', 'sig', 'msg'))):
+    pass
+
+
+class _SignatureScheme(object):
+    @classmethod
+    def to_bytes(cls, M):
+        if isinstance(M, Point):
+            return M.x.n.to_bytes(32, 'little')
+        elif isinstance(M, FQ):
+            return M.n.to_bytes(32, 'little')
+        elif isinstance(M, bitstring.BitArray):
+            return M.tobytes()
+        elif not isinstance(M, bytes):
+            raise TypeError("Bad type for M: " + str(type(M)))
+        return M
+
+    @classmethod
+    def to_bits(cls, M):
+        if isinstance(M, Point):
+            return M.x.bits()
+        elif isinstance(M, FQ):
+            return M.bits()
+        elif isinstance(M, bytes):
+            return bitstring.BitArray(M).bin.zfill(8)
+        elif isinstance(M, bitstring.BitArray):
+            return M.bin
+        raise TypeError("Bad type for M: " + str(type(M)))
+
+    @classmethod
+    def prehash_message(cls, M):
+        """
+        Identity function for message
+
+        Can be used to truncate the message before hashing it
+        as part of the public parameters.
+        """
+        return M
+
+    @classmethod
+    def hash_public(cls, R, A, M):
+        """
+        Identity function for public parameters:
+
+            R, A, M
+
+        Is used to multiply the resulting point
+        """
+        raise NotImplementedError()
+
+    @classmethod
+    def hash_secret(cls, k, *args):
+        """
+        Hash the key and message to create `r`, the blinding factor for this signature.
+
+        If the same `r` value is used more than once, the key for the signature is revealed.
+
+        From: https://eprint.iacr.org/2015/677.pdf (EdDSA for more curves)
+
+        Page 3:
+
+            (Implementation detail: To save time in the computation of `rB`, the signer
+            can replace `r` with `r mod L` before computing `rB`.)
+        """
+        assert isinstance(k, FQ)
+        data = b''.join(cls.to_bytes(_) for _ in (k,) + args)
+        return int.from_bytes(sha512(data).digest(), 'little') % JUBJUB_L
+
+    @classmethod
+    def B(cls):
+        return Point.generator()
+
+    @classmethod
+    def random_keypair(cls, B=None):
+        B = B or cls.B()
+        k = FQ.random(JUBJUB_L)
+        A = B * k
+        return k, A
+
+    @classmethod
+    def sign(cls, M, k, B=None):
+        raise NotImplementedError()
+
+    @classmethod
+    def verify(cls, A, sig, M, B=None):
+        raise NotImplementedError()
+
+
+class PureEdDSA(_SignatureScheme):
+    @classmethod
+    def hash_public(cls, *args, p13n=P13N_EDDSA_VERIFY_RAM):
+        """
+        Hash used for the public parameters.
+
+            hash_RAM = H(R,A,M)
+
+        @param R Signature point
+        @param A Signers public key
+        @param M Hashed message (Point)
+        @param p13n Personalisation string
+        @returns Point
+        """
+        bits = ''.join([cls.to_bits(_) for _ in args])
+        return pedersen_hash_zcash_bits(p13n, bits).x.n
+
+    @classmethod
+    def sign(cls, msg, key, B=None):
+        if not isinstance(key, FQ):
+            raise TypeError("Invalid type for parameter k")
+        # Strict parsing ensures key is in the prime-order group
+        if key.n >= JUBJUB_L or key.n <= 0:
+            raise RuntimeError("Strict parsing of k failed")
+
+        M = cls.prehash_message(msg)
+        B = B or cls.B()
+        A = B * key
+        r = cls.hash_secret(key, M)       # r = H(k,M) mod L
+        R = B * r                         # rB
+        t = cls.hash_public(R, A, M)      # Bind the message to the nonce, public key and message
+        S = (r + (key.n*t)) % JUBJUB_E    # S -> r + H(R,A,M)*k
+        return SignedMessage(A, Signature(R, S), msg)
+
+    @classmethod
+    def verify(cls, A, sig, msg, B=None):
+        if not isinstance(A, Point):
+            A = Point(*A)
+
+        if not isinstance(sig, Signature):
+            sig = Signature(*sig)
+
+        R, S = sig
+        M = cls.prehash_message(msg)
+        B = B or cls.B()
+        lhs = B * S
+        rhs = R + (A * cls.hash_public(R, A, M))
+        return lhs == rhs
+
+
+class EdDSA(PureEdDSA):
+    @classmethod
+    def prehash_message(cls, M, p13n=P13N_EDDSA_VERIFY_M):
+        return pedersen_hash_zcash_bytes(p13n, M)
+
+
 def eddsa_random_keypair():
-    secret = FQ.random(JUBJUB_L)
-    pubkey = Point.generator() * secret
-    return secret, pubkey
+    return EdDSA.random_keypair()
 
 
-def eddsa_hash_message(data, p13n='EdDSA_Verify.M'):
-    return pedersen_hash_zcash_bytes(p13n, data)
+def pureeddsa_verify(*args, **kwa):
+    return PureEdDSA.verify(*args, **kwa)
 
 
-def eddsa_tobytes(M):
-    if isinstance(M, Point):
-        return M.x.n.to_bytes(32, 'little')
-    elif isinstance(M, bitstring.BitArray):
-        return M.tobytes()
-    elif not isinstance(M, bytes):
-        raise TypeError("Bad type for M: " + str(type(M)))
+def pureeddsa_sign(*args, **kwa):
+    return PureEdDSA.sign(*args, **kwa)
 
 
-def eddsa_tobits(M):
-    if isinstance(M, Point):
-        return M.x.bits()
-    elif isinstance(M, FQ):
-        return M.bits()
-    elif isinstance(M, bytes):
-        return bitstring.BitArray(M).bin.zfill(8)
-    elif isinstance(M, bitstring.BitArray):
-        return M.bin
-    else:
-        raise TypeError("Bad type for M: " + str(type(M)))
+def eddsa_verify(*args, **kwa):
+    return EdDSA.verify(*args, **kwa)
 
 
-def eddsa_hash_secret(k, M):
-    """
-    Hash the key and message to create `r`, the blinding factor for this signature.
-
-    If the same `r` value is used more than once, the key for the signature is revealed.
-
-    From: https://eprint.iacr.org/2015/677.pdf (EdDSA for more curves)    
-
-    Page 3:
-
-        (Implementation detail: To save time in the computation of `rB`, the signer
-        can replace `r` with `r mod L` before computing `rB`.)
-    """
-    assert isinstance(k, FQ)
-    M = eddsa_tobytes(M)
-    khash = sha512(k.n.to_bytes(32, 'little')).digest()
-    data = b''.join([khash, M])
-    return int.from_bytes(sha512(data).digest(), 'little') % JUBJUB_L
-
-
-def eddsa_hash_public(R, A, M, p13n="EdDSA_Verify.RAM"):
-    """
-    Hash the public R, A and M parameters.
-
-        hash_RAM = H(R.x,A.x,M)
-
-    # XXX: need to hash both X and Y coordinates?
-
-    @param R Signature point
-    @param A Signers public key
-    @param M Hashed message (Point)
-    @param p13n Personalisation string
-    @returns Point
-    """
-    assert isinstance(R, Point)
-    assert isinstance(A, Point)
-    msg_parts = [R.x, A.x, M]
-    bits = ''.join([eddsa_tobits(_) for _ in msg_parts])
-    return pedersen_hash_zcash_bits(p13n, bits).x.n
-
-
-def pureeddsa_verify(A, R, s, M, B=None):
-    """
-    Verifies an EdDSA signature
-
-    Potential vulnerabilities:
-
-        A is Infinity
-            - When `A` is infinity, the signature for *every* message will be the same
-            - All that's validated is `s` is the secret for `R`
-
-        A is a low-order point
-            - Forging a signature requires knowledge of the scalar value of the low-order point
-            - There is a 1/# (where # is order of the point A) probability of passing validation
-            - e.g. when A is of order 1 (Infinity), there is a 1/1 probability (100%)
-
-        A, B or R are not of prime-order
-            - TBD?
-
-        s is 0
-
-    @param A public key
-    @param R Signature point
-    @param s Signature scalar
-    @param m Message being signed
-    @param B base point
-    """
-    assert isinstance(R, Point)
-    assert isinstance(s, int)
-    assert s < JUBJUB_Q and s > 0
-    assert isinstance(A, Point)
-
-    if B is None:
-        B = Point.generator()
-    
-    hash_RAM = eddsa_hash_public(R, A, M)
-    lhs = B * s
-    rhs = R + (A * hash_RAM)
-    return lhs == rhs
-
-
-def eddsa_verify(A, R, s, m, B=None):
-    """
-    For HashEdDSA, where the message is compressed first
-    """
-    return pureeddsa_verify(A, R, s, eddsa_hash_message(m), B)
-
-
-def pureeddsa_sign(M, k, B=None):
-    """
-    @param M Message being signed, bytes, (len(M)*8)%3 == 0
-    @param k secret key
-    @param B base point
-    @param A public key, k*B
-    """
-    if not isinstance(k, FQ):
-        raise TypeError("Invalid type for parameter k")
-
-    # Strict parsing ensures key is in the prime-order group
-    if k.n >= JUBJUB_L or k.n <= 0:
-        raise RuntimeError("Strict parsing of k failed")
-
-    if B is None:
-        B = Point.generator()
-
-    A = B * k
-    r = eddsa_hash_secret(k, M)     # r = H(k,M) mod L
-    R = B * r                       # rB
-    t = eddsa_hash_public(R, A, M)  # Bind the message to the nonce, public key and message
-    S = (r + (k.n*t)) % JUBJUB_E    # S -> r + H(R,A,M)*k
-    return [R, S, A]
-
-
-def eddsa_sign(msg, k, B=None):
-    """
-    For HashEdDSA, where the message is compressed first
-    """
-    return pureeddsa_sign(eddsa_hash_message(msg), k, B)
+def eddsa_sign(*args, **kwa):
+    return EdDSA.sign(*args, **kwa)
