@@ -24,6 +24,17 @@ const VariableArrayT flatten( const std::vector<VariableArrayT> &in_scalars );
 
 std::vector<unsigned long> bit_list_to_ints(std::vector<bool> bit_list, const size_t wordsize);
 
+/**
+* Convert a sequence of integers into a sequence of bits
+* You can specify the word-length for every integer separately.
+*
+* Usage example: int_list_to_bits({10, 238923}, {8, 16});
+*/
+libff::bit_vector int_list_to_bits(const std::initializer_list<unsigned long> &l, const std::initializer_list<unsigned long> &wordsizes);
+
+/**
+* Convert a sequence of bytes into a sequence of bits
+*/
 libff::bit_vector bytes_to_bv(const uint8_t *in_bytes, const size_t in_count);
 
 /**

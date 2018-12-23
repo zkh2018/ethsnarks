@@ -11,7 +11,11 @@ namespace jubjub {
 
 class Params {
 public:
-    // Edwards parameters
+    // Base point
+    const FieldT Gx;
+    const FieldT Gy;
+
+    // twisted Edwards parameters
     const FieldT a;
     const FieldT d;
 
@@ -20,6 +24,8 @@ public:
     const FieldT scale;
 
     Params() :
+        Gx("16540640123574156134436876038791482806971768689494387082833631921987005038935"),
+        Gy("20819045374670962167435360035096875258406992893633759881276124905556507972311"),
         a("168700"),
         d("168696"),
         A("168698"),

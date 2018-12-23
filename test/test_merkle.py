@@ -2,7 +2,7 @@ import unittest
 
 import hashlib
 from ethsnarks.merkletree import MerkleTree, MerkleHasherLongsight
-from ethsnarks.field import SNARK_SCALAR_FIELD
+from ethsnarks.field import FQ, SNARK_SCALAR_FIELD
 
 
 class TestMerkleTree(unittest.TestCase):
@@ -44,6 +44,34 @@ class TestMerkleTree(unittest.TestCase):
 
         proof_b = tree.proof(1)
         self.assertEqual(proof_b.path, [item_a])
+
+    def test_update(self):
+        """
+        Verify that items in the tree can be updated
+        """
+        tree = MerkleTree(2)
+        tree.append(FQ.random())
+        tree.append(FQ.random())
+        proof_0_before = tree.proof(0)
+        proof_1_before = tree.proof(1)
+        root_before = tree.root
+        self.assertTrue(proof_0_before.verify(tree.root))
+        self.assertTrue(proof_1_before.verify(tree.root))
+
+        leaf_0_after = FQ.random()
+        tree.update(0, leaf_0_after)
+        root_after_0 = tree.root
+        proof_0_after = tree.proof(0)
+        self.assertTrue(proof_0_after.verify(tree.root))
+        self.assertNotEqual(root_before, root_after_0)
+
+        leaf_1_after = FQ.random()
+        tree.update(1, leaf_1_after)
+        root_after_1 = tree.root
+        proof_1_after = tree.proof(1)
+        self.assertTrue(proof_1_after.verify(tree.root))
+        self.assertNotEqual(root_before, root_after_1)
+        self.assertNotEqual(root_after_0, root_after_1)
 
     def test_known_2pow28(self):
         tree = MerkleTree(2<<28)

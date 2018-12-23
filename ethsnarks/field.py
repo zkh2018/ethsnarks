@@ -24,7 +24,9 @@
 #
 
 import sys
-from random import randint
+import bitstring
+from math import ceil, log2
+from os import urandom
 from collections import defaultdict
 from .numbertheory import square_root_mod_prime
 
@@ -37,22 +39,6 @@ else:
 
 
 SNARK_SCALAR_FIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617
-
-
-
-# Extended euclidean algorithm to find modular inverses for
-# integers
-# equivalent to pow(a, n-2, n)
-def inv(a, n):
-    if a == 0:
-        return 0
-    lm, hm = 1, 0
-    low, high = a % n, n
-    while low > 1:
-        r = high // low
-        nm, new = hm - lm * r, high - low * r
-        lm, low, hm, high = nm, new, lm, low
-    return lm % n
 
 
 # A class for field elements in FQ. Wrap a number in this class,
@@ -87,11 +73,17 @@ class FQ(object):
             self.n = n.n
         else:
             if not isinstance(n, int_types):
-                raise ValueError("Invalid number type")
+                raise ValueError("Invalid number type: " + str(type(n)))
             if not isinstance(field_modulus, int_types):
-                raise ValueError("Invalid modulus type")
+                raise ValueError("Invalid modulus type: " + str(type(field_modulus)))
             self.m = field_modulus
             self.n = n % self.m
+
+    def __int__(self):
+        return self.n
+
+    def __hash__(self):
+        return hash((self.n, self.m))
 
     def _other_n(self, other):
         if isinstance(other, FQ):
@@ -131,21 +123,27 @@ class FQ(object):
         self._count('sub')
         return FQ((self.n - on) % self.m, self.m)
 
+    def bits(self):
+        nbits = ceil(log2(self.m))
+        return bitstring.BitArray('0b' + bin(self.n)[2:][::-1].ljust(nbits, '0'))
+
     def inv(self):
         self._count('inv')
         return FQ(pow(self.n, self.m - 2, self.m), self.m)
 
     def sqrt(self):
+        self._count('sqrt')
         return FQ(square_root_mod_prime(self.n, self.m), self.m)
 
     def exp(self, e):
         e = self._other_n(e)
+        self._count('exp')
         return FQ(pow(self.n, e, self.m), self.m)
 
     def __div__(self, other):
         on = self._other_n(other)
         self._count('inv')
-        return FQ(self.n * inv(on, self.m) % self.m, self.m)
+        return FQ((self.n * pow(on, self.m-2, self.m)) % self.m, self.m)
 
     def __floordiv__(self, other):
         return self.__div__(other)
@@ -157,7 +155,7 @@ class FQ(object):
         on = self._other_n(other)
         self._count('inv')
         self._count('mul')
-        return FQ(inv(self.n, self.m) * on % self.m, self.m)
+        return FQ((pow(self.n, self.m-2, self.m) * on) % self.m, self.m)
 
     def __rtruediv__(self, other):
         return self.__rdiv__(other)
@@ -178,9 +176,9 @@ class FQ(object):
 
     @classmethod
     def random(cls, modulus=SNARK_SCALAR_FIELD):
-        # XXX: use stronger random source of data
-        # e.g. int.from_bytes(urandom(int(ceil(log2(n)))), 'little')
-        return FQ(randint(1, modulus - 1), modulus)
+        nbytes = ceil(ceil(log2(modulus)) / 8) + 1
+        rand_n = int.from_bytes(urandom(nbytes), 'little')
+        return FQ(rand_n, modulus)
 
     @classmethod
     def one(self, modulus=SNARK_SCALAR_FIELD):

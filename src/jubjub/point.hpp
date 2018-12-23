@@ -6,6 +6,7 @@
 // License: LGPL-3.0+
 
 #include "ethsnarks.hpp"
+#include "utils.hpp"
 #include "jubjub/params.hpp"
 
 
@@ -21,6 +22,14 @@ public:
 
     VariablePointT(const VariableT in_x, const VariableT in_y)
     : x(in_x), y(in_y)
+    {}
+
+    VariablePointT(
+        ProtoboardT &in_pb,
+        const std::string& annotation_prefix
+    ) :
+        x(make_variable(in_pb, FMT(annotation_prefix, ".x"))),
+        y(make_variable(in_pb, FMT(annotation_prefix, ".y")))
     {}
 };
 
@@ -40,6 +49,8 @@ class EdwardsPoint
 public:
     FieldT x;
     FieldT y;
+
+    EdwardsPoint() {}
 
     EdwardsPoint(const FieldT& in_x, const FieldT& in_y);
 
@@ -75,6 +86,19 @@ public:
     * Convert to a VariablePoint - allocates two new variables for its X and Y coordinates
     */
     const VariablePointT as_VariablePointT (ProtoboardT& pb, const std::string& annotation_prefix) const;
+
+    friend std::istream& operator>> (std::istream& is, EdwardsPoint& self)
+    {
+        std::string read_str;
+
+        is >> read_str;
+        self.x = decltype(self.x)(read_str.c_str());
+
+        is >> read_str;
+        self.y = decltype(self.y)(read_str.c_str());
+
+        return is;
+    }
 };
 
 

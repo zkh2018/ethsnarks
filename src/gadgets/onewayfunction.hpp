@@ -38,7 +38,7 @@ public:
 		}
 	}
 
-	VariableT result() const {
+	const VariableT& result() const {
 		return m_outputs[ m_outputs.size() - 1 ];
 	}
 

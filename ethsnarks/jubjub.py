@@ -181,11 +181,21 @@ class Point(AbstractCurveOps, namedtuple('_Point', ('x', 'y'))):
 		"""
 		HashToPoint (or Point.from_hash)
 
-		Hashes the input entropy repeatedly, and interprets it as the Y
-		coordinate then recovers the X coordinate, if no valid point can be
-		recovered Y is incremented until a matching X coordinate is found.
+		Hashes the input entropy and interprets the result as the Y coordinate
+		then recovers the X coordinate, if no valid point can be recovered
+		Y is incremented until a matching X coordinate is found.
 
-		The point is guaranteed to be prime order and not the identity
+		The point is guaranteed to be prime order and not the identity.
+
+		From: https://datatracker.ietf.org/doc/draft-irtf-cfrg-hash-to-curve/?include_text=1
+
+		Page 6:
+
+		   o  HashToBase(x, i).  This method is parametrized by p and H, where p
+      		  is the prime order of the base field Fp, and H is a cryptographic
+      		  hash function which outputs at least floor(log2(p)) + 2 bits.  The
+ 			  function first hashes x, converts the result to an integer, and
+      		  reduces modulo p to give an element of Fp.
 		"""
 		assert isinstance(entropy, bytes)
 		entropy = sha256(entropy).digest()
@@ -206,6 +216,12 @@ class Point(AbstractCurveOps, namedtuple('_Point', ('x', 'y'))):
 				raise RuntimeError("Point not on prime-ordered subgroup")
 
 			return p
+
+	def __eq__(self, other):
+		return self.x == other.x and self.y == other.y
+
+	def __hash__(self):
+		return hash((self.x, self.y))
 
 	def compress(self):
 		x = self.x.n
@@ -254,6 +270,13 @@ class Point(AbstractCurveOps, namedtuple('_Point', ('x', 'y'))):
 		"""
 		return Point(-self.x, self.y)
 
+	@classmethod
+	def generator(cls):
+		x = 16540640123574156134436876038791482806971768689494387082833631921987005038935
+		y = 20819045374670962167435360035096875258406992893633759881276124905556507972311
+		return Point(FQ(x), FQ(y))
+
+
 	def valid(self):
 		"""
 		Satisfies the relationship
@@ -285,6 +308,12 @@ class ProjPoint(AbstractCurveOps, namedtuple('_ProjPoint', ('x', 'y', 'z'))):
 
 	def as_proj(self):
 		return self
+
+	def __eq__(self, other):
+		return self.x == other.x and self.y == other.y and self.z == other.z
+
+	def __hash__(self):
+		return hash((self.x, self.y, self.z))
 
 	def as_etec(self):
 		"""
@@ -374,6 +403,12 @@ class ProjPoint(AbstractCurveOps, namedtuple('_ProjPoint', ('x', 'y', 'z'))):
 class EtecPoint(AbstractCurveOps, namedtuple('_EtecPoint', ('x', 'y', 't', 'z'))):
 	def as_etec(self):
 		return self
+
+	def __eq__(self, other):
+		return self.x == other.x and self.y == other.y and self.t == other.t and self.z == other.z
+
+	def __hash__(self):
+		return hash((self.x, self.y, self.t, self.z))
 
 	def as_point(self):
 		"""

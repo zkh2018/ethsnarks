@@ -5,7 +5,7 @@ import hashlib
 import math
 
 from .longsight import LongsightL12p5_MP
-from .field import SNARK_SCALAR_FIELD
+from .field import FQ, SNARK_SCALAR_FIELD
 
 
 class MerkleProof(object):
@@ -70,9 +70,23 @@ class MerkleTree(object):
     def __len__(self):
         return self._cur
 
+    def update(self, index, leaf):
+        if isinstance(leaf, FQ):
+            leaf = leaf.n
+        if not isinstance(leaf, int):
+            raise TypeError("Invalid key")
+        assert leaf >= 0 and leaf < SNARK_SCALAR_FIELD
+        if (len(self._leaves[0]) - 1) < index:
+            raise KeyError("Out of bounds")
+        self._leaves[0][index] = leaf
+        self._updateTree(index)
+
     def append(self, leaf):
         if self._cur >= (self._n_items):
             raise RuntimeError("Tree Full")
+        if isinstance(leaf, FQ):
+            leaf = leaf.n
+        assert leaf >= 0 and leaf < SNARK_SCALAR_FIELD
         self._leaves[0].append(leaf)
         self._updateTree()
         self._cur += 1
@@ -84,6 +98,9 @@ class MerkleTree(object):
         if key < 0 or key >= self._cur:
             raise KeyError("Out of bounds")
         return self._leaves[0][key]
+
+    def __setitem__(self, key, value):
+        self.update(key, value)
 
     def __contains__(self, key):
         return key in self._leaves[0]
@@ -107,8 +124,8 @@ class MerkleTree(object):
             index = index // 2
         return MerkleProof(leaf, address_bits, merkle_proof, self._hasher)
 
-    def _updateTree(self):
-        cur_index = self._cur
+    def _updateTree(self, cur_index=None):
+        cur_index = self._cur if cur_index is None else cur_index
         for depth in range(0, self._tree_depth):
             next_index = cur_index // 2
             if cur_index % 2 == 0:

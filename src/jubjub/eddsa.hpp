@@ -49,15 +49,37 @@ public:
 };
 
 
-class EdDSA_Verify : public GadgetT
+class PureEdDSA_Verify : public GadgetT
 {
 public:
     PointValidator m_validator_R;           // IsValid(R)
     fixed_base_mul m_lhs;                   // lhs = B*s
-    PedersenHashToBits m_msg_hashed;        // M = H(m)
     EdDSA_HashRAM_gadget m_hash_RAM;        // hash_RAM = H(R,A,M)
     ScalarMult m_At;                        // A*hash_RAM
     PointAdder m_rhs;                       // rhs = R + (A*hash_RAM)
+
+    PureEdDSA_Verify(
+        ProtoboardT& in_pb,
+        const Params& in_params,
+        const EdwardsPoint& in_base,    // B
+        const VariablePointT& in_A,      // A
+        const VariablePointT& in_R,      // R
+        const VariableArrayT& in_s,      // s
+        const VariableArrayT& in_msg,    // m
+        const std::string& annotation_prefix);
+
+    void generate_r1cs_constraints();
+
+    void generate_r1cs_witness();
+};
+
+
+class EdDSA_Verify
+{
+public:
+    PedersenHashToBits m_msg_hashed;        // M = H(m)
+
+    PureEdDSA_Verify m_verifier;
 
     EdDSA_Verify(
         ProtoboardT& in_pb,

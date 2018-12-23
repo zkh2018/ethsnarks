@@ -29,9 +29,9 @@ subadd_gadget::subadd_gadget(
 	cmp_N_A(in_pb, n_bits, N, A, N_lt_A, N_leq_A, FMT(this->annotation_prefix, ".cmp_N_A")),
 
 	// B+N overflow check, B+N < (1<<n_bits)
-	Y_overflow_lt(make_variable(in_pb, FMT(this->annotation_prefix, ".Y < (1<<N)"))),
-	Y_overflow_leq(make_variable(in_pb, FMT(this->annotation_prefix, ".Y <= (1<<N)"))),
-	cmp_Y_overflow(in_pb, n_bits+1, Y, make_linear_term(in_pb, libsnark::ONE, (1<<n_bits)), Y_overflow_lt, Y_overflow_leq, FMT(this->annotation_prefix, ".cmp_B_Y"))
+	Y_overflow_lt(make_variable(in_pb, FMT(this->annotation_prefix, ".Y < (1<<%zu)", n_bits))),
+	Y_overflow_leq(make_variable(in_pb, FMT(this->annotation_prefix, ".Y <= (1<<%zu)", n_bits))),
+	cmp_Y_overflow(in_pb, n_bits+1, Y, make_linear_term(in_pb, libsnark::ONE, FieldT("2")^n_bits), Y_overflow_lt, Y_overflow_leq, FMT(this->annotation_prefix, ".cmp_Y_overflow"))
 {
 	assert( (n_bits+1) <= FieldT::capacity() );
 }
@@ -51,10 +51,12 @@ void subadd_gadget::generate_r1cs_constraints ()
 		ConstraintT(B + N, FieldT::one(), Y),
 			FMT(this->annotation_prefix, ".B + N == Y"));
 
+	// N <= A (or, balance >= amount)
 	this->pb.add_r1cs_constraint(
 		ConstraintT(N_leq_A, FieldT::one(), FieldT::one()),
 			FMT(this->annotation_prefix, ".N_leq_A == 1"));
 
+	// Y < (1<<bits), prevents overflowing a fixed-bit size
 	this->pb.add_r1cs_constraint(
 		ConstraintT(Y_overflow_lt, FieldT::one(), FieldT::one()),
 			FMT(this->annotation_prefix, ".Y_overflow_lt == 1"));
@@ -71,6 +73,7 @@ void subadd_gadget::generate_r1cs_witness ()
 
 	cmp_Y_overflow.generate_r1cs_witness();
 }
+
 
 // namespace ethsnarks
 }

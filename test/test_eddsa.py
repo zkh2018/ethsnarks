@@ -3,21 +3,37 @@ from os import urandom
 
 
 from ethsnarks.jubjub import JUBJUB_L, Point, FQ
-from ethsnarks.eddsa import eddsa_sign, eddsa_verify
+from ethsnarks.eddsa import eddsa_sign, eddsa_verify, pureeddsa_verify, pureeddsa_sign, eddsa_random_keypair
 
 
 class TestEdDSA(unittest.TestCase):
 	def test_signverify(self):
 		B = Point.from_hash(b'eddsa_base')
-		k = FQ.random(JUBJUB_L)
+		#B = None
+		k, A = eddsa_random_keypair()
 		m = urandom(32)
-		R, S, A = eddsa_sign(m, k, B)
-		self.assertTrue(eddsa_verify(A, R, S, m, B))
 
-	def test_fixedcase_1(self):
-		"""
-		Used in test_jubjub_eddsa.cpp
-		"""
+		smsg = eddsa_sign(m, k, B)
+		self.assertTrue(eddsa_verify(*smsg, B))
+
+		smsg = pureeddsa_sign(m, k, B)
+		self.assertTrue(pureeddsa_verify(*smsg, B))
+
+	def test_pure_eddsa(self):
+		# Used to verify compatibility with test_jubjub_eddsa.cpp
+		B = Point(FQ(16117159321177103813813294286550615556837550473658220567209763364611339839115),
+				  FQ(11465736382824868633493204496205282307637286781164666440541087834417561817657))
+		A = Point(FQ(7232078318593313024960606529959628262327760580530543297615441605656275483008),
+				  FQ(13445187542498117393920468884784587115570437154948817232436446927611108297778))
+		R = Point(FQ(16748186150368319377210820880944935248945916993910817768852007732596413990860),
+				  FQ(4850962850934517657076914998696277193398065576910427229359881798401199408131))
+		s = 9530517511211249528464523051059372760063486304291273287859289432498093931519
+		m = b'abcd'
+		self.assertTrue(pureeddsa_verify(A, (R, s), m, B))
+		self.assertFalse(eddsa_verify(A, (R, s), m, B))
+
+	def test_hash_eddsa(self):
+		# Used to verify compatibility with test_jubjub_eddsa.cpp
 		B = Point(FQ(21609035313031231356478892405209584931807557563713540183143349090940105307553),
 				  FQ(845281570263603011277359323511710394920357596931617398831207691379369851278))
 		A = Point(FQ(5616630816018221659484394091994939318481030030481519242876140465113436048304),
@@ -26,8 +42,8 @@ class TestEdDSA(unittest.TestCase):
 				  FQ(11833558192785987866925773659755699683735551950878443451361314529874236222818))
 		s = 9920504625278683304895036460477595239370241328717115039061027107077120437288
 		m = b'abc'
-		self.assertTrue(eddsa_verify(A, R, s, m, B))
-
+		self.assertTrue(eddsa_verify(A, (R, s), m, B))
+		self.assertFalse(pureeddsa_verify(A, (R, s), m, B))
 
 if __name__ == "__main__":
 	unittest.main()

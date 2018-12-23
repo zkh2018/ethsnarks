@@ -32,7 +32,7 @@ namespace jubjub {
 */
 class fixed_base_mul : public GadgetT {
 public:
-	const VariableArrayT m_scalar;
+	//const VariableArrayT& m_scalar;
 
 	std::vector<PointAdder> m_adders;
 	std::vector<lookup_2bit_gadget> m_windows_x;
@@ -43,7 +43,7 @@ public:
 		const Params& in_params,
 		const FieldT& in_base_x,
 		const FieldT& in_base_y,
-		const VariableArrayT in_scalar,
+		const VariableArrayT& in_scalar,
 		const std::string &annotation_prefix
 	);
 

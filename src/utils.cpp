@@ -20,6 +20,27 @@ libff::bit_vector bytes_to_bv(const uint8_t *in_bytes, const size_t in_count)
 }
 
 
+libff::bit_vector int_list_to_bits(const std::initializer_list<unsigned long> &l, const std::initializer_list<unsigned long> &wordsizes)
+{
+    size_t total_bits = 0;
+    for( const auto& ws : wordsizes )
+    {
+        total_bits += ws;
+    }
+
+    libff::bit_vector res(total_bits);
+    for (size_t i = 0; i < l.size(); ++i)
+    {
+        const auto wordsize = *(wordsizes.begin());
+        for (size_t j = 0; j < wordsize + i; ++j)
+        {
+            res[i*wordsize + j] = (*(l.begin()+i) & (1ul<<(wordsize-1-j)));
+        }
+    }
+    return res;
+}
+
+
 std::vector<unsigned long> bit_list_to_ints(std::vector<bool> bit_list, const size_t wordsize)
 {
     std::vector<unsigned long> res;

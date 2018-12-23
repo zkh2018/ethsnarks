@@ -114,8 +114,7 @@ def LongsightL(x, k, C, R, e, p):
     """
     assert math.gcd(p-1, e) == 1       # XXX: is a bijection required?
     assert len(C) == R - 2
-
-    assert x > 0 and x < (p-1)
+    assert x >= 0 and x < (p-1)
     if k != 0:
         assert k > 0 and k < (p-1)
 
