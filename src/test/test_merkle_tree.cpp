@@ -1,6 +1,6 @@
 #include "stubs.hpp"
 #include "gadgets/merkle_tree.hpp"
-#include "gadgets/longsightl.hpp"
+#include "gadgets/mimc.hpp"
 
 namespace ethsnarks {
 
@@ -74,7 +74,7 @@ bool test_merkle_path_authenticator() {
 	pb.val(expected_root) = FieldT("13981856331482487152452149678096232821987624395720231314895268163963385035507");
 
 	size_t tree_depth = 1;
-	merkle_path_authenticator<LongsightL12p5_MP_gadget> auth(
+	merkle_path_authenticator<MiMC_hash_gadget> auth(
 		pb, tree_depth, address_bits,
 		merkle_tree_IVs(pb),
 		leaf, expected_root, path,

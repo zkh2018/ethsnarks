@@ -14,28 +14,6 @@ using std::endl;
 using std::string;
 using ethsnarks::FieldT;
 
-namespace ethsnarks {
-
-
-const FieldT mimc( std::vector<FieldT>& round_constants, const FieldT& x, const FieldT& k )
-{
-    ProtoboardT pb;
-
-    VariableT var_x = make_variable(pb, x, "x");
-    VariableT var_k = make_variable(pb, k, "k");
-    pb.set_input_sizes(2);
-
-    MiMCe7_gadget the_gadget(pb, var_x, var_k, round_constants, "the_gadget");
-    the_gadget.generate_witness();
-    the_gadget.generate_constraints();
-
-    return the_gadget.result_value();
-}
-
-
-// namespace ethsnarks
-}
-
 
 int main( int argc, char **argv )
 {

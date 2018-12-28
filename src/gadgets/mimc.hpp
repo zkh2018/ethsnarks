@@ -2,7 +2,10 @@
 #define ETHSNARKS_MIMC_HPP_
 
 #include "ethsnarks.hpp"
+#include "gadgets/onewayfunction.hpp"
+
 #include "utils.hpp"
+#include <mutex>
 #include <openssl/sha.h>
 
 
@@ -52,6 +55,7 @@ protected:
     const VariableT& x;
     const VariableT& k;
     const FieldT& C;
+    const bool add_k_to_result;
     const VariableT a;
     const VariableT b;
     const VariableT c;
@@ -63,10 +67,12 @@ public:
         const VariableT& in_x,
         const VariableT& in_k,
         const FieldT& in_C,
+        const bool in_add_k_to_result,
         const std::string &annotation_prefix
     ) :
         GadgetT(pb, annotation_prefix),
         x(in_x), k(in_k), C(in_C),
+        add_k_to_result(in_add_k_to_result),
         a(make_variable(pb, FMT(annotation_prefix, ".a"))),
         b(make_variable(pb, FMT(annotation_prefix, ".b"))),
         c(make_variable(pb, FMT(annotation_prefix, ".c"))),
@@ -78,18 +84,26 @@ public:
         return d;
     }
 
-    void generate_constraints()
+    void generate_r1cs_constraints()
     {
         auto t = x + k + C;       
         this->pb.add_r1cs_constraint(ConstraintT(t, t, a), ".a = t*t"); // x^2
         this->pb.add_r1cs_constraint(ConstraintT(a, a, b), ".b = a*a"); // x^4
         this->pb.add_r1cs_constraint(ConstraintT(a, b, c), ".c = a*b"); // x^6
-        this->pb.add_r1cs_constraint(ConstraintT(t, c, d), ".d = c*t"); // x^7
+
+        if( add_k_to_result )
+        {
+            this->pb.add_r1cs_constraint(ConstraintT(t, c, d - k), ".d = (c*t) + k"); // x^7
+        }
+        else {
+            this->pb.add_r1cs_constraint(ConstraintT(t, c, d), ".d = c*t"); // x^7
+        }
     }
 
-    void generate_witness()
+    void generate_r1cs_witness()
     {
-        const auto t = this->pb.val(x) + this->pb.val(k) + C;
+        const auto val_k = this->pb.val(k);
+        const auto t = this->pb.val(x) + val_k + C;
 
         const auto val_a = t * t;
         this->pb.val(a) = val_a;
@@ -100,7 +114,8 @@ public:
         const auto val_c = val_a * val_b;
         this->pb.val(c) = val_c;
 
-        this->pb.val(d) = val_c * t;
+        const FieldT result = (val_c * t) + (add_k_to_result ? val_k : FieldT::zero());
+        this->pb.val(d) = result;
     }
 };
 
@@ -111,10 +126,26 @@ protected:
     std::vector<MiMCe7_round> m_rounds;
     const VariableT k;
 
+    void _setup_gadgets(
+        const VariableT& in_x,
+        const VariableT& in_k,
+        const std::vector<FieldT>& in_round_constants)
+    {
+        m_rounds.reserve(in_round_constants.size());
+
+        for( size_t i = 0; i < in_round_constants.size(); i++ )
+        {
+            const auto round_x = (i == 0 ? in_x : m_rounds.back().result() );
+
+            bool is_last = (i == (in_round_constants.size() - 1));
+            m_rounds.emplace_back(this->pb, round_x, in_k, in_round_constants[i], is_last, FMT(annotation_prefix, ".round[%d]", i));
+        }   
+    }
+
 public:
     MiMCe7_gadget(
         ProtoboardT& pb,
-        const VariableT& x,
+        const VariableT& in_x,
         const VariableT& in_k,
         const std::vector<FieldT>& in_round_constants,
         const std::string& annotation_prefix
@@ -122,39 +153,62 @@ public:
         GadgetT(pb, annotation_prefix),
         k(in_k)
     {
-        m_rounds.reserve(in_round_constants.size());
-
-        for( size_t i = 0; i < in_round_constants.size(); i++ )
-        {
-            const auto round_x = (i == 0 ? x : m_rounds.back().result() );
-
-            m_rounds.emplace_back(pb, round_x, in_k, in_round_constants[i], FMT(annotation_prefix, ".round[%d]", i));
-        }
+        _setup_gadgets(in_x, in_k, in_round_constants);
     }
 
-    const libsnark::linear_combination<FieldT> result ()
+    MiMCe7_gadget(
+        ProtoboardT& pb,
+        const VariableT& in_x,
+        const VariableT& in_k,
+        const std::string& annotation_prefix
+    ) :
+        GadgetT(pb, annotation_prefix),
+        k(in_k)
     {
-        return m_rounds.back().result() + k;
+        _setup_gadgets(in_x, in_k, static_constants());
+    }
+
+    const VariableT& result ()
+    {
+        return m_rounds.back().result();
     }
 
     const FieldT result_value() {
         return pb.val(m_rounds.back().result()) + pb.val(k);
     }
 
-    void generate_constraints()
+    void generate_r1cs_constraints()
     {
         for( auto& gadget : m_rounds )
         {
-            gadget.generate_constraints();
+            gadget.generate_r1cs_constraints();
         }
     }
 
-    void generate_witness()
+    void generate_r1cs_witness()
     {
         for( auto& gadget : m_rounds )
         {
-            gadget.generate_witness();
+            gadget.generate_r1cs_witness();
         }
+    }
+
+    static const std::vector<FieldT>& static_constants ()
+    {
+        static bool filled = false;
+        static std::vector<FieldT> round_constants;
+        static std::mutex fill_lock;
+
+        // TODO: locking
+        if( ! filled )
+        {
+            fill_lock.lock();
+            constants_fill(round_constants);
+            filled = true;
+            fill_lock.unlock();
+        }
+
+        return round_constants;
     }
 
     static void constants_fill( std::vector<FieldT>& round_constants, const char* seed = "mimc", int round_count = 91 )
@@ -182,6 +236,40 @@ public:
         }
     }
 };
+
+
+class MiMCe7_hash_gadget : public MiyaguchiPreneel_OWF<MiMCe7_gadget>
+{
+public:
+    using MiyaguchiPreneel_OWF<MiMCe7_gadget>::MiyaguchiPreneel_OWF;
+};
+
+
+using MiMC_hash_gadget = MiMCe7_hash_gadget;
+
+using MiMC_gadget = MiMCe7_gadget;
+
+
+const FieldT mimc( const std::vector<FieldT>& round_constants, const FieldT& x, const FieldT& k )
+{
+    ProtoboardT pb;
+
+    VariableT var_x = make_variable(pb, x, "x");
+    VariableT var_k = make_variable(pb, k, "k");
+    pb.set_input_sizes(2);
+
+    MiMCe7_gadget the_gadget(pb, var_x, var_k, round_constants, "the_gadget");
+    the_gadget.generate_r1cs_witness();
+    the_gadget.generate_r1cs_constraints();
+
+    return the_gadget.result_value();
+}
+
+
+const FieldT mimc( const FieldT& x, const FieldT& k )
+{
+    return mimc(MiMCe7_gadget::static_constants(), x, k);
+}
 
 
 // namespace ethsnarks

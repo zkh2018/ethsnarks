@@ -2,39 +2,14 @@
 // License: LGPL-3.0+
 
 
-#include "gadgets/longsightl.hpp"
+#include "gadgets/mimc.hpp"
 #include "stubs.hpp"
 
 namespace ethsnarks {
 
-const FieldT run_LongsightL(int n_msgs, const char **msgs)
+
+bool test_mimc_hash()
 {
-    std::vector<FieldT> round_constants;
-    LongsightL12p5_constants_fill(round_constants);
-
-    ProtoboardT pb;
-
-    std::vector<VariableT> v_msgs;
-    for( int i = 0; i < n_msgs; i++ )
-    {
-        v_msgs.emplace_back(make_variable(pb, FieldT(msgs[i]), FMT("msgs","[%u]", i)));
-    }
-    pb.set_input_sizes(n_msgs);
-
-    // Private inputs
-    VariableT iv = make_variable(pb, FieldT("918403109389145570117360101535982733651217667914747213867238065296420114726"), "iv");
-
-    LongsightL12p5_MP_gadget the_gadget(pb, iv, v_msgs, "gadget");
-    the_gadget.generate_r1cs_witness();
-
-    return pb.val(the_gadget.result());
-}
-
-bool test_LongsightL()
-{
-    std::vector<FieldT> round_constants;
-    LongsightL12p5_constants_fill(round_constants);
-
     ProtoboardT pb;
 
     // Public inputs
@@ -45,7 +20,7 @@ bool test_LongsightL()
     // Private inputs
     VariableT iv = make_variable(pb, FieldT("918403109389145570117360101535982733651217667914747213867238065296420114726"), "iv");
 
-    LongsightL12p5_MP_gadget the_gadget(pb, iv, {m_0, m_1}, "gadget");
+    MiMCe7_hash_gadget the_gadget(pb, iv, {m_0, m_1}, "gadget");
     the_gadget.generate_r1cs_witness();
     the_gadget.generate_r1cs_constraints();
 
@@ -97,7 +72,7 @@ int main( int argc, char **argv )
     // Types for board
     ethsnarks::ppT::init_public_params();
 
-    if( ! ethsnarks::test_LongsightL() )
+    if( ! ethsnarks::test_mimc_hash() )
     {
         std::cerr << "FAIL\n";
         return 1;
