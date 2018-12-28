@@ -7,9 +7,9 @@ namespace ethsnarks {
 
 merkle_path_selector::merkle_path_selector(
     ProtoboardT &in_pb,
-    const VariableT in_input,
-    const VariableT in_pathvar,
-    const VariableT in_is_right,
+    const VariableT& in_input,
+    const VariableT& in_pathvar,
+    const VariableT& in_is_right,
     const std::string &in_annotation_prefix
 ) :
     GadgetT(in_pb, in_annotation_prefix),
@@ -35,7 +35,7 @@ void merkle_path_selector::generate_r1cs_constraints()
     this->pb.add_r1cs_constraint(ConstraintT(m_is_right, m_pathvar, m_left_b),
         FMT(this->annotation_prefix, "is_right * pathvar = left_b"));
 
-    this->pb.add_r1cs_constraint(ConstraintT(1, m_left_a + m_left_b, m_left),
+    this->pb.add_r1cs_constraint(ConstraintT(m_left_a + m_left_b, 1, m_left),
         FMT(this->annotation_prefix, "1 * left_a + left_b = left"));
 
     this->pb.add_r1cs_constraint(ConstraintT(m_is_right, m_input, m_right_a),
@@ -44,7 +44,7 @@ void merkle_path_selector::generate_r1cs_constraints()
     this->pb.add_r1cs_constraint(ConstraintT(1 - m_is_right, m_pathvar, m_right_b),
         FMT(this->annotation_prefix, "1-is_right * pathvar = right_b"));
 
-    this->pb.add_r1cs_constraint(ConstraintT(1, m_right_a + m_right_b, m_right),
+    this->pb.add_r1cs_constraint(ConstraintT(m_right_a + m_right_b, 1, m_right),
         FMT(this->annotation_prefix, "1 * right_a + right_b = right"));
 }
 

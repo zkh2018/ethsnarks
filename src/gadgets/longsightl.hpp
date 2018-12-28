@@ -67,8 +67,8 @@ class LongsightL12p5_gadget : public LongsightL_gadget
 public:
     LongsightL12p5_gadget(
         ProtoboardT &in_pb,
-        const VariableT &in_x,
-        const VariableT &in_k,
+        const VariableT in_x,
+        const VariableT in_k,
         const std::string &in_annotation_prefix=""
     ) :
         LongsightL_gadget(in_pb, LongsightL12p5_constants_assign(), in_x, in_k, in_annotation_prefix)
@@ -82,11 +82,11 @@ class LongsightL12p5_MP_gadget : public MiyaguchiPreneel_OWF<LongsightL12p5_gadg
 public:
     LongsightL12p5_MP_gadget(
         ProtoboardT &in_pb,
-        VariableT in_IV,
-        std::vector<VariableT> in_messages,
+        const VariableT in_IV,
+        const std::vector<VariableT>& in_messages,
         const std::string &in_annotation_prefix=""
     ) :
-        MiyaguchiPreneel_OWF(in_pb, in_IV, in_messages, FMT(in_annotation_prefix, ".MP_OWF"))
+        MiyaguchiPreneel_OWF(in_pb, in_IV, in_messages, in_annotation_prefix)
     {
 
     }

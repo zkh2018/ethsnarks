@@ -48,9 +48,9 @@ public:
 
     merkle_path_selector(
         ProtoboardT &in_pb,
-        const VariableT in_input,
-        const VariableT in_pathvar,
-        const VariableT in_is_right,
+        const VariableT& in_input,
+        const VariableT& in_pathvar,
+        const VariableT& in_is_right,
         const std::string &in_annotation_prefix=""
     );
 
@@ -82,10 +82,10 @@ public:
     markle_path_compute(
         ProtoboardT &in_pb,
         const size_t in_depth,
-        const VariableArrayT in_address_bits,
-        const VariableArrayT in_IVs,
-        const VariableT in_leaf,
-        const VariableArrayT in_path,
+        const VariableArrayT& in_address_bits,
+        const VariableArrayT& in_IVs,
+        const VariableT& in_leaf,
+        const VariableArrayT& in_path,
         const std::string &in_annotation_prefix = ""
     ) :
         GadgetT(in_pb, FMT(in_annotation_prefix, " merkle_path_authenticator")),
@@ -184,7 +184,7 @@ public:
 
         // Ensure root matches calculated path hash
         this->pb.add_r1cs_constraint(
-            ConstraintT(1, markle_path_compute<HashT>::result(), m_expected_root),
+            ConstraintT(markle_path_compute<HashT>::result(), 1, m_expected_root),
             FMT(this->annotation_prefix, "expected_root matches"));
     }
 };

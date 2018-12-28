@@ -206,6 +206,8 @@ set_target_properties(
   INTERFACE_INCLUDE_DIRECTORIES ${GMPXX_INCLUDE_DIR}
 )
 
+find_package(Boost REQUIRED program_options)
+
 
 add_compile_options(-fPIC)
 

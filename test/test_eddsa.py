@@ -9,7 +9,6 @@ from ethsnarks.eddsa import eddsa_sign, eddsa_verify, pureeddsa_verify, pureedds
 class TestEdDSA(unittest.TestCase):
 	def test_signverify(self):
 		B = Point.from_hash(b'eddsa_base')
-		#B = None
 		k, A = eddsa_random_keypair()
 		m = urandom(32)
 
