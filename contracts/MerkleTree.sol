@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-import "./LongsightL.sol";
+import "./MiMC.sol";
 
 library MerkleTree
 {
@@ -55,10 +55,10 @@ library MerkleTree
     }
 
 
-    function HashImpl (uint256 left, uint256 right, uint256[10] memory C, uint256 IV)
+    function HashImpl (uint256 left, uint256 right, uint256 IV)
         internal pure returns (uint256)
     {
-        return LongsightL.LongsightL12p5_MP([left, right], IV, C);
+        return MiMC.MiMCpe7_mp([left, right], IV);
     }
 
 
@@ -66,9 +66,6 @@ library MerkleTree
         internal returns (uint256, uint256)
     {
         require( leaf != 0 );
-
-        uint256[10] memory C;
-        LongsightL.ConstantsL12p5(C);
 
         uint256[29] memory IVs;
         FillLevelIVs(IVs);
@@ -79,7 +76,7 @@ library MerkleTree
 
         self.leaves[0][offset] = leaf;
 
-        uint256 new_root = UpdateTree(self, C, IVs);
+        uint256 new_root = UpdateTree(self, IVs);
 
         self.cur = offset + 1;
    
@@ -93,9 +90,6 @@ library MerkleTree
     function VerifyPath(uint256 leaf, uint256[29] in_path, bool[29] address_bits)
         internal pure returns (uint256)
     {
-        uint256[10] memory C;
-        LongsightL.ConstantsL12p5(C);
-
         uint256[29] memory IVs;
         FillLevelIVs(IVs);
 
@@ -104,9 +98,9 @@ library MerkleTree
         for (uint depth = 0; depth < TREE_DEPTH; depth++)
         {
             if (address_bits[depth]) {
-                item = HashImpl(in_path[depth], item, C, IVs[depth]);
+                item = HashImpl(in_path[depth], item, IVs[depth]);
             } else {
-                item = HashImpl(item, in_path[depth], C, IVs[depth]);
+                item = HashImpl(item, in_path[depth], IVs[depth]);
             }
         }
 

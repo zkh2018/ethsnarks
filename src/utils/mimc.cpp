@@ -32,8 +32,8 @@ int main( int argc, char **argv )
 
 	desc.add_options()
 		("help", "display usage information")
-		("rounds,r", po::value<int>(&rounds)->default_value(91), "number of rounds")
-		("seed,s", po::value<decltype(seed)>(&seed)->default_value("mimc"), "seed for round constants")
+		("rounds,r", po::value<decltype(rounds)>(&rounds)->default_value(rounds), "number of rounds")
+		("seed,s", po::value<decltype(seed)>(&seed)->default_value(seed), "seed for round constants")
 		("key,k", po::value<decltype(key_opt)>(&key_opt), "initial key")
 		("command", po::value<decltype(cmd)>(&cmd), "Sub-command")
 		("subargs", po::value<decltype(subargs)>(&subargs), "Arguments for command")
@@ -41,16 +41,19 @@ int main( int argc, char **argv )
 
 	po::variables_map vm;
 	auto parsed = po::command_line_parser(argc, argv)
-					 .options(desc).positional(p).allow_unregistered().run();
+					 .options(desc)
+					 .positional(p)
+					 .allow_unregistered()
+					 .run();
 	po::store(parsed, vm);
 	po::notify(vm);
 
 	FieldT key(key_opt.c_str());
 
-	std::vector<FieldT> round_constants;
-    ethsnarks::MiMCe7_gadget::constants_fill(round_constants, seed.c_str());
+	const auto round_constants = ethsnarks::MiMC_gadget::constants(seed.c_str(), rounds);
 
-	if( cmd == "constants" ) {
+	if( cmd == "constants" )
+	{
 		for( const auto& c_i : round_constants )
 		{
 			c_i.print();

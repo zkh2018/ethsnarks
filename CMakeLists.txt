@@ -259,3 +259,4 @@ if(OpenMP_CXX_FOUND)
 endif()
 
 add_subdirectory(src)
+add_subdirectory(depends)

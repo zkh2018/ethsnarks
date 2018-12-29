@@ -1,5 +1,4 @@
-const web3 = require("web3");
-
+const Web3 = require("web3");
 
 const SEED = "mimc";
 const NROUNDS = 91;
@@ -11,17 +10,15 @@ const getConstants = (seed, nRounds) => {
     if (typeof nRounds === "undefined") nRounds = NROUNDS;
 
     const cts = new Array(nRounds);
-    let c = Web3.utils.keccak256(SEED);
+    var c = SEED;
 
-    for (let i=1; i<nRounds; i++)
+    for (let i=0; i<nRounds; i++)
     {
         c = Web3.utils.keccak256(c);
-        const n1 = Web3.utils.toBN(c).mod(SNARK_SCALAR_FIELD);
-        const c2 = Web3.utils.padLeft(Web3.utils.toHex(n1), 64);
-        cts[i] = bigInt(Web3.utils.toBN(c2).toString());
+        cts[i] = Web3.utils.toBN(c);
     }
 
-    cts[0] = bigInt(0);
     return cts;
 };
 
+console.log(getConstants());

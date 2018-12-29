@@ -56,7 +56,7 @@ public:
 
     void generate_r1cs_constraints();
 
-    void generate_r1cs_witness();
+    void generate_r1cs_witness() const;
 
     const VariableT& left() const;
 
@@ -84,7 +84,7 @@ public:
         const size_t in_depth,
         const VariableArrayT& in_address_bits,
         const VariableArrayT& in_IVs,
-        const VariableT& in_leaf,
+        const VariableT in_leaf,
         const VariableArrayT& in_path,
         const std::string &in_annotation_prefix = ""
     ) :
@@ -138,7 +138,7 @@ public:
         }
     }
 
-    void generate_r1cs_witness()
+    void generate_r1cs_witness() const
     {
         size_t i;
         for( i = 0; i < m_hashers.size(); i++ )

@@ -48,7 +48,7 @@ void merkle_path_selector::generate_r1cs_constraints()
         FMT(this->annotation_prefix, "1 * right_a + right_b = right"));
 }
 
-void merkle_path_selector::generate_r1cs_witness()
+void merkle_path_selector::generate_r1cs_witness() const
 {
     this->pb.val(m_left_a) = (FieldT::one() - this->pb.val(m_is_right)) * this->pb.val(m_input);
     this->pb.val(m_left_b) = this->pb.val(m_is_right) * this->pb.val(m_pathvar);

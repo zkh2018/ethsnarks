@@ -6,6 +6,63 @@
 
 namespace ethsnarks {
 
+
+/**
+* Implements the Merkle-Damgard scheme for turning a cipher into a
+* one-way compression function. The output of the previous cipher is
+* used as the key for the next message.
+*/
+template<class CipherT>
+class MerkleDamgard_OWF : public GadgetT
+{
+public:
+	std::vector<CipherT> m_ciphers;
+	const std::vector<VariableT> m_messages;
+
+	MerkleDamgard_OWF(
+		ProtoboardT& in_pb,
+		const VariableT& in_IV,
+		const std::vector<VariableT>& in_messages,
+		const std::string &in_annotation_prefix
+	) :
+		GadgetT(in_pb, in_annotation_prefix),
+		m_messages(in_messages)
+	{
+		int i = 0;
+		for( auto& m_i : in_messages )
+		{
+			if( i == 0 ) {
+				m_ciphers.emplace_back( in_pb, m_i, in_IV, FMT(in_annotation_prefix, ".cipher[%d]", i) );
+			}
+			else {
+				m_ciphers.emplace_back( in_pb, m_i, m_ciphers.back().result(), FMT(in_annotation_prefix, ".cipher[%d]", i) );
+			}
+			i += 1;
+		}
+	}
+
+	const VariableT& result() const {
+		return m_ciphers.back();
+	}
+
+	void generate_r1cs_constraints ()
+	{
+		for( auto& gadget : m_ciphers )
+		{
+			gadget.generate_r1cs_constraints();
+		}
+	}
+
+	void generate_r1cs_witness () const
+	{
+		for( auto& gadget : m_ciphers )
+		{
+			gadget.generate_r1cs_witness();
+		}
+	}
+};
+
+
 template<class CipherT>
 class MiyaguchiPreneel_OWF : public GadgetT
 {
@@ -46,10 +103,9 @@ public:
 
 	void generate_r1cs_constraints ()
 	{
-		size_t i;
-		for( i = 0; i < m_ciphers.size(); i++ )
+		for( size_t i = 0; i < m_ciphers.size(); i++ )
 		{
-			m_ciphers[i++].generate_r1cs_constraints();
+			m_ciphers[i].generate_r1cs_constraints();
 
 			if( i == 0 ) {
 				this->pb.add_r1cs_constraint(
@@ -70,7 +126,7 @@ public:
 		}
 	}
 
-	void generate_r1cs_witness ()
+	void generate_r1cs_witness () const
 	{
 		size_t i;
 		for( i = 0; i < m_ciphers.size(); i++ )

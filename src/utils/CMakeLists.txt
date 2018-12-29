@@ -7,5 +7,4 @@ foreach(util_path ${utils_sources})
 	target_link_libraries(${util_exe} ethsnarks_common)
 endforeach()
 
-
-target_link_libraries(mimc Boost::program_options OpenSSL::Crypto)
+target_link_libraries(mimc Boost::program_options SHA3IUF)
