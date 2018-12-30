@@ -209,15 +209,11 @@ public:
     static void constants_fill( std::vector<FieldT>& round_constants, const char* seed = "mimc", int round_count = 91 )
     {
         // XXX: replace '32' with digest size in bytes
-
         const size_t DIGEST_SIZE_BYTES = 32;
 
         round_constants.reserve(round_count);
 
-        libff::bigint<FieldT::num_limbs> item;
-        assert( sizeof(item.data) == DIGEST_SIZE_BYTES );
-
-        unsigned char* output_digest = (unsigned char*)item.data;
+        unsigned char output_digest[DIGEST_SIZE_BYTES];
 
         for( int i = 0; i < round_count; i++ )
         {
@@ -231,6 +227,31 @@ public:
             }
             auto result = sha3_Finalize(&ctx);
             memcpy(output_digest, result, DIGEST_SIZE_BYTES);
+
+            // Import bytes as big-endian
+            mpz_t result_as_num;
+            mpz_init(result_as_num);
+            mpz_import(result_as_num,       // rop
+                       DIGEST_SIZE_BYTES,   // count
+                       1,                   // order
+                       1,                   // size
+                       0,                   // endian
+                       0,                   // nails
+                       output_digest);      // op
+
+            // Convert to bigint
+            libff::bigint<FieldT::num_limbs> item(result_as_num);
+            assert( sizeof(item.data) == DIGEST_SIZE_BYTES );
+            mpz_clear(result_as_num);
+
+            /*
+            // Debug constants generation
+            for( auto x : output_digest ) {
+                printf("%02X", x);
+            }
+            printf(" ");
+            item.print();
+            */
             
             round_constants.emplace_back( item );
         }

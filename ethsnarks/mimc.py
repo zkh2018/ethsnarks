@@ -78,7 +78,7 @@ def main():
         return 0
     elif cmd == "constants":
         for x in mimc_constants(seed, SNARK_SCALAR_FIELD, rounds):
-            print(hex(x))
+            print(hex(x), x)
     elif cmd == "encrypt":
         pass
     elif cmd == "hash":
