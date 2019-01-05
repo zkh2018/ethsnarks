@@ -4,4 +4,4 @@
 	ignore = dirty
 [submodule "depends/SHA3IUF"]
 	path = depends/SHA3IUF
-	url = https://github.com/brainhub/SHA3IUF.git
+	url = https://github.com/harryr/SHA3IUF.git
