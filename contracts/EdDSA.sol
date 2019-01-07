@@ -1,14 +1,14 @@
 // Copyright (c) 2018 @HarryR
 // License: LGPL-3.0+
 
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.0;
 
 import "./JubJub.sol";
 
 
 contract EdDSA
 {
-    function HashToInt( bytes data )
+    function HashToInt( bytes memory data )
         public pure returns (uint256)
     {
         uint256 hashed = uint256(sha256(data));
@@ -19,7 +19,7 @@ contract EdDSA
         return hashed & mask;
     }
 
-    function Verify( uint256[2] pubkey, uint256 hashed_msg, uint256[2] R, uint256 s )
+    function Verify( uint256[2] memory pubkey, uint256 hashed_msg, uint256[2] memory R, uint256 s )
         public view returns (bool)
     {
         uint256[2] memory B = JubJub.Generator();

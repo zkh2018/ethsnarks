@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.0;
 
 import "./MiMC.sol";
 
@@ -58,7 +58,11 @@ library MerkleTree
     function HashImpl (uint256 left, uint256 right, uint256 IV)
         internal pure returns (uint256)
     {
-        return MiMC.MiMCpe7_mp([left, right], IV);
+        uint256[] memory x = new uint256[](2);
+        x[0] = left;
+        x[1] = right;
+
+        return MiMC.Hash(x, IV);
     }
 
 
@@ -87,7 +91,7 @@ library MerkleTree
     /**
     * Returns calculated merkle root
     */
-    function VerifyPath(uint256 leaf, uint256[29] in_path, bool[29] address_bits)
+    function VerifyPath(uint256 leaf, uint256[29] memory in_path, bool[29] memory address_bits)
         internal pure returns (uint256)
     {
         uint256[29] memory IVs;
@@ -108,7 +112,7 @@ library MerkleTree
     }
 
 
-    function VerifyPath(Data storage self, uint256 leaf, uint256[29] in_path, bool[29] address_bits)
+    function VerifyPath(Data storage self, uint256 leaf, uint256[29] memory in_path, bool[29] memory address_bits)
         internal view returns (bool)
     {
         return VerifyPath(leaf, in_path, address_bits) == GetRoot(self);
@@ -123,7 +127,7 @@ library MerkleTree
 
 
     function GetProof(Data storage self, uint index)
-        internal view returns (uint256[29], bool[29])
+        internal view returns (uint256[29] memory, bool[29] memory)
     {
         bool[29] memory address_bits;
 
@@ -155,14 +159,14 @@ library MerkleTree
                 sha256(
                     abi.encodePacked(
                         uint16(depth),
-                        uint240(offset)))) % LongsightL.GetScalarField();
+                        uint240(offset)))) % MiMC.GetScalarField();
         }
 
         return leaf;
     }
 
 
-    function UpdateTree(Data storage self, uint256[10] C, uint256[29] IVs)
+    function UpdateTree(Data storage self, uint256[29] memory IVs)
         internal returns(uint256 root)
     {
         uint CurrentIndex = self.cur;
@@ -187,7 +191,7 @@ library MerkleTree
                 leaf2 = self.leaves[depth][CurrentIndex];
             }
 
-            self.leaves[depth+1][NextIndex] = HashImpl(leaf1, leaf2, C, IVs[depth]);
+            self.leaves[depth+1][NextIndex] = HashImpl(leaf1, leaf2, IVs[depth]);
 
             CurrentIndex = NextIndex;
         }

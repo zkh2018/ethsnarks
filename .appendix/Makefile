@@ -8,4 +8,4 @@ primes1.txt: primes1.zip
 	unzip primes1.zip
 
 primes1.zip:
-	wget -O $@ http://primes.utm.edu/lists/small/millions/primes1.zip
+	curl -o $@ https://primes.utm.edu/lists/small/millions/primes1.zip

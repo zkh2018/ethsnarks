@@ -91,7 +91,7 @@ public:
 				m_ciphers.emplace_back( in_pb, m_i, in_IV, FMT(in_annotation_prefix, ".cipher[%d]", i) );
 			}
 			else {
-				m_ciphers.emplace_back( in_pb, m_i, m_outputs[m_outputs.size() - 1], FMT(in_annotation_prefix, ".cipher[%d]", i) );
+				m_ciphers.emplace_back( in_pb, m_i, m_outputs[i - 1], FMT(in_annotation_prefix, ".cipher[%d]", i) );
 			}
 			i += 1;
 		}
@@ -138,7 +138,7 @@ public:
 			}
 			else {
 				// H_{i-1} + m_i + k_i
-				this->pb.val( m_outputs[i] ) = pb.val(m_outputs[m_outputs.size() - 1]) + pb.val(m_ciphers[i].result()) + pb.val(m_messages[i]);
+				this->pb.val( m_outputs[i] ) = pb.val(m_outputs[i - 1]) + pb.val(m_ciphers[i].result()) + pb.val(m_messages[i]);
 			}
 		}
 	}

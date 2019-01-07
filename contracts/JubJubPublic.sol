@@ -2,14 +2,14 @@
 // Copyright (c) 2018 @yondonfu
 // License: LGPL-3.0+
 
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.0;
 
 import "./JubJub.sol";
 
 contract JubJubPublic
 {
-    function pointAddViaEtec(uint256[2] a, uint256[2] b)
-        public view returns (uint256[2])
+    function pointAddViaEtec(uint256[2] memory a, uint256[2] memory b)
+        public view returns (uint256[2] memory)
     {
         uint256[4] memory p;
         uint256[4] memory q;
@@ -24,13 +24,13 @@ contract JubJubPublic
         return [p[0], p[1]];
     }
 
-    function pointAdd(uint256[2] a, uint256[2] b)   
-        public view returns (uint256[2])
+    function pointAdd(uint256[2] memory a, uint256[2] memory b)
+        public view returns (uint256[2] memory)
     {
         return JubJub.pointAdd(a, b);
     }
 
-    function scalarMult(uint256[2] a, uint256 s)
+    function scalarMult(uint256[2] memory a, uint256 s)
         public view returns (uint256, uint256)
     {
         return JubJub.scalarMult(a[0], a[1], s);

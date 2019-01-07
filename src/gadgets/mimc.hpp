@@ -19,16 +19,9 @@ namespace ethsnarks {
 *            |    |
 *           (+)---|     X[0] = x + k
 *            |    |
-*          (n^7)  |     Y[0] = X[0]^7
+*    C[0] --(+)   |     Y[0] = X[0] + C[0]
 *            |    |
-******************************************
-* Second round
-*            |    |
-*           (+)---|     X[1] = Z[0] + k  
-*            |    |
-*    C[0] --(+)   |     Y[1] = X[1] + C[0]
-*            |    |
-*          (n^7)  |     W[1] = Y[1]^7
+*          (n^7)  |     Z[0] = Y[0]^7
 *            |    |
 ******************************************
 * i'th round
@@ -37,12 +30,12 @@ namespace ethsnarks {
 *            |    |
 *    C[i] --(+)   |     Y[i] = X[i] + C[i]
 *            |    |
-*          (n^7)  |     W[i] = Y[i]^7
+*          (n^7)  |     Z[i] = Y[i]^7
 *            |    |
 ******************************************
 * Last round
 *            |    |
-*           (+)---'     X[i] = X[i-1] + k
+*           (+)---'     result = Z.back() + k
 *            |
 *          result
 */
@@ -50,7 +43,7 @@ namespace ethsnarks {
 
 
 class MiMCe7_round : public GadgetT {
-protected:
+public:
     const VariableT x;
     const VariableT k;
     const FieldT& C;
@@ -78,7 +71,7 @@ public:
         d(make_variable(pb, FMT(annotation_prefix, ".d")))
     { }
 
-    const VariableT result() const
+    const VariableT& result() const
     {
         return d;
     }
@@ -121,7 +114,7 @@ public:
 
 class MiMCe7_gadget : public GadgetT
 {
-protected:
+public:
     std::vector<MiMCe7_round> m_rounds;
     const VariableT k;
 
@@ -134,7 +127,7 @@ protected:
 
         for( size_t i = 0; i < in_round_constants.size(); i++ )
         {
-            const auto round_x = (i == 0 ? in_x : m_rounds.back().result() );
+            const auto& round_x = (i == 0 ? in_x : m_rounds.back().result() );
 
             bool is_last = (i == (in_round_constants.size() - 1));
 
@@ -168,7 +161,7 @@ public:
         _setup_gadgets(in_x, in_k, static_constants());
     }
 
-    const VariableT result () const
+    const VariableT& result () const
     {
         return m_rounds.back().result();
     }
@@ -189,6 +182,12 @@ public:
         }
     }
 
+    /**
+    * Caches the default round constants using a static variable
+    *
+    * It is thread safe due to mutex lock, but must be initialised
+    * after libff's number system.
+    */
     static const std::vector<FieldT>& static_constants ()
     {
         static bool filled = false;
@@ -206,6 +205,9 @@ public:
         return round_constants;
     }
 
+    /**
+    * Generate a sequence of round constants from an initial seed value.
+    */
     static void constants_fill( std::vector<FieldT>& round_constants, const char* seed = "mimc", int round_count = 91 )
     {
         // XXX: replace '32' with digest size in bytes
@@ -215,18 +217,18 @@ public:
 
         unsigned char output_digest[DIGEST_SIZE_BYTES];
 
+        // Hash the initial seed
+        sha3_context ctx;
+        sha3_Init256(&ctx);
+        sha3_Update(&ctx, seed, strlen(seed));
+        memcpy(output_digest, sha3_Finalize(&ctx), DIGEST_SIZE_BYTES);
+
         for( int i = 0; i < round_count; i++ )
         {
-            sha3_context ctx;
+            // Derive a sequence of hashes to use as round constants
             sha3_Init256(&ctx);
-            if( i == 0 ) {
-                sha3_Update(&ctx, seed, strlen(seed));
-            }
-            else {
-                sha3_Update(&ctx, output_digest, DIGEST_SIZE_BYTES);
-            }
-            auto result = sha3_Finalize(&ctx);
-            memcpy(output_digest, result, DIGEST_SIZE_BYTES);
+            sha3_Update(&ctx, output_digest, DIGEST_SIZE_BYTES);
+            memcpy(output_digest, sha3_Finalize(&ctx), DIGEST_SIZE_BYTES);
 
             // Import bytes as big-endian
             mpz_t result_as_num;
@@ -239,19 +241,10 @@ public:
                        0,                   // nails
                        output_digest);      // op
 
-            // Convert to bigint
+            // Convert to bigint, within F_p
             libff::bigint<FieldT::num_limbs> item(result_as_num);
             assert( sizeof(item.data) == DIGEST_SIZE_BYTES );
             mpz_clear(result_as_num);
-
-            /*
-            // Debug constants generation
-            for( auto x : output_digest ) {
-                printf("%02X", x);
-            }
-            printf(" ");
-            item.print();
-            */
             
             round_constants.emplace_back( item );
         }
@@ -306,6 +299,42 @@ const FieldT mimc( const std::vector<FieldT>& round_constants, const FieldT& x, 
 const FieldT mimc( const FieldT& x, const FieldT& k )
 {
     return mimc(MiMCe7_gadget::static_constants(), x, k);
+}
+
+
+const FieldT mimc_hash( const std::vector<FieldT>& m, const FieldT& k )
+{
+    ProtoboardT pb;
+
+    std::vector<VariableT> var_m;
+    var_m.reserve(m.size());
+    for( const auto& m_i : m )
+    {
+        var_m.emplace_back(make_variable(pb, m_i, "k"));
+    }
+
+    auto var_k = make_variable(pb, k, "k");
+    pb.set_input_sizes(m.size() + 1);
+
+    MiMC_hash_gadget the_gadget(pb, var_k, var_m, "the_gadget");
+    the_gadget.generate_r1cs_witness();
+    the_gadget.generate_r1cs_constraints();
+
+    // Debug internal state of one-way-function
+    /*
+    int i = 0;
+    for( const auto& c : the_gadget.m_ciphers )
+    {
+        std::cout << "k "; pb.val(c.k).print();
+        std::cout << "x_i "; pb.val(c.m_rounds[0].x).print();
+        std::cout << "r "; pb.val(c.m_rounds.back().result()).print();
+        std::cout << "= "; pb.val(the_gadget.m_outputs[i]).print();
+        std::cout << std::endl;
+        i += 1;
+    }
+    */
+
+    return pb.val(the_gadget.result());
 }
 
 

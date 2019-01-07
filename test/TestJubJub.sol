@@ -2,7 +2,7 @@
 // Copyright (c) 2018 @yondonfu
 // License: LGPL-3.0+
 
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.0;
 
 import "truffle/Assert.sol";
 import "../contracts/JubJub.sol";

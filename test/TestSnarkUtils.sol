@@ -1,8 +1,12 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.0;
 
 import "truffle/Assert.sol";
 import "../contracts/SnarkUtils.sol";
 
+/**
+* Tests bitwise reversal of an arbitrary number of bits
+* And packing of a sequence of n-bits into a sequence of m bits where m < n
+*/
 contract TestSnarkUtils
 {
 	function testReverseBits()
@@ -26,7 +30,7 @@ contract TestSnarkUtils
 		}
 	}
 
-	function _testOutputs( uint256[] outputs, uint256[] expected_outputs )
+	function _testOutputs( uint256[] memory outputs, uint256[] memory expected_outputs )
 		internal
 	{
 		uint i;

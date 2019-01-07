@@ -2,7 +2,7 @@
 // Copyright (c) 2018 @yondonfu
 // License: LGPL-3.0+
 
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.0;
 
 library JubJub
 {
@@ -21,7 +21,7 @@ library JubJub
 
 
     function Generator()
-        internal pure returns (uint256[2])
+        internal pure returns (uint256[2] memory)
     {
         return 
 [17777552123799933955779906779655732241715742912184938656739573121738514868268,
@@ -145,12 +145,12 @@ library JubJub
      * z3 = (z1z2 - dt1t2) * (z1z2 + dt1t2)
      */
     function etecAdd(
-        uint256[4] _p1,
-        uint256[4] _p2
+        uint256[4] memory _p1,
+        uint256[4] memory _p2
     ) 
         internal
         pure
-        returns (uint256[4] p3)
+        returns (uint256[4] memory p3)
     {
         // inf + (x,y) = (x,y)
         if (_p1[0] == 0 && _p1[1] == 1 && _p1[2] == 0 && _p1[3] == 1) {
@@ -212,8 +212,8 @@ library JubJub
         }
     }
 
-    function pointAdd(uint256[2] self, uint256[2] other)
-        internal view returns (uint256[2])
+    function pointAdd(uint256[2] memory self, uint256[2] memory other)
+        internal view returns (uint256[2] memory)
     {
         if (self[0] == 0 && self[1] == 0) {
             return other;

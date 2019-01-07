@@ -25,6 +25,7 @@ int main( int argc, char **argv )
 	p.add("subargs", -1);
 
 	int rounds = 91;
+	bool verbose = false;
 	string seed = "mimc";
 	string key_opt("0");
 	string cmd = "help";
@@ -35,6 +36,7 @@ int main( int argc, char **argv )
 		("rounds,r", po::value<decltype(rounds)>(&rounds)->default_value(rounds), "number of rounds")
 		("seed,s", po::value<decltype(seed)>(&seed)->default_value(seed), "seed for round constants")
 		("key,k", po::value<decltype(key_opt)>(&key_opt), "initial key")
+		("verbose,v", po::bool_switch(&verbose), "display settings")
 		("command", po::value<decltype(cmd)>(&cmd), "Sub-command")
 		("subargs", po::value<decltype(subargs)>(&subargs), "Arguments for command")
 	;
@@ -52,6 +54,13 @@ int main( int argc, char **argv )
 
 	const auto round_constants = ethsnarks::MiMC_gadget::constants(seed.c_str(), rounds);
 
+	if( verbose ) {
+		cerr << "# exponent 7" << endl;
+		cerr << "# rounds " << rounds << endl;
+		cerr << "# seed " << seed << endl;
+		cerr << "# key "; key.print();
+	}
+
 	if( cmd == "constants" )
 	{
 		for( const auto& c_i : round_constants )
@@ -61,32 +70,23 @@ int main( int argc, char **argv )
 	}
 	else if( cmd == "encrypt" )
 	{
-		int i = 0;
-
 		for( const auto& w : subargs )
 		{
 			const FieldT x(w.c_str());
-			cout << "key ";
-			key.print();
-
-			const auto result = ethsnarks::mimc(round_constants, x, key);
-			cout << i << " ";
-			result.print();
-
+			ethsnarks::mimc(round_constants, x, key).print();
 			key = ethsnarks::mimc(round_constants, key, key);
-
-			i += 1;
 		}
 	}
 	else if( cmd == "hash" )
 	{
-		FieldT result = key;
-		for( const auto& w : subargs )
+		std::vector<FieldT> msgs;
+		msgs.reserve(subargs.size());
+		for( const auto& x : subargs )
 		{
-			const FieldT x(w.c_str());
-			result = ethsnarks::mimc(round_constants, x, result);
+			msgs.emplace_back(x.c_str());
 		}
-		result.print();
+
+		ethsnarks::mimc_hash(msgs, key).print();
 	}
 	else
 	{

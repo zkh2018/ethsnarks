@@ -123,7 +123,7 @@ class FQ(object):
         self._count('sub')
         return FQ((self.n - on) % self.m, self.m)
 
-    def bytes(self, endian='big'):
+    def to_bytes(self, endian='big'):
         nbits = ceil(log2(self.m))
         nbits += 8 - (nbits % 8)
         nbytes = nbits // 8
