@@ -6,6 +6,8 @@ project(ethsnarks)
 include(CTest)
 enable_testing()
 
+set(SHA3_USE_KECCAK ON)
+add_definitions(-DSHA3_USE_KECCAK=1)
 
 set(
   CURVE
