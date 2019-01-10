@@ -1,4 +1,4 @@
-#include "stubs.hpp"
+ #include "stubs.hpp"
 #include "gadgets/merkle_tree.hpp"
 #include "gadgets/mimc.hpp"
 
@@ -71,7 +71,7 @@ bool test_merkle_path_authenticator() {
 
 	VariableT expected_root;
 	expected_root.allocate(pb, "expected_root");
-	pb.val(expected_root) = FieldT("13981856331482487152452149678096232821987624395720231314895268163963385035507");
+	pb.val(expected_root) = FieldT("3075442268020138823380831368198734873612490112867968717790651410945045657947");
 
 	size_t tree_depth = 1;
 	merkle_path_authenticator<MiMC_hash_gadget> auth(
@@ -85,6 +85,8 @@ bool test_merkle_path_authenticator() {
 
 	if( ! auth.is_valid() ) {
 		std::cerr << "Not valid!" << std::endl;
+		std::cerr << "Expected "; pb.val(expected_root).print();
+		std::cerr << "Actual "; pb.val(auth.result()).print();
 		return false;
 	}
 

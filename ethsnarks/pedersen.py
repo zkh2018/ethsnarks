@@ -41,7 +41,7 @@ import bitstring
 from math import floor, log2
 from struct import pack
 
-from .jubjub import Point, JUBJUB_L
+from .jubjub import Point, JUBJUB_L, JUBJUB_C
 
 
 MAX_SEGMENT_BITS = floor(log2(JUBJUB_L))
@@ -68,41 +68,9 @@ def pedersen_hash_basepoint(name, i):
 	return Point.from_hash(data)
 
 
-def pedersen_hash_points(name, *points):
-	# XXX: should the coordinate be truncated?
-	result = Point.infinity()
-	for i, p in enumerate(points):
-		p = p.as_point()
-		for j, c in enumerate([p.x, p.y]):
-			base = pedersen_hash_basepoint(name, i*2 + j)
-			result += base * c
-	return result
-
-
-def pedersen_hash_bytes(name, *args):
-	"""
-	Split the message data into segments, then hash each segment
-
-	Data is split into bytes for convenience, rather
-	than bits. e.g. if snark scalar field is 253 bits
-	then only 248 will be used (31 bytes), the reason is:
-
-		1) Conversion is easier
-		2) All values are below L (location of the curve twist)
-	"""
-	data = b''.join(args)
-	segments_list = [data[i:i+MAX_SEGMENT_BYTES]
-					 for i in range(0, len(data), MAX_SEGMENT_BYTES)]
-	result = Point.infinity()
-	for i, segment in enumerate(segments_list):
-		base = pedersen_hash_basepoint(name, i)
-		scalar = int.from_bytes(segment, 'big')
-		result += base * scalar
-	return result
-
-
-def pedersen_hash_zcash_windows(name, windows):
-	# TODO: define `62`
+def pedersen_hash_windows(name, windows):
+	# TODO: define `62`,
+	# 248/62 == 4... ? CHUNKS_PER_BASE_POINT
 	result = Point.infinity()
 	for j, window in enumerate(windows):
 		if j % 62 == 0:
@@ -117,7 +85,7 @@ def pedersen_hash_zcash_windows(name, windows):
 	return result
 
 
-def pedersen_hash_zcash_bits(name, bits):
+def pedersen_hash_bits(name, bits):
 	# Split into 3 bit windows
 	if isinstance(bits, bitstring.BitArray):
 		bits = bits.bin
@@ -125,10 +93,10 @@ def pedersen_hash_zcash_bits(name, bits):
 	assert len(windows) > 0
 
 	# Hash resulting windows
-	return pedersen_hash_zcash_windows(name, windows)
+	return pedersen_hash_windows(name, windows)
 
 
-def pedersen_hash_zcash_bytes(name, data):
+def pedersen_hash_bytes(name, data):
 	"""
 	Hashes a sequence of bits (the message) into a point.
 
@@ -141,10 +109,10 @@ def pedersen_hash_zcash_bytes(name, data):
 	# Decode bytes to octets of binary bits
 	bits = ''.join([bin(_)[2:].rjust(8, '0') for _ in data])
 
-	return pedersen_hash_zcash_bits(name, bits)
+	return pedersen_hash_bits(name, bits)
 
 
-def pedersen_hash_zcash_scalars(name, *scalars):
+def pedersen_hash_scalars(name, *scalars):
 	"""
 	Calculates a pedersen hash of scalars in the same way that zCash
 	is doing it according to: ... of their spec.
@@ -171,4 +139,4 @@ def pedersen_hash_zcash_scalars(name, *scalars):
 	windows = []
 	for i, s in enumerate(scalars):
 		windows += list((s >> i) & 0b111 for i in range(0,s.bit_length(),3))
-	return pedersen_hash_zcash_windows(name, windows)
+	return pedersen_hash_windows(name, windows)

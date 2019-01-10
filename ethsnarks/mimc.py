@@ -18,7 +18,9 @@ DEFAULT_SEED = b'mimc'
 
 def to_bytes(*args):
     for i, _ in enumerate(args):
-        if not isinstance(_, int) and hasattr(_, 'to_bytes'):
+        if isinstance(_, str):
+            yield _.encode('ascii')
+        elif not isinstance(_, int) and hasattr(_, 'to_bytes'):
             # for 'F_p' or 'FQ' class etc.
             yield _.to_bytes('big')
         elif isinstance(_, bytes):
@@ -38,9 +40,14 @@ assert H(123) == 386321405952203923542809986145255781453538180292878740883563048
 
 """
 Generate a sequence of round constants
+
+These can hard-coded into circuits or generated on-demand
 """
 def mimc_constants(seed, p=SNARK_SCALAR_FIELD, R=DEFAULT_ROUNDS):
+    if isinstance(seed, str):
+        seed = seed.encode('ascii')
     if isinstance(seed, bytes):
+        # pre-hash byte strings before use
         seed = H(seed)
     else:
         seed = int(seed)
@@ -51,6 +58,8 @@ def mimc_constants(seed, p=SNARK_SCALAR_FIELD, R=DEFAULT_ROUNDS):
 
 
 """
+The MiMC cipher: https://eprint.iacr.org/2016/492
+
  First round
 
             x    k
@@ -63,7 +72,7 @@ def mimc_constants(seed, p=SNARK_SCALAR_FIELD, R=DEFAULT_ROUNDS):
           (n^7)  |     Z[0] = Y[0]^7
             |    |
 *****************************************
- i'th round
+ per-round  |    |
             |    |
            (+)---|     X[i] = Z[i-1] + k
             |    |
@@ -113,13 +122,8 @@ H_{i-1}--,-->[E]   |
 """
 def mimc_hash(x, k=0, seed=DEFAULT_SEED, p=SNARK_SCALAR_FIELD, e=DEFAULT_EXPONENT, R=DEFAULT_ROUNDS):
     for x_i in x:
-        #print("k", k)
-        #print("x_i", x_i)
         r = mimc(x_i, k, seed, p, e, R)
         k = (k + x_i + r) % p
-        #print("r", r)
-        #print("=", k)
-        #print()
     return k
 
 

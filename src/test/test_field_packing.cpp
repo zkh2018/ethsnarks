@@ -49,7 +49,7 @@ void test_packing_bytes_to_field( int n_words, const char *refstr )
 	::printf("%d words, refstr: '%s'\n", n_words, refstr);
 	for( auto& f : buffer_fields )
 	{
-		std::cout << "\t" << f << "\n";
+		std::cout << "\t"; f.print();
 	}
 	::printf("\n\n");
 

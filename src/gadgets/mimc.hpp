@@ -41,6 +41,9 @@ namespace ethsnarks {
 */
 
 
+#define MIMC_ROUNDS 91
+#define MIMC_SEED "mimc"
+
 
 class MiMCe7_round : public GadgetT {
 public:
@@ -208,7 +211,7 @@ public:
     /**
     * Generate a sequence of round constants from an initial seed value.
     */
-    static void constants_fill( std::vector<FieldT>& round_constants, const char* seed = "mimc", int round_count = 91 )
+    static void constants_fill( std::vector<FieldT>& round_constants, const char* seed = MIMC_SEED, int round_count = MIMC_ROUNDS )
     {
         // XXX: replace '32' with digest size in bytes
         const size_t DIGEST_SIZE_BYTES = 32;
@@ -250,7 +253,7 @@ public:
         }
     }
 
-    static const std::vector<FieldT> constants( const char* seed = "mimc", int round_count = 91 )
+    static const std::vector<FieldT> constants( const char* seed = MIMC_SEED, int round_count = MIMC_ROUNDS )
     {
         std::vector<FieldT> round_constants;
 
@@ -261,23 +264,26 @@ public:
 };
 
 
-class MiMCe7_hash_MiyaguchiPreneel_gadget : public MiyaguchiPreneel_OWF<MiMCe7_gadget>
+using MiMC_gadget = MiMCe7_gadget;
+
+
+class MiMC_hash_MiyaguchiPreneel_gadget : public MiyaguchiPreneel_OWF<MiMC_gadget>
 {
 public:
-    using MiyaguchiPreneel_OWF<MiMCe7_gadget>::MiyaguchiPreneel_OWF;
+    using MiyaguchiPreneel_OWF<MiMC_gadget>::MiyaguchiPreneel_OWF;
 };
 
 
-class MiMCe7_hash_MerkleDamgard_gadget : public MerkleDamgard_OWF<MiMCe7_gadget>
+class MiMC_hash_MerkleDamgard_gadget : public MerkleDamgard_OWF<MiMC_gadget>
 {
 public:
-    using MerkleDamgard_OWF<MiMCe7_gadget>::MerkleDamgard_OWF;
+    using MerkleDamgard_OWF<MiMC_gadget>::MerkleDamgard_OWF;
 };
 
 
 // generic aliases for 'MiMC', masks specific implementation
-using MiMC_hash_gadget = MiMCe7_hash_MiyaguchiPreneel_gadget;
-using MiMC_gadget = MiMCe7_gadget;
+using MiMC_hash_gadget = MiMC_hash_MiyaguchiPreneel_gadget;
+
 
 
 const FieldT mimc( const std::vector<FieldT>& round_constants, const FieldT& x, const FieldT& k )
@@ -288,7 +294,7 @@ const FieldT mimc( const std::vector<FieldT>& round_constants, const FieldT& x, 
     VariableT var_k = make_variable(pb, k, "k");
     pb.set_input_sizes(2);
 
-    MiMCe7_gadget the_gadget(pb, var_x, var_k, round_constants, "the_gadget");
+    MiMC_gadget the_gadget(pb, var_x, var_k, round_constants, "the_gadget");
     the_gadget.generate_r1cs_witness();
     the_gadget.generate_r1cs_constraints();
 
@@ -298,7 +304,7 @@ const FieldT mimc( const std::vector<FieldT>& round_constants, const FieldT& x, 
 
 const FieldT mimc( const FieldT& x, const FieldT& k )
 {
-    return mimc(MiMCe7_gadget::static_constants(), x, k);
+    return mimc(MiMC_gadget::static_constants(), x, k);
 }
 
 

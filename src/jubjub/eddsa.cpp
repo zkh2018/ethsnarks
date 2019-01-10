@@ -57,7 +57,7 @@ const VariableArrayT& EdDSA_HashRAM_gadget::result()
 
 
 
-PureEdDSA_Verify::PureEdDSA_Verify(
+PureEdDSA::PureEdDSA(
     ProtoboardT& in_pb,
     const Params& in_params,
     const EdwardsPoint& in_base,    // B
@@ -86,7 +86,7 @@ PureEdDSA_Verify::PureEdDSA_Verify(
 { }
 
 
-void PureEdDSA_Verify::generate_r1cs_constraints()
+void PureEdDSA::generate_r1cs_constraints()
 {
     m_validator_R.generate_r1cs_constraints();
     m_lhs.generate_r1cs_constraints();
@@ -105,7 +105,7 @@ void PureEdDSA_Verify::generate_r1cs_constraints()
 }
 
 
-void PureEdDSA_Verify::generate_r1cs_witness()
+void PureEdDSA::generate_r1cs_witness()
 {
     m_validator_R.generate_r1cs_witness();
     m_lhs.generate_r1cs_witness();
@@ -118,7 +118,7 @@ void PureEdDSA_Verify::generate_r1cs_witness()
 // --------------------------------------------------------------------
 
 
-EdDSA_Verify::EdDSA_Verify(
+EdDSA::EdDSA(
     ProtoboardT& in_pb,
     const Params& in_params,
     const EdwardsPoint& in_base,    // B
@@ -135,14 +135,14 @@ EdDSA_Verify::EdDSA_Verify(
 { }
 
 
-void EdDSA_Verify::generate_r1cs_constraints()
+void EdDSA::generate_r1cs_constraints()
 {
     m_msg_hashed.generate_r1cs_constraints();
     m_verifier.generate_r1cs_constraints();
 }
 
 
-void EdDSA_Verify::generate_r1cs_witness()
+void EdDSA::generate_r1cs_witness()
 {
     m_msg_hashed.generate_r1cs_witness();
     m_verifier.generate_r1cs_witness();

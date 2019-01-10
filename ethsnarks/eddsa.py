@@ -2,9 +2,12 @@ import math
 import bitstring
 from collections import namedtuple
 from hashlib import sha512
+
 from .field import FQ, SNARK_SCALAR_FIELD
 from .jubjub import Point, JUBJUB_L, JUBJUB_Q, JUBJUB_E
-from .pedersen import pedersen_hash_zcash_bytes, pedersen_hash_zcash_bits
+from .pedersen import pedersen_hash_bytes, pedersen_hash_bits
+from .mimc import mimc_hash
+
 
 """
 Implements Pure-EdDSA and Hash-EdDSA
@@ -55,7 +58,8 @@ class Signature(object):
 
 
 class SignedMessage(namedtuple('_SignedMessage', ('A', 'sig', 'msg'))):
-    pass
+    def __str__(self):
+        return ' '.join(str(_) for _ in [self.A, self.sig, self.msg])
 
 
 class _SignatureScheme(object):
@@ -64,12 +68,15 @@ class _SignatureScheme(object):
         # TODO: move to ethsnarks.utils ?
         result = b''
         for M in args:
-            if isinstance(M, list):
+            if isinstance(M, (list, tuple)):
                 result += b''.join(cls.to_bytes(_) for _ in M)
-            if isinstance(M, Point):
-                result += M.x.n.to_bytes(32, 'little')
+            elif isinstance(M, Point):
+                result += M.x.to_bytes('little')
+                result += M.y.to_bytes('little')
             elif isinstance(M, FQ):
-                result += M.n.to_bytes(32, 'little')
+                result += M.to_bytes('little')
+            elif isinstance(M, int):
+                result += M.to_bytes(32, 'little')
             elif isinstance(M, bitstring.BitArray):
                 result += M.tobytes()
             elif isinstance(M, bytes):
@@ -188,45 +195,34 @@ class _SignatureScheme(object):
 class PureEdDSA(_SignatureScheme):
     @classmethod
     def hash_public(cls, *args, p13n=P13N_EDDSA_VERIFY_RAM):
-        """
-        Hash used for the public parameters.
-
-            hash_RAM = H(R,A,M)
-
-        @returns X coordinate of point
-        """
-        return pedersen_hash_zcash_bits(p13n, cls.to_bits(*args)).x.n
+        return pedersen_hash_bits(p13n, cls.to_bits(*args)).x.n
 
 
 class EdDSA(PureEdDSA):
     @classmethod
     def prehash_message(cls, M, p13n=P13N_EDDSA_VERIFY_M):
-        return pedersen_hash_zcash_bytes(p13n, M)
+        return pedersen_hash_bytes(p13n, M)
 
 
-def eddsa_tobits(*args):
-    return PureEdDSA.to_bits(*args)
+# Convert arguments to integers / scalar values
+# TODO: move to ethsnarks.utils ?
+def as_scalar(*args):
+    for x in args:
+        if isinstance(x, FQ):
+            yield int(x)
+        elif isinstance(x, int):
+            yield x
+        elif isinstance(x, Point):
+            yield int(x.x)
+            yield int(x.y)
+        elif isinstance(x, (tuple, list)):
+            for _ in as_scalar(*x):
+                yield _
+        else:
+            raise TypeError("Unknown type " + str(type(x)))
 
 
-def eddsa_tobytes(*args):
-    return PureEdDSA.to_bytes(*args)
-
-
-def eddsa_random_keypair():
-    return EdDSA.random_keypair()
-
-
-def pureeddsa_verify(*args, **kwa):
-    return PureEdDSA.verify(*args, **kwa)
-
-
-def pureeddsa_sign(*args, **kwa):
-    return PureEdDSA.sign(*args, **kwa)
-
-
-def eddsa_verify(*args, **kwa):
-    return EdDSA.verify(*args, **kwa)
-
-
-def eddsa_sign(*args, **kwa):
-    return EdDSA.sign(*args, **kwa)
+class MiMCEdDSA(_SignatureScheme):
+    @classmethod
+    def hash_public(cls, *args, p13n=P13N_EDDSA_VERIFY_RAM):
+        return mimc_hash(list(as_scalar(*args)), seed=p13n)

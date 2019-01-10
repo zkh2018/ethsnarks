@@ -3,105 +3,76 @@
 
 using ethsnarks::jubjub::EdwardsPoint;
 using ethsnarks::jubjub::VariablePointT;
-using ethsnarks::jubjub::EdDSA_Verify;
-using ethsnarks::jubjub::PureEdDSA_Verify;
+using ethsnarks::jubjub::EdDSA;
+using ethsnarks::jubjub::PureEdDSA;
+using ethsnarks::jubjub::eddsa_open;
+
 using ethsnarks::bytes_to_bv;
 using ethsnarks::FieldT;
 
 
-namespace ethsnarks {
-
-
-template<class T>
-bool test_jubjub_eddsa(
-    const EdwardsPoint& B,
-    const EdwardsPoint& A,
-    const EdwardsPoint& R,
-    const FieldT& s,
-    const libff::bit_vector& msg
-) {
-    ProtoboardT pb;
-    jubjub::Params params;
-
-    auto msg_var_bits = make_var_array(pb, msg.size(), "msg_var_bits");
-    msg_var_bits.fill_with_bits(pb, msg);
-
-    const auto A_var = A.as_VariablePointT(pb, "A");
-    const auto R_var = R.as_VariablePointT(pb, "R");
-
-    auto s_var_bits = make_var_array(pb, FieldT::size_in_bits(), "s_var_bits");
-    s_var_bits.fill_with_bits_of_field_element(pb, s);
-
-    T the_gadget(pb, params, B, A_var, R_var, s_var_bits, msg_var_bits, "the_gadget");
-
-    the_gadget.generate_r1cs_witness();
-    the_gadget.generate_r1cs_constraints();
-
-    std::cout << "Num constraints: " << pb.num_constraints() << std::endl;
-
-    return pb.is_satisfied();
-}
-
-
-// namespace ethsnarks
-}
-
 
 /*
-To generate signatures for testing:
+To generate random signatures for testing:
 
-    from os import urandom
-    from ethsnarks.eddsa import *
-    B = Point.from_hash(b'eddsa_base')
-    k = FQ.random(JUBJUB_L)
-    m = urandom(31)
-    R, S, A = pureeddsa_sign(m, k, B)
+>>> from ethsnarks.eddsa import * 
+... k, A = EdDSA.random_keypair() 
+... A, sig, m = EdDSA.sign(b'abcd', k)  
+*/
+
+/*
+Test-vectors for default parameters with known key
+
+from ethsnarks.eddsa import *
+k = FQ(92734322978479831564281963181193415354487363923837807727447121691861920913223)
+pmsg = pureeddsa_sign(b'abcd', k)
+print(pmsg.A, pmsg.sig.R, pmsg.sig.s)
+emsg = eddsa_sign(b'abc', k)
+print(emsg.A, emsg.sig.R, emsg.sig.s)
 */
 
 int main( int argc, char **argv )
 {
     ethsnarks::ppT::init_public_params();
 
+    ethsnarks::jubjub::Params params;
 
-    // Verify HashEdDSA - where message is hashed prior to signing
-    const char *msg = "abc";
-    const auto msg_bits = bytes_to_bv((const uint8_t*)msg, strlen(msg));
-    if( ! ethsnarks::test_jubjub_eddsa<EdDSA_Verify>(
-        {
-            FieldT("21609035313031231356478892405209584931807557563713540183143349090940105307553"),
-            FieldT("845281570263603011277359323511710394920357596931617398831207691379369851278")
-        }, {
-            FieldT("5616630816018221659484394091994939318481030030481519242876140465113436048304"),
-            FieldT("8476221375891900895034976644661703008703725320613595264559419965669922411183")
-        }, {
-            FieldT("17883110238616315155327756854433987355427639458557188556819876765548551765197"),
-            FieldT("11833558192785987866925773659755699683735551950878443451361314529874236222818")
+    const char *msg_abcd = "abcd";
+    const auto msg_abcd_bits = bytes_to_bv((const uint8_t*)msg_abcd, strlen(msg_abcd));
+
+    const char *msg_abc = "abc";
+    const auto msg_abc_bits = bytes_to_bv((const uint8_t*)msg_abc, strlen(msg_abc));
+
+    const EdwardsPoint A(FieldT("333671881179914989291633188949569309119725676183802886621140166987382124337"),
+                         FieldT("4050436616325076046600891135828313078248584449767955905006778857958871314574"));
+
+    // Verify HashEdDSA - where message is hashed prior to signing    
+    if( ! eddsa_open<EdDSA>(
+        params, A, {
+            {
+                FieldT("21473010389772475573783051334263374448039981396476357164143587141689900886674"),
+                FieldT("11330590229113935667895133446882512506792533479705847316689101265088791098646")
+            },
+            FieldT("21807294168737929637405719327036335125520717961882955117047593281820367379946")
         },
-        FieldT("9920504625278683304895036460477595239370241328717115039061027107077120437288"),
-        msg_bits
+        msg_abc_bits
     )) {
-        std::cerr << "FAIL\n";
+        std::cerr << "FAIL HashEdDSA\n";
         return 1;
     }
 
     // Verify PureEdDSA where no message compression is used for H(R,A,M)
-    const char *msg2 = "abcd";
-    const auto msg2_bits = bytes_to_bv((const uint8_t*)msg2, strlen(msg2));
-    if( ! ethsnarks::test_jubjub_eddsa<PureEdDSA_Verify>(
-        {
-            FieldT("16117159321177103813813294286550615556837550473658220567209763364611339839115"),
-            FieldT("11465736382824868633493204496205282307637286781164666440541087834417561817657")
-        }, {
-            FieldT("7232078318593313024960606529959628262327760580530543297615441605656275483008"),
-            FieldT("13445187542498117393920468884784587115570437154948817232436446927611108297778")
-        }, {
-            FieldT("16748186150368319377210820880944935248945916993910817768852007732596413990860"),
-            FieldT("4850962850934517657076914998696277193398065576910427229359881798401199408131")
+    if( ! eddsa_open<PureEdDSA>(
+        params, A, {
+            {
+                FieldT("17815983127755465894346158776246779862712623073638768513395595796132990361464"),
+                FieldT("947174453624106321442736396890323086851143728754269151257776508699019857364")
+            },
+            FieldT("13341814865473145800030207090487687417599620847405735706082771659861699337012")
         },
-        FieldT("9530517511211249528464523051059372760063486304291273287859289432498093931519"),
-        msg2_bits
+        msg_abcd_bits
     )) {
-        std::cerr << "FAIL\n";
+        std::cerr << "FAIL PureEdDSA\n";
         return 1;
     }
 

@@ -70,6 +70,8 @@ const VariableT& merkle_path_selector::right() const {
 
 const VariableArrayT merkle_tree_IVs (ProtoboardT &in_pb)
 {
+    // TODO: replace with auto-generated constants
+    // or remove the merkle tree IVs entirely...
     auto x = make_var_array(in_pb, 29, "IVs");
     std::vector<FieldT> level_IVs = {
         FieldT("149674538925118052205057075966660054952481571156186698930522557832224430770"),

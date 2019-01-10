@@ -4,11 +4,11 @@ import "./MiMC.sol";
 
 library MerkleTree
 {
-    // ceil(log2(2<<28))
+    // ceil(log2(1<<29))
     uint constant public TREE_DEPTH = 29;
 
 
-    // 2<<28 leaves
+    // 1<<29 leaves
     uint constant public MAX_LEAF_COUNT = 536870912;
 
 
