@@ -103,6 +103,9 @@ independently proposed by Shoji Miyaguchi and Bart Preneel.
 
 H_i = E_{H_{i-1}}(m_i) + {H_{i-1}} + m_i
 
+The previous output is used as the key for
+the next iteration.
+
 or..
 
              m_i

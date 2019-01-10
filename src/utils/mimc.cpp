@@ -70,6 +70,12 @@ int main( int argc, char **argv )
 	}
 	else if( cmd == "encrypt" )
 	{
+		if( subargs.size() == 0 )
+		{
+			cerr << "Requires arguments" << endl;
+			return 2;
+		}
+
 		for( const auto& w : subargs )
 		{
 			const FieldT x(w.c_str());
@@ -79,6 +85,12 @@ int main( int argc, char **argv )
 	}
 	else if( cmd == "hash" )
 	{
+		if( subargs.size() == 0 )
+		{
+			cerr << "Requires arguments" << endl;
+			return 3;
+		}
+
 		std::vector<FieldT> msgs;
 		msgs.reserve(subargs.size());
 		for( const auto& x : subargs )

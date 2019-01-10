@@ -29,6 +29,12 @@ bool test_mimc_hash()
     {
         std::cerr << "Unexpected result!\n";
 
+        std::cerr << "Expected: ";
+        result_expected.print();
+
+        std::cerr << "Cipher Output: ";
+        pb.val(the_gadget.m_ciphers.back().result()).print();
+
         std::cerr << "Result: ";
         pb.val(the_gadget.result()).print();
 

@@ -39,8 +39,8 @@ bool eddsa_open(
 template<class T>
 class Signature {
 public:
-    const EdwardsPoint R;
-    const FieldT s;
+    EdwardsPoint R;
+    FieldT s;
 
     bool open( const EdwardsPoint& A, const libff::bit_vector& msg ) const
     {
@@ -62,10 +62,10 @@ bool eddsa_open(
 ) {
     ProtoboardT pb;
 
-    auto msg_var_bits = make_var_array(pb, msg.size(), "msg_var_bits");
+    const auto msg_var_bits = make_var_array(pb, msg.size(), "msg_var_bits");
     msg_var_bits.fill_with_bits(pb, msg);
 
-    auto s_var_bits = make_var_array(pb, FieldT::size_in_bits(), "s_var_bits");
+    const auto s_var_bits = make_var_array(pb, FieldT::size_in_bits(), "s_var_bits");
     s_var_bits.fill_with_bits_of_field_element(pb, sig.s);
 
     T the_gadget(pb, params,
@@ -103,7 +103,7 @@ bool eddsa_open(
     const Signature<T>& sig,
     const libff::bit_vector& msg
 ) {
-    Params params;
+    const Params params;
     return eddsa_open<T>(params, A, sig, msg);
 }
 
