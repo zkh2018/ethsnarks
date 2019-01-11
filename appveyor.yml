@@ -13,28 +13,18 @@ environment:
   #BOOST_ROOT: C:\Libraries\boost_1_67_0
   #BOOST_LIBRARYDIR: C:\Libraries\boost_1_67_0\lib64-msvc-14.0
 
-# libfqfft 
 install:
   - C:\cygwin\bin\git submodule update --init --recursive
   - set PATH=%BOOST_LIBRARYDIR%;%PATH%
   - if defined MINGW_ROOT set PATH=%MINGW_ROOT%\bin;C:\msys64\usr\bin\;%PATH%
   - if defined MINGW_ARCH bash -lc "pacman --needed --noconfirm -S mingw-w64-%MINGW_ARCH%-boost mingw-w64-%MINGW_ARCH%-gmp"
-#  - if defined MSVC_ARCH call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %MSVC_ARCH%
+  - if defined MSVC_ARCH call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %MSVC_ARCH%
 
 build_script:
   - cmake -E make_directory build
   - cmake -E chdir build cmake -G "%CMAKE_GENERATOR%" -DOPENSSL_ROOT_DIR=C:\OpenSSL-Win64 --DOPENSSL_LIBRARIES=C:\OpenSSL-Win64\lib -DOPENSSL_INCLUDE_DIR=C:\OpenSSL-Win64\include ..
   - cmake --build build --config Release
 
-
 test_script:
   - set CTEST_OUTPUT_ON_FAILURE=ON
   - cmake --build build --target test
-
-#
-#  - md build
-#  - cd build
-#  - cmake -G "Visual Studio 14 2015 Win64" -DOPENSSL_ROOT_DIR=C:\OpenSSL-Win64 --DOPENSSL_LIBRARIES=C:\OpenSSL-Win64\lib -DOPENSSL_INCLUDE_DIR=C:\OpenSSL-Win64\include ..
-#  - cmake --build . --config Release
-
-#  - ctest

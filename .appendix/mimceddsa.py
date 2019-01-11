@@ -1,4 +1,4 @@
-from ethsnarks.eddsa import *
+from ethsnarks.eddsa import MiMCEdDSA
 
 k, A = MiMCEdDSA.random_keypair()
 A, sig, m = MiMCEdDSA.sign([1,2,3], k)

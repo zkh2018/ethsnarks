@@ -58,14 +58,14 @@ The following gadgets are available
  * 1-of-N
  * [2-bit lookup table](src/gadgets/lookup_2bit.cpp)
  * [3-bit lookup table](src/gadgets/lookup_3bit.cpp)
- * [MiMC](https://eprint.iacr.org/2016/492) / LongsightL cipher
+ * [MiMC](https://eprint.iacr.org/2016/492) hash and cipher
  * [Miyaguchi-Preneel one-way function](https://en.wikipedia.org/wiki/One-way_compression_function)
- * 'Field-native' Merkle tree
+ * Merkle tree
  * SHA256 (Ethereum compatible, full round)
  * [Shamir's Secret Sharing Scheme](https://en.wikipedia.org/wiki/Shamir%27s_Secret_Sharing)
  * 'Baby JubJub' twisted Edwards curve
    * EdDSA
-   * Pedersen commitments
+   * Pedersen hash
 
 ## Maintainers
 

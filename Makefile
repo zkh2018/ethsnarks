@@ -68,6 +68,12 @@ build/Makefile: build CMakeLists.txt
 depends/libsnarks/CMakeLists.txt:
 	git submodule update --init --recursive
 
+build/PVS-Studio.log: build/Makefile
+	cd build && pvs-studio-analyzer analyze
+
+pvs-tasks: build/PVS-Studio.log
+	plog-converter -t tasklist $<
+
 
 #######################################################################
 
