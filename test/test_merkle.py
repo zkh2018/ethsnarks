@@ -1,7 +1,7 @@
 import unittest
 
 import hashlib
-from ethsnarks.merkletree import MerkleTree, MerkleHasherLongsight
+from ethsnarks.merkletree import MerkleTree, DEFAULT_HASHER
 from ethsnarks.field import FQ, SNARK_SCALAR_FIELD
 
 
@@ -37,7 +37,7 @@ class TestMerkleTree(unittest.TestCase):
         item_b = 134551314051432487569247388144051420116740427803855572138106146683954151557
         tree.append(item_b)
 
-        self.assertEqual(tree.root, 13981856331482487152452149678096232821987624395720231314895268163963385035507)
+        self.assertEqual(tree.root, 3075442268020138823380831368198734873612490112867968717790651410945045657947)
 
         proof_a = tree.proof(0)
         self.assertEqual(proof_a.path, [item_b])
@@ -46,9 +46,7 @@ class TestMerkleTree(unittest.TestCase):
         self.assertEqual(proof_b.path, [item_a])
 
     def test_update(self):
-        """
-        Verify that items in the tree can be updated
-        """
+        # Verify that items in the tree can be updated
         tree = MerkleTree(2)
         tree.append(FQ.random())
         tree.append(FQ.random())
@@ -82,7 +80,7 @@ class TestMerkleTree(unittest.TestCase):
         item_b = 134551314051432487569247388144051420116740427803855572138106146683954151557
         tree.append(item_b)
 
-        self.assertEqual(tree.root, 12880293998234311228895747943713504338160238149993004139365982527556885579681)
+        self.assertEqual(tree.root, 14972246236048249827985830600768475898195156734731557762844426864943654467818)
 
         proof_a = tree.proof(0)
         self.assertTrue(proof_a.verify(tree.root))
@@ -91,8 +89,8 @@ class TestMerkleTree(unittest.TestCase):
         self.assertTrue(proof_b.verify(tree.root))
 
         self.assertEqual(tree.leaf(0, 0), 3703141493535563179657531719960160174296085208671919316200479060314459804651)
-        self.assertEqual(tree.leaf(1, 0), 13981856331482487152452149678096232821987624395720231314895268163963385035507)
-        self.assertEqual(tree.leaf(2, 0), 4008582766686307301250960594183893449903725811265984514032955228389672705119)
+        self.assertEqual(tree.leaf(1, 0), 3075442268020138823380831368198734873612490112867968717790651410945045657947)
+        self.assertEqual(tree.leaf(2, 0), 10399465128272526817755257959020023025563587559350936053132523411421423507430)
 
         self.assertEqual(tree.leaf(1, 1), 17296471688945713021042054900108821045192859417413320566181654591511652308323)
         self.assertEqual(tree.leaf(2, 1), 4832852105446597958495745596582249246190817345027389430471458078394903639834)
@@ -101,7 +99,7 @@ class TestMerkleTree(unittest.TestCase):
 
 
     def test_uniques(self):
-        hasher = MerkleHasherLongsight(29)
+        hasher = DEFAULT_HASHER(29)
         self.assertEqual(hasher.unique(20, 20), 6738165491478210350639451800403024427867073896603076888955948358229240057870)
         self.assertEqual(hasher.unique(2, 2), 21534879888322772601810176771999178940739467644392123609236489175629034941722)
         self.assertEqual(hasher.unique(0, 0), 2544023609834722662089612003212769975105508295482723304413974529614913939747)

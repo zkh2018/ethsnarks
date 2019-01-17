@@ -24,6 +24,90 @@ namespace ethsnarks {
 namespace jubjub {
 
 
+template<class T>
+class Signature;
+
+
+template<class T>
+bool eddsa_open(
+    const EdwardsPoint& A,
+    const Signature<T>& sig,
+    const libff::bit_vector& msg
+);
+
+
+template<class T>
+class Signature {
+public:
+    EdwardsPoint R;
+    FieldT s;
+
+    bool open( const EdwardsPoint& A, const libff::bit_vector& msg ) const
+    {
+        return eddsa_open<T>(A, this, msg);
+    }
+};
+
+
+/**
+* Use a compatible gadget to verify an EdDSA signature
+*/
+template<class T>
+bool eddsa_open(
+    const Params& params,
+    const EdwardsPoint& B,
+    const EdwardsPoint& A,
+    const Signature<T>& sig,
+    const libff::bit_vector& msg
+) {
+    ProtoboardT pb;
+
+    const auto msg_var_bits = make_var_array(pb, msg.size(), "msg_var_bits");
+    msg_var_bits.fill_with_bits(pb, msg);
+
+    const auto s_var_bits = make_var_array(pb, FieldT::size_in_bits(), "s_var_bits");
+    s_var_bits.fill_with_bits_of_field_element(pb, sig.s);
+
+    T the_gadget(pb, params,
+        B,
+        A.as_VariablePointT(pb, "A"),
+        sig.R.as_VariablePointT(pb, "R"),
+        s_var_bits,
+        msg_var_bits,
+        "the_gadget");
+
+    the_gadget.generate_r1cs_constraints();
+    the_gadget.generate_r1cs_witness();
+    return pb.is_satisfied();
+}
+
+
+/**
+* Auto-fill base point from Params
+*/
+template<class T>
+bool eddsa_open(
+    const Params& params,
+    const EdwardsPoint& A,
+    const Signature<T>& sig,
+    const libff::bit_vector& msg
+) {
+    const EdwardsPoint B(params.Gx, params.Gy);
+    return eddsa_open<T>(params, B, A, sig, msg);
+}
+
+
+template<class T>
+bool eddsa_open(
+    const EdwardsPoint& A,
+    const Signature<T>& sig,
+    const libff::bit_vector& msg
+) {
+    const Params params;
+    return eddsa_open<T>(params, A, sig, msg);
+}
+
+
 class EdDSA_HashRAM_gadget : public GadgetT
 {
 public:
@@ -49,7 +133,7 @@ public:
 };
 
 
-class PureEdDSA_Verify : public GadgetT
+class PureEdDSA : public GadgetT
 {
 public:
     PointValidator m_validator_R;           // IsValid(R)
@@ -58,7 +142,7 @@ public:
     ScalarMult m_At;                        // A*hash_RAM
     PointAdder m_rhs;                       // rhs = R + (A*hash_RAM)
 
-    PureEdDSA_Verify(
+    PureEdDSA(
         ProtoboardT& in_pb,
         const Params& in_params,
         const EdwardsPoint& in_base,    // B
@@ -74,14 +158,14 @@ public:
 };
 
 
-class EdDSA_Verify
+class EdDSA
 {
 public:
     PedersenHashToBits m_msg_hashed;        // M = H(m)
 
-    PureEdDSA_Verify m_verifier;
+    PureEdDSA m_verifier;
 
-    EdDSA_Verify(
+    EdDSA(
         ProtoboardT& in_pb,
         const Params& in_params,
         const EdwardsPoint& in_base,    // B

@@ -1,24 +1,21 @@
 // Copyright (c) 2018 HarryR
 // License: LGPL-3.0+
 
-#include <libff/algebra/curves/alt_bn128/alt_bn128_pp.hpp>
+#include "ethsnarks.hpp"
+#include "stubs.hpp"
 
-#include "gadgets/shamir_poly.cpp"
-
-#include "r1cs_gg_ppzksnark_zok/r1cs_gg_ppzksnark_zok.hpp"
-
-
-using libsnark::r1cs_gg_ppzksnark_zok_generator;
-using libsnark::r1cs_gg_ppzksnark_zok_prover;
-using libsnark::r1cs_gg_ppzksnark_zok_verifier_strong_IC;
+#include "gadgets/shamir_poly.hpp"
 
 
-template<typename ppT>
+using ethsnarks::ppT;
+
+
+namespace ethsnarks {
+
+
 bool test_shamirs_poly()
 {
-    typedef libff::Fr<ppT> FieldT;
-
-    protoboard<FieldT> pb;
+    ProtoboardT pb;
 
     auto rand_input = FieldT::random_element();
     std::vector<FieldT> rand_alpha = {
@@ -26,47 +23,33 @@ bool test_shamirs_poly()
         FieldT::random_element(), FieldT::random_element()
     };
 
-    pb_variable<FieldT> in_input;
-    pb_variable_array<FieldT> in_alpha;
+    const VariableT in_input = make_variable(pb, rand_input, "in_input");
+    pb.set_input_sizes(1);
 
-    in_input.allocate(pb, "in_input");
-    pb.val(in_input) = rand_input;
-
-    in_alpha.allocate(pb, rand_alpha.size(), "in_alpha");
+    const VariableArrayT in_alpha = make_var_array(pb, rand_alpha.size(), "in_alpha");
     in_alpha.fill_with_field_elements(pb, rand_alpha);
 
-    shamir_poly<FieldT> the_gadget(pb, in_input, in_alpha);
-
+    shamir_poly the_gadget(pb, in_input, in_alpha, "gadget");
     the_gadget.generate_r1cs_witness();
-
     the_gadget.generate_r1cs_constraints();
-
-    pb.set_input_sizes(1);
 
     if( ! pb.is_satisfied() ) {
         std::cerr << "Not satisfied!\n";
         return false;
     }
 
-    auto constraints = pb.get_constraint_system();
+    return stub_test_proof_verify(pb);
+}
 
-    std::cout << "Setup keypair\n";
-    auto keypair = r1cs_gg_ppzksnark_zok_generator<ppT>(constraints);
-
-    auto primary_input = pb.primary_input();
-    auto auxiliary_input = pb.auxiliary_input();
-    auto proof = r1cs_gg_ppzksnark_zok_prover<ppT>(keypair.pk, primary_input, auxiliary_input);
-    return r1cs_gg_ppzksnark_zok_verifier_strong_IC <ppT> (keypair.vk, primary_input, proof);
+// namespace ethsnarks
 }
 
 
 int main( int argc, char **argv )
 {
-    // Types for board
-    typedef libff::alt_bn128_pp ppT;    
     ppT::init_public_params();
 
-    if( ! test_shamirs_poly<ppT>() )
+    if( ! ethsnarks::test_shamirs_poly() )
     {
         std::cerr << "FAIL\n";
         return 1;

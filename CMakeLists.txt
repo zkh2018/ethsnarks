@@ -6,6 +6,8 @@ project(ethsnarks)
 include(CTest)
 enable_testing()
 
+set(SHA3_USE_KECCAK ON)
+add_definitions(-DSHA3_USE_KECCAK=1)
 
 set(
   CURVE
@@ -206,6 +208,8 @@ set_target_properties(
   INTERFACE_INCLUDE_DIRECTORIES ${GMPXX_INCLUDE_DIR}
 )
 
+find_package(Boost REQUIRED program_options)
+
 
 add_compile_options(-fPIC)
 
@@ -257,3 +261,4 @@ if(OpenMP_CXX_FOUND)
 endif()
 
 add_subdirectory(src)
+add_subdirectory(depends)

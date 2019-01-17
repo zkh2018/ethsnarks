@@ -1,14 +1,14 @@
 // Copyright (c) 2018 HarryR
 // License: LGPL-3.0+
 
-#pragma once
+#ifndef ETHSNARKS_ONEOFN_HPP_
+#define ETHSNARKS_ONEOFN_HPP_
 
-#include <libsnark/gadgetlib1/gadget.hpp>
+
 #include <libsnark/gadgetlib1/gadgets/basic_gadgets.hpp>
 
 #include "ethsnarks.hpp"
 
-using libsnark::r1cs_constraint;
 using libsnark::generate_boolean_r1cs_constraint;
 
 
@@ -49,7 +49,7 @@ public:
     const VariableArrayT &items;
     VariableArrayT toggles;
     VariableArrayT toggles_sum;
-    const std::string annotation_prefix="";
+    const std::string annotation_prefix;
 
     one_of_n(
         ProtoboardT &in_pb,
@@ -83,31 +83,28 @@ public:
         for( size_t i = 1; i < toggles.size(); i++ )
         {
             pb.add_r1cs_constraint(
-                r1cs_constraint<FieldT>(
+                ConstraintT(
                     toggles_sum[i-1] + toggles[i],
                     FieldT::one(),
                     toggles_sum[i]),
                 FMT(this->annotation_prefix, ".toggles_sum_%zu", i));
         }
         pb.add_r1cs_constraint(
-                r1cs_constraint<FieldT>(
+                ConstraintT(
                     toggles_sum[items.size()-1],
                     FieldT::one(),
                     FieldT::one()),
                 FMT(this->annotation_prefix, ".toggles_sum_eq_1"));
-
-        // XXX: why use `lc_val` here?
-        auto our_item_lc_val = pb.lc_val(our_item);
 
         // then multiply toggles with items
         // subtract toggle*our_item
         for( size_t i = 0; i < items.size(); i++ )
         {
             pb.add_r1cs_constraint(
-                r1cs_constraint<FieldT>(
+                ConstraintT(
                     items[i],
                     toggles[i],
-                    toggles[i] * our_item_lc_val),
+                    toggles[i] * pb.val(our_item)),
                 FMT(this->annotation_prefix, ".were_selected"));
         }
     }
@@ -132,5 +129,9 @@ public:
     }
 };
 
+
 // ethsnarks
 }
+
+// ETHSNARKS_ONEOFN_HPP_
+#endif

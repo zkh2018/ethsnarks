@@ -48,15 +48,15 @@ public:
 
     merkle_path_selector(
         ProtoboardT &in_pb,
-        const VariableT in_input,
-        const VariableT in_pathvar,
-        const VariableT in_is_right,
-        const std::string &in_annotation_prefix=""
+        const VariableT& in_input,
+        const VariableT& in_pathvar,
+        const VariableT& in_is_right,
+        const std::string &in_annotation_prefix
     );
 
     void generate_r1cs_constraints();
 
-    void generate_r1cs_witness();
+    void generate_r1cs_witness() const;
 
     const VariableT& left() const;
 
@@ -82,13 +82,13 @@ public:
     markle_path_compute(
         ProtoboardT &in_pb,
         const size_t in_depth,
-        const VariableArrayT in_address_bits,
-        const VariableArrayT in_IVs,
+        const VariableArrayT& in_address_bits,
+        const VariableArrayT& in_IVs,
         const VariableT in_leaf,
-        const VariableArrayT in_path,
-        const std::string &in_annotation_prefix = ""
+        const VariableArrayT& in_path,
+        const std::string &in_annotation_prefix
     ) :
-        GadgetT(in_pb, FMT(in_annotation_prefix, " merkle_path_authenticator")),
+        GadgetT(in_pb, in_annotation_prefix),
         m_depth(in_depth),
         m_address_bits(in_address_bits),
         m_leaf(in_leaf),
@@ -105,19 +105,19 @@ public:
                 m_selectors.push_back(
                     merkle_path_selector(
                         in_pb, in_leaf, in_path[i], in_address_bits[i],
-                        FMT(this->annotation_prefix, ".selector_%zu", i)));
+                        FMT(this->annotation_prefix, ".selector[%zu]", i)));
             }
             else {
                 m_selectors.push_back(
                     merkle_path_selector(
-                        in_pb, m_hashers.back().result(), in_path[i], in_address_bits[i],
-                        FMT(this->annotation_prefix, ".selector_%zu", i)));
+                        in_pb, m_hashers[i-1].result(), in_path[i], in_address_bits[i],
+                        FMT(this->annotation_prefix, ".selector[%zu]", i)));
             }
 
             m_hashers.push_back(HashT(
                 in_pb, in_IVs[i],
                 {m_selectors[i].left(), m_selectors[i].right()},
-                FMT(this->annotation_prefix, " hasher_%zu", i)));
+                FMT(this->annotation_prefix, ".hasher[%zu]", i)));
         }
     }
 
@@ -138,7 +138,7 @@ public:
         }
     }
 
-    void generate_r1cs_witness()
+    void generate_r1cs_witness() const
     {
         size_t i;
         for( i = 0; i < m_hashers.size(); i++ )
@@ -167,7 +167,7 @@ public:
         const VariableT in_leaf,
         const VariableT in_expected_root,
         const VariableArrayT in_path,
-        const std::string &in_annotation_prefix = ""
+        const std::string &in_annotation_prefix
     ) :
         markle_path_compute<HashT>::markle_path_compute(in_pb, in_depth, in_address_bits, in_IVs, in_leaf, in_path, in_annotation_prefix),
         m_expected_root(in_expected_root)
@@ -175,7 +175,7 @@ public:
 
     bool is_valid() const
     {
-        return this->pb.val(markle_path_compute<HashT>::result()) == this->pb.val(m_expected_root);
+        return this->pb.val(this->result()) == this->pb.val(m_expected_root);
     }
 
     void generate_r1cs_constraints()
@@ -184,8 +184,8 @@ public:
 
         // Ensure root matches calculated path hash
         this->pb.add_r1cs_constraint(
-            ConstraintT(1, markle_path_compute<HashT>::result(), m_expected_root),
-            FMT(this->annotation_prefix, "expected_root matches"));
+            ConstraintT(this->result(), 1, m_expected_root),
+            FMT(this->annotation_prefix, ".expected_root authenticator"));
     }
 };
 

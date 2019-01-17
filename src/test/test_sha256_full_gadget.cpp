@@ -1,6 +1,4 @@
-#include <libff/algebra/curves/alt_bn128/alt_bn128_pp.hpp>
-
-#include "gadgets/sha256_full.cpp"
+#include "gadgets/sha256_full.hpp"
 #include "utils.hpp"
 
 

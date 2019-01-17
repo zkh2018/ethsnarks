@@ -2,3 +2,6 @@
 	path = depends/libsnark
 	url = https://github.com/scipr-lab/libsnark.git
 	ignore = dirty
+[submodule "depends/SHA3IUF"]
+	path = depends/SHA3IUF
+	url = https://github.com/harryr/SHA3IUF.git

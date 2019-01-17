@@ -1,6 +1,9 @@
 // Copyright (c) 2018 HarryR
 // License: LGPL-3.0+
 
+#ifndef ETHSNARKS_SHA256_FULL_HPP_
+#define ETHSNARKS_SHA256_FULL_HPP_
+
 #pragma once
 
 #include <libsnark/gadgetlib1/gadget.hpp>
@@ -158,3 +161,6 @@ public:
 
 // ethsnarks
 }
+
+// ETHSNARKS_SHA256_FULL_HPP_
+#endif

@@ -4,7 +4,7 @@
 import hashlib
 import math
 
-from .longsight import LongsightL12p5_MP
+from .mimc import mimc_hash
 from .field import FQ, SNARK_SCALAR_FIELD
 
 
@@ -28,14 +28,14 @@ class MerkleProof(object):
         return root == item
 
 
-class MerkleHasherLongsight(object):
+class MerkleHasher_MiMC(object):
     def __init__(self, tree_depth):
         self._tree_depth = tree_depth
         self._IVs = self._make_IVs()
 
     def hash_pair(self, depth, left, right):
         IV = self._IVs[depth]
-        return LongsightL12p5_MP([left, right], IV)
+        return mimc_hash([left, right], IV)
 
     def unique(self, depth, index):
         assert depth < self._tree_depth
@@ -57,12 +57,13 @@ class MerkleHasherLongsight(object):
     def valid(self, item):
         return isinstance(item, int) and item > 0 and item < SNARK_SCALAR_FIELD
 
+DEFAULT_HASHER = MerkleHasher_MiMC
 
 class MerkleTree(object):
     def __init__(self, n_items):
         assert n_items > 1
         self._tree_depth = math.ceil(math.log2(n_items))
-        self._hasher = MerkleHasherLongsight(self._tree_depth)
+        self._hasher = DEFAULT_HASHER(self._tree_depth)
         self._n_items = n_items
         self._cur = 0
         self._leaves = [list() for _ in range(0, self._tree_depth + 1)]

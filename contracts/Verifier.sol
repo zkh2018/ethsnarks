@@ -1,6 +1,6 @@
 // this code is taken from https://github.com/JacobEberhardt/ZoKrates 
 
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.0;
 
 import "./Pairing.sol";
 
@@ -90,7 +90,7 @@ library Verifier
         ok = check_1 * check_2 * check_3 * check_4
         assert ok == FQ12.one()
     */
-    function Verify ( uint256[14] in_vk, uint256[] vk_gammaABC, uint256[8] in_proof, uint256[] proof_inputs )
+    function Verify ( uint256[14] memory in_vk, uint256[] memory vk_gammaABC, uint256[8] memory in_proof, uint256[] memory proof_inputs )
         internal view returns (bool)
     {
         require( ((vk_gammaABC.length / 2) - 1) == proof_inputs.length );

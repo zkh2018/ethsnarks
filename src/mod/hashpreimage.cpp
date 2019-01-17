@@ -5,7 +5,7 @@
 
 #include "ethsnarks.hpp"
 
-#include "gadgets/sha256_full.cpp"
+#include "gadgets/sha256_full.hpp"
 #include "utils.hpp"
 #include "export.hpp"
 #include "import.hpp"

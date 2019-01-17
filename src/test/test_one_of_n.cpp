@@ -1,7 +1,7 @@
 // Copyright (c) 2018 HarryR
 // License: LGPL-3.0+
 
-#include "gadgets/one_of_n.cpp"
+#include "gadgets/one_of_n.hpp"
 #include "stubs.hpp"
 
 
@@ -31,7 +31,7 @@ bool test_one_of_n()
     pb.val(in_our_item) = rand_items[3];
 
     // Setup gadget
-    ethsnarks::one_of_n the_gadget(pb, in_our_item, in_items);
+    ethsnarks::one_of_n the_gadget(pb, in_our_item, in_items, "gadget");
     the_gadget.generate_r1cs_witness();
     the_gadget.generate_r1cs_constraints();
     pb.set_input_sizes(rand_items.size());
@@ -50,7 +50,6 @@ bool test_one_of_n()
 
 int main( int argc, char **argv )
 {
-    // Types for board 
     ethsnarks::ppT::init_public_params();
 
     if( ! ethsnarks::test_one_of_n() )

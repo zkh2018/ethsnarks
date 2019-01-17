@@ -1,3 +1,6 @@
+// This is an open source non-commercial project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
+
 #include "jubjub/fixed_base_mul_zcash.hpp"
 
 
@@ -38,6 +41,9 @@ fixed_base_mul_zcash::fixed_base_mul_zcash(
 	{
 		std::vector<FieldT> lookup_x;
 		std::vector<FieldT> lookup_y;
+
+		lookup_x.reserve(window_size_items);
+		lookup_y.reserve(window_size_items);
 
 		if (i % CHUNKS_PER_BASE_POINT == 0) {
 			start = base_points[ i / CHUNKS_PER_BASE_POINT ];
@@ -105,7 +111,8 @@ fixed_base_mul_zcash::fixed_base_mul_zcash(
 					m_windows_y[i].result(),
 					FMT(this->annotation_prefix, ".point_conversion_segment_with_single_triplet"));
 			}
-		} else if( i % CHUNKS_PER_BASE_POINT == 1 ) {
+		}
+		else if( i % CHUNKS_PER_BASE_POINT == 1 ) {
 			montgomery_adders.emplace_back(
 				in_pb, in_params,
 				m_windows_x[i-1],
@@ -127,6 +134,7 @@ fixed_base_mul_zcash::fixed_base_mul_zcash(
 
 	// Convert every point at the end of a segment back to edwards format
 	const size_t segment_width = CHUNKS_PER_BASE_POINT - 1;
+
 	for(size_t i = segment_width; i < montgomery_adders.size(); i += segment_width ) {
 		point_converters.emplace_back(
 			in_pb, in_params,

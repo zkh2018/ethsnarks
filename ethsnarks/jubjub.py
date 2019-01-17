@@ -139,6 +139,9 @@ class AbstractCurveOps(object):
 
 
 class Point(AbstractCurveOps, namedtuple('_Point', ('x', 'y'))):
+	def __str__(self):
+		return ' '.join([str(_) for _ in self])
+
 	@classmethod
 	def from_y(cls, y, sign=None):
 		"""
