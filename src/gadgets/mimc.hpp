@@ -293,8 +293,8 @@ const FieldT mimc( const std::vector<FieldT>& round_constants, const FieldT& x, 
 {
     ProtoboardT pb;
 
-    VariableT var_x = make_variable(pb, x, "x");
-    VariableT var_k = make_variable(pb, k, "k");
+    const VariableT var_x = make_variable(pb, x, "x");
+    const VariableT var_k = make_variable(pb, k, "k");
     pb.set_input_sizes(2);
 
     MiMC_gadget the_gadget(pb, var_x, var_k, round_constants, "the_gadget");
@@ -322,7 +322,7 @@ const FieldT mimc_hash( const std::vector<FieldT>& m, const FieldT& k )
         var_m.emplace_back(make_variable(pb, m_i, "k"));
     }
 
-    auto var_k = make_variable(pb, k, "k");
+    const auto var_k = make_variable(pb, k, "k");
     pb.set_input_sizes(m.size() + 1);
 
     MiMC_hash_gadget the_gadget(pb, var_k, var_m, "the_gadget");
@@ -344,6 +344,12 @@ const FieldT mimc_hash( const std::vector<FieldT>& m, const FieldT& k )
     */
 
     return pb.val(the_gadget.result());
+}
+
+
+const FieldT mimc_hash( const std::vector<FieldT>& m )
+{
+    return mimc_hash(m, FieldT::zero());
 }
 
 
