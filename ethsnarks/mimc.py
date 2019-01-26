@@ -43,7 +43,7 @@ Generate a sequence of round constants
 
 These can hard-coded into circuits or generated on-demand
 """
-def mimc_constants(seed, p=SNARK_SCALAR_FIELD, R=DEFAULT_ROUNDS):
+def mimc_constants(seed=DEFAULT_SEED, p=SNARK_SCALAR_FIELD, R=DEFAULT_ROUNDS):
     if isinstance(seed, str):
         seed = seed.encode('ascii')
     if isinstance(seed, bytes):
