@@ -5,12 +5,6 @@ target_link_libraries(ethsnarks_common ff)
 target_compile_features(ethsnarks_common PUBLIC cxx_std_11)
 target_include_directories(ethsnarks_common PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-add_library(hashpreimage SHARED mod/hashpreimage.cpp)
-target_link_libraries(hashpreimage ethsnarks_gadgets)
-
-add_executable(hashpreimage_cli hashpreimage_cli.cpp)
-target_link_libraries(hashpreimage_cli ethsnarks_gadgets)
-
 add_executable(verify verify.cpp)
 target_link_libraries(verify ethsnarks_gadgets)
 
