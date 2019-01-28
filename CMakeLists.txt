@@ -118,6 +118,10 @@ option(
 
 add_definitions(-DCURVE_${CURVE})
 
+if(CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+  add_compile_options(-fPIC)
+endif()
+
 if(${CURVE} STREQUAL "BN128")
   add_definitions(-DBN_SUPPORT_SNARK=1)
 endif()
@@ -255,7 +259,7 @@ target_include_directories(ff INTERFACE
   ${DEPENDS_DIR_LIBSNARK} ${DEPENDS_DIR_LIBFF} ${DEPENDS_DIR_LIBFQFFT})
 target_compile_features(ff INTERFACE cxx_std_11)
 
-target_link_libraries(ff ${GMP_LIBRARY})
+target_link_libraries(ff ${GMP_LIBRARY} ${PROCPS_LIBRARIES})
 
 if(OpenMP_CXX_FOUND)
     target_link_libraries(ff OpenMP::OpenMP_CXX)
