@@ -79,7 +79,7 @@ pvs-tasks: build/PVS-Studio.log
 
 
 .PHONY: test
-test: pinocchio-test cxx-tests hashpreimage-tests python-test truffle-test
+test: pinocchio-test cxx-tests python-test truffle-test
 
 python-test:
 	$(COVERAGE) -m unittest discover test/
@@ -89,13 +89,6 @@ cxx-tests:
 
 .keys:
 	mkdir -p $@
-
-hashpreimage-tests: .keys
-	time ./build/src/hashpreimage_cli genkeys .keys/hpi.pk.raw .keys/hpi.vk.json
-	ls -lah .keys/hpi.pk.raw
-	time ./build/src/hashpreimage_cli prove .keys/hpi.pk.raw 0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a089f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08 .keys/hpi.proof.json
-	time ./build/src/hashpreimage_cli verify .keys/hpi.vk.json .keys/hpi.proof.json
-	time ./build/src/test/benchmark/benchmark_load_proofkey .keys/hpi.pk.raw
 
 
 #######################################################################

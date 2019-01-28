@@ -2,9 +2,12 @@ cmake_minimum_required(VERSION 3.9)
 
 project(ethsnarks)
 
+option(ETHSNARKS_DISABLE_TESTS "Disable ethsnarks tests" OFF)
 
-include(CTest)
-enable_testing()
+if( NOT ${ETHSNARKS_DISABLE_TESTS} )
+  include(CTest)
+  enable_testing()
+endif()
 
 set(SHA3_USE_KECCAK ON)
 add_definitions(-DSHA3_USE_KECCAK=1)
@@ -115,6 +118,10 @@ option(
 
 add_definitions(-DCURVE_${CURVE})
 
+if(CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+  add_compile_options(-fPIC)
+endif()
+
 if(${CURVE} STREQUAL "BN128")
   add_definitions(-DBN_SUPPORT_SNARK=1)
 endif()
@@ -184,9 +191,9 @@ else()
   set(gmp_library_type STATIC)
 endif()
 message(STATUS "GMP: ${GMP_LIBRARY}, ${GMP_INCLUDE_DIR}")
-add_library(GMP::gmp ${gmp_library_type} IMPORTED)
+add_library(gmp ${gmp_library_type} IMPORTED)
 set_target_properties(
-  GMP::gmp PROPERTIES
+  gmp PROPERTIES
   IMPORTED_LOCATION ${GMP_LIBRARY}
   INTERFACE_INCLUDE_DIRECTORIES ${GMP_INCLUDE_DIR}
 )
@@ -200,18 +207,16 @@ if(GMPXX_LIBRARY MATCHES ${CMAKE_SHARED_LIBRARY_SUFFIX})
 else()
   set(gmpxx_library_type STATIC)
 endif()
-add_library(GMP::gmpxx ${gmpxx_library_type} IMPORTED)
+add_library(gmpxx ${gmpxx_library_type} IMPORTED)
 message(STATUS "GMPxx: ${GMPXX_LIBRARY}, ${GMPXX_INCLUDE_DIR}")
 set_target_properties(
-  GMP::gmpxx PROPERTIES
+  gmpxx PROPERTIES
   IMPORTED_LOCATION ${GMPXX_LIBRARY}
   INTERFACE_INCLUDE_DIRECTORIES ${GMPXX_INCLUDE_DIR}
 )
 
 find_package(Boost REQUIRED program_options)
 
-
-add_compile_options(-fPIC)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OPT_FLAGS}")
 
@@ -254,7 +259,7 @@ target_include_directories(ff INTERFACE
   ${DEPENDS_DIR_LIBSNARK} ${DEPENDS_DIR_LIBFF} ${DEPENDS_DIR_LIBFQFFT})
 target_compile_features(ff INTERFACE cxx_std_11)
 
-target_link_libraries(ff GMP::gmp ${PROCPS_LIBRARIES})
+target_link_libraries(ff ${GMP_LIBRARY} ${PROCPS_LIBRARIES})
 
 if(OpenMP_CXX_FOUND)
     target_link_libraries(ff OpenMP::OpenMP_CXX)

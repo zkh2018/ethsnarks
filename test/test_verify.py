@@ -3,8 +3,7 @@ import json
 import time
 import random
 
-from ethsnarks.verifier import VerifyingKey, Proof
-from ethsnarks.mod.hashpreimage import HashPreimage
+from ethsnarks.verifier import VerifyingKey, Proof, NativeVerifier
 from ethsnarks.utils import native_lib_path
 
 
@@ -22,16 +21,17 @@ class VerifyTests(unittest.TestCase):
 
     def test_verify_native(self):
         """Verify using fast native library"""
-        vk = VerifyingKey.from_dict(VK_STATIC)
+        vk = NativeVerifier.from_dict(VK_STATIC)
         proof = Proof.from_dict(PROOF_STATIC)
-        wrapper = HashPreimage(native_lib_path('build/src/libhashpreimage'), vk)
-        self.assertTrue(wrapper.verify(proof))
+        dll_path = native_lib_path('build/src/libethsnarks_verify')
+        self.assertTrue(vk.verify(proof, dll_path))
 
     def test_verify_python(self):
         # Verify using sloooow python implementation
         vk = VerifyingKey.from_dict(VK_STATIC)
         proof = Proof.from_dict(PROOF_STATIC)
         self.assertTrue(vk.verify(proof))
+
 
 if __name__ == "__main__":
     unittest.main()
