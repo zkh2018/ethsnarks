@@ -3,6 +3,7 @@
 
 
 import json
+import ctypes
 from functools import reduce
 from binascii import unhexlify
 from collections import namedtuple
@@ -189,3 +190,19 @@ class VerifyingKey(BaseVerifier, _VerifyingKeyStruct):
             (neg(vk_x), self.gamma),
             (neg(proof.C), self.delta),
             (neg(self.alpha), self.beta))
+
+
+class NativeVerifier(VerifyingKey):
+    def verify(self, proof, native_library_path):
+        if not isinstance(proof, Proof):
+            raise TypeError("Invalid proof type")
+
+        vk_cstr = ctypes.c_char_p(self.to_json().encode('ascii'))
+        proof_cstr = ctypes.c_char_p(proof.to_json().encode('ascii'))
+
+        lib = ctypes.cdll.LoadLibrary(native_library_path)
+        lib_verify = lib.ethsnarks_verify
+        lib_verify.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
+        lib_verify.restype = ctypes.c_bool
+
+        return lib_verify(vk_cstr, proof_cstr)

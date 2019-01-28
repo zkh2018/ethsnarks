@@ -2,8 +2,12 @@ cmake_minimum_required(VERSION 3.9)
 
 project(ethsnarks)
 
-include(CTest)
-enable_testing()
+option(ETHSNARKS_DISABLE_TESTS "Disable ethsnarks tests" OFF)
+
+if( NOT ${ETHSNARKS_DISABLE_TESTS} )
+  include(CTest)
+  enable_testing()
+endif()
 
 set(SHA3_USE_KECCAK ON)
 add_definitions(-DSHA3_USE_KECCAK=1)
