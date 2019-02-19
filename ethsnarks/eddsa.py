@@ -68,13 +68,14 @@ class _SignatureScheme(object):
         # TODO: move to ethsnarks.utils ?
         result = b''
         for M in args:
-            if isinstance(M, (list, tuple)):
-                result += b''.join(cls.to_bytes(_) for _ in M)
-            elif isinstance(M, Point):
+            if isinstance(M, Point):
                 result += M.x.to_bytes('little')
                 result += M.y.to_bytes('little')
             elif isinstance(M, FQ):
                 result += M.to_bytes('little')
+            elif isinstance(M, (list, tuple)):
+                # Note: (list,tuple) must go *below* other class types to avoid type confusion
+                result += b''.join(cls.to_bytes(_) for _ in M)
             elif isinstance(M, int):
                 result += M.to_bytes(32, 'little')
             elif isinstance(M, bitstring.BitArray):
@@ -90,13 +91,14 @@ class _SignatureScheme(object):
         # TODO: move to ethsnarks.utils ?
         result = bitstring.BitArray()
         for M in args:
-            if isinstance(M, list):
-                for _ in cls.to_bits(M):
-                    result.append(_)
             if isinstance(M, Point):
                 result.append(M.x.bits())
             elif isinstance(M, FQ):
                 result.append(M.bits())
+            elif isinstance(M, (list, tuple)):
+                # Note: (list,tuple) must go *below* other class types to avoid type confusion
+                for _ in cls.to_bits(M):
+                    result.append(_)
             elif isinstance(M, bytes):
                 result.append(M)
             elif isinstance(M, bitstring.BitArray):
@@ -216,6 +218,7 @@ def as_scalar(*args):
             yield int(x.x)
             yield int(x.y)
         elif isinstance(x, (tuple, list)):
+            # Note: (tuple,list) must go below other class types, to avoid possible type confusion
             for _ in as_scalar(*x):
                 yield _
         else:
