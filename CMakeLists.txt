@@ -1,8 +1,25 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 2.8)
 
 project(ethsnarks)
 
 option(ETHSNARKS_DISABLE_TESTS "Disable ethsnarks tests" OFF)
+
+
+if (CMAKE_VERSION VERSION_GREATER "3.0")
+  set(CMAKE_CXX_STANDARD 11)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON) #...is required...
+else()
+  include(CheckCXXCompilerFlag)
+  CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
+
+  if(COMPILER_SUPPORTS_CXX11)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+  elseif(COMPILER_SUPPORTS_CXX0X)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+  else()
+        message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
+  endif()
+endif()
 
 if( NOT ${ETHSNARKS_DISABLE_TESTS} )
   include(CTest)
@@ -247,7 +264,8 @@ add_library(
 
 target_include_directories(ff PUBLIC
   ${DEPENDS_DIR_LIBSNARK} ${DEPENDS_DIR_LIBFF} ${DEPENDS_DIR_LIBFQFFT})
-target_compile_features(ff PUBLIC cxx_std_11)
+
+set_property(TARGET ff PROPERTY CXX_STANDARD 11)
 
 
 if("${DEBUG}" OR "${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
@@ -257,7 +275,7 @@ endif()
 
 target_include_directories(ff INTERFACE
   ${DEPENDS_DIR_LIBSNARK} ${DEPENDS_DIR_LIBFF} ${DEPENDS_DIR_LIBFQFFT})
-target_compile_features(ff INTERFACE cxx_std_11)
+
 
 target_link_libraries(ff ${GMP_LIBRARY} ${PROCPS_LIBRARIES})
 

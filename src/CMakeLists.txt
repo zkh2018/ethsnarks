@@ -2,7 +2,6 @@ include_directories(.)
 
 add_library(ethsnarks_common STATIC export.cpp import.cpp stubs.cpp utils.cpp)
 target_link_libraries(ethsnarks_common ff)
-target_compile_features(ethsnarks_common PUBLIC cxx_std_11)
 target_include_directories(ethsnarks_common PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(verify verify.cpp)
