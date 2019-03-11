@@ -55,23 +55,32 @@ bool test_merkle_path_selector(int is_right)
 
 
 bool test_merkle_path_authenticator() {
+    // Tree depth is 1, left leaf is 3703141493535563179657531719960160174296085208671919316200479060314459804651,
+    // right leaf is 134551314051432487569247388144051420116740427803855572138106146683954151557,
+    // root is 3075442268020138823380831368198734873612490112867968717790651410945045657947. Authenticator for right leaf (`is_right` = 1)
+
+    auto left = FieldT("3703141493535563179657531719960160174296085208671919316200479060314459804651");
+    auto right = FieldT("134551314051432487569247388144051420116740427803855572138106146683954151557");
+    auto root = FieldT("3075442268020138823380831368198734873612490112867968717790651410945045657947");
+    auto is_right = 1;
+
 	ProtoboardT pb;
 
 	VariableArrayT address_bits;
 	address_bits.allocate(pb, 1, "address_bits");
-	pb.val(address_bits[0]) = 1;
+	pb.val(address_bits[0]) = is_right;
 
 	VariableArrayT path;
 	path.allocate(pb, 1, "path");
-	pb.val(path[0]) = FieldT("3703141493535563179657531719960160174296085208671919316200479060314459804651");
+	pb.val(path[0]) = left;
 
 	VariableT leaf;
 	leaf.allocate(pb, "leaf");
-	pb.val(leaf) = FieldT("134551314051432487569247388144051420116740427803855572138106146683954151557");
+	pb.val(leaf) = right;
 
 	VariableT expected_root;
 	expected_root.allocate(pb, "expected_root");
-	pb.val(expected_root) = FieldT("3075442268020138823380831368198734873612490112867968717790651410945045657947");
+	pb.val(expected_root) = root;
 
 	size_t tree_depth = 1;
 	merkle_path_authenticator<MiMC_hash_gadget> auth(

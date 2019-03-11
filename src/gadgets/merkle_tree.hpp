@@ -23,10 +23,10 @@ namespace ethsnarks {
 * method:
 *
 * Left:
-*  (is_right * input) + ((1 - is_right) * pathvar)
+*  ((1-is_right) * input) + (is_right * pathvar)
 *
 * Right:
-*  ((1 - is_right) * input) + (is_right * pathvar)
+*  (is_right * input) + ((1 - is_right) * pathvar)
 *
 * Each component is split into a & b sides, then added together
 * so the correct variable ends up in the right or left hand side.
@@ -114,10 +114,11 @@ public:
                         FMT(this->annotation_prefix, ".selector[%zu]", i)));
             }
 
-            m_hashers.push_back(HashT(
-                in_pb, in_IVs[i],
-                {m_selectors[i].left(), m_selectors[i].right()},
-                FMT(this->annotation_prefix, ".hasher[%zu]", i)));
+            auto t = HashT(
+                    in_pb, in_IVs[i],
+                    {m_selectors[i].left(), m_selectors[i].right()},
+                    FMT(this->annotation_prefix, ".hasher[%zu]", i));
+            m_hashers.push_back(t);
         }
     }
 
