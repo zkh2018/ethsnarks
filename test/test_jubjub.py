@@ -3,7 +3,7 @@ import unittest
 from os import urandom
 
 from ethsnarks.field import FQ
-from ethsnarks.jubjub import Point, EtecPoint, ProjPoint, JUBJUB_L, JUBJUB_C, MONT_A, MONT_B, JUBJUB_E
+from ethsnarks.jubjub import Point, EtecPoint, ProjPoint, JUBJUB_L, JUBJUB_C, MONT_A, MONT_B, JUBJUB_E, mult_naf_lut
 from ethsnarks.numbertheory import SquareRootError
 
 
@@ -264,6 +264,20 @@ class TestJubjub(unittest.TestCase):
 		q = q.as_point()
 		self.assertEqual(q.x, 6317123931401941284657971611369077243307682877199795030160588338302336995127)
 		self.assertEqual(q.y, 17705894757276775630165779951991641206660307982595100429224895554788146104270)
+
+	def test_naf(self):
+		"""
+		Verify that multiplying using w-NAF provides identical results with different windows
+		"""
+		for _ in range(5):
+			p = self._point_a()
+			e = p.as_etec()
+			x = FQ.random()
+			r = p * x
+			for w in range(2, 8):
+				y = mult_naf_lut(e, x, w)
+				z = y.as_point()
+				self.assertEqual(z, r)
 
 	def test_loworder(self):
 		for p in Point.all_loworder_points():
