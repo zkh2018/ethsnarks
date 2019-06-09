@@ -17,6 +17,7 @@ intermediate uses a much faster form.
 # XXX: none of these functions are constant time, they should not be used interactively!
 """
 
+from os import urandom
 from hashlib import sha256
 from collections import namedtuple
 
@@ -178,6 +179,10 @@ class Point(AbstractCurveOps, namedtuple('_Point', ('x', 'y'))):
 		ysq = dxsqm1 * (ax2 - 1)
 		y = ysq.sqrt()
 		return cls(x, y)
+
+	@classmethod
+	def random(cls):
+		return cls.from_hash(urandom(32))
 
 	@classmethod
 	def from_hash(cls, entropy):
