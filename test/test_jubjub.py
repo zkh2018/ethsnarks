@@ -3,7 +3,7 @@ import unittest
 from os import urandom
 
 from ethsnarks.field import FQ
-from ethsnarks.jubjub import Point, EtecPoint, ProjPoint, JUBJUB_L, JUBJUB_C, MONT_A, MONT_B, JUBJUB_E, mult_naf_lut
+from ethsnarks.jubjub import Point, EtecPoint, ProjPoint, JUBJUB_L, JUBJUB_C, MONT_A, MONT_B, JUBJUB_E, mult_naf_lut, mult_naf
 from ethsnarks.numbertheory import SquareRootError
 
 
@@ -278,6 +278,9 @@ class TestJubjub(unittest.TestCase):
 				y = mult_naf_lut(e, x, w)
 				z = y.as_point()
 				self.assertEqual(z, r)
+				if w == 2:
+					v = mult_naf(e, x)
+					self.assertEqual(v, y)
 
 	def test_loworder(self):
 		for p in Point.all_loworder_points():
