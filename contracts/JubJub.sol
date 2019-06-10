@@ -152,6 +152,7 @@ library JubJub
         pure
         returns (uint256[4] memory p3)
     {
+        /*
         // inf + (x,y) = (x,y)
         if (_p1[0] == 0 && _p1[1] == 1 && _p1[2] == 0 && _p1[3] == 1) {
             return _p2;
@@ -161,22 +162,30 @@ library JubJub
         if (_p2[0] == 0 && _p2[1] == 1 && _p2[2] == 0 && _p2[3] == 1) {
             return _p1;
         }
+        */
 
         assembly {
-            let localQ := 0x30644E72E131A029B85045B68181585D2833E84879B9709143E1F593F0000001 
-            let localA := 0x292FC
-            let localD := 0x292F8 
+            let localQ := 0x30644E72E131A029B85045B68181585D2833E84879B9709143E1F593F0000001
+            let y1 := mload(add(_p1, 0x20))
+            let y2 := mload(add(_p2, 0x20))
+            //let localA := 0x292FC
+            //let localD := 0x292F8
 
             // A <- x1 * x2
             let a := mulmod(mload(_p1), mload(_p2), localQ)
+
             // B <- y1 * y2
-            let b := mulmod(mload(add(_p1, 0x20)), mload(add(_p2, 0x20)), localQ)
+            let b := mulmod(y1, y2, localQ)
+
             // C <- d * t1 * t2
-            let c := mulmod(mulmod(localD, mload(add(_p1, 0x40)), localQ), mload(add(_p2, 0x40)), localQ)
+            let c := mulmod(mulmod(0x292F8, mload(add(_p1, 0x40)), localQ), mload(add(_p2, 0x40)), localQ)
+
             // D <- z1 * z2
             let d := mulmod(mload(add(_p1, 0x60)), mload(add(_p2, 0x60)), localQ)
+
             // E <- (x1 + y1) * (x2 + y2) - A - B
-            let e := mulmod(addmod(mload(_p1), mload(add(_p1, 0x20)), localQ), addmod(mload(_p2), mload(add(_p2, 0x20)), localQ), localQ)
+            let e := addmod(mulmod(add(mload(_p1), y1), add(mload(_p2), y2), localQ), add(sub(localQ, a), sub(localQ, b)), localQ)
+            /*
             if lt(e, add(a, 1)) {
                 e := add(e, localQ)
             }
@@ -185,21 +194,29 @@ library JubJub
                 e := add(e, localQ)
             }
             e := mod(sub(e, b), localQ)
+            */
             // F <- D - C
+            let f := addmod(d, sub(localQ, c), localQ)
+            /*
             let f := d
             if lt(f, add(c, 1)) {
                 f := add(f, localQ)
             }
             f := mod(sub(f, c), localQ)
+            */
             // G <- D + C
-            let g := addmod(d, c, localQ)
+            let g := add(d, c)
+
             // H <- B - a * A
+            let h := add(b, sub(localQ, mulmod(0x292FC, a, localQ)))
+            /*
             let aA := mulmod(localA, a, localQ)
             let h := b
             if lt(h, add(aA, 1)) {
                 h := add(h, localQ)
             }
             h := mod(sub(h, aA), localQ)
+            */
 
             // x3 <- E * F
             mstore(p3, mulmod(e, f, localQ))
