@@ -70,25 +70,85 @@ library JubJub
     }
 
 
+    /**
+    * Project X,Y point to extended twisted edwards coordinates
+    */
+    function pointToEtec( uint256 X, uint256 Y, uint256[4] memory output )
+        internal pure
+    {
+        output[0] = X;
+        output[1] = Y;
+        output[2] = mulmod(X, Y, Q);
+        output[3] = 1;
+    }
+
+
+    function scalarMultNAF(uint256 x, uint256 y, uint256 value)
+        internal view returns (uint256, uint256)
+    {
+        uint256 booth_double = 2*value;
+        require( booth_double > value );
+
+        uint256 a = 1<<255;
+        uint256 i = 0xFF;
+
+        // Window, [-1, R, 1], where R stores the result/accumulator
+        uint256[4][3] memory w;
+        w[1] = [uint256(0), uint256(1), uint256(0), uint256(1)];
+        pointToEtec(x, y, w[2]);
+        // Negate first point in window
+        // Twisted Edwards Curves Revisited - HWCD, pg 5, section 3
+        //  -(X : Y : T : Z) = (-X : Y : -T : Z)
+        w[0] = [Q-x, y, Q-w[2][2], 1];
+
+        while( a != 0 )
+        {
+            // Calculate a two-bit window of the Booth encoding (in right-to-left form)
+            // See: https://eprint.iacr.org/2005/384.pdf
+            int256 naf_a = int256((booth_double & a) >> i) - int256((value & a) >> i);
+            a = a / 2;
+            i -= 1;
+            int256 naf_b = int256((booth_double & a) >> i) - int256((value & a) >> i);
+            a = a / 2;
+            i -= 1;
+            // Then, convert Booth encoding window to NAF, without using IF statement (it's cheaper this way)
+            assembly {
+                let k := eq(add(naf_a, naf_b), 0)
+                naf_b := add(mul(naf_a, k), mul(naf_b, sub(1, k)))
+                naf_a := mul(naf_a, sub(1, k))
+            }
+
+            etecDouble(w[1], w[1]);
+            if( naf_a != 0 ) {
+                etecAdd(w[1], w[uint256(1 + naf_a)], w[1]);
+            }
+
+            etecDouble(w[1], w[1]);
+            if( naf_b != 0 ) {
+                etecAdd(w[1], w[uint256(1 + naf_b)], w[1]);
+            }
+        }
+        return etecToPoint(w[1][0], w[1][1], w[1][2], w[1][3]);
+    }
+
+
     function scalarMult(uint256 x, uint256 y, uint256 value)
         internal view returns (uint256, uint256)
     {
         uint256[4] memory p;
-        (p[0], p[1], p[2]) = pointToEac(x, y);
-        p[3] = 1;
+        pointToEtec(x, y, p);
 
         uint256[4] memory a = [uint256(0), uint256(1), uint256(0), uint256(1)];
-
         uint256 i = 0;
 
         while (value != 0)
         {
             if ((value & 1) != 0)
             {
-                a = etecAdd(a, p);
+                etecAdd(a, p, a);
             }
 
-            p = etecAdd(p, p);
+            etecDouble(p, p);
 
             value = value / 2;
 
@@ -138,6 +198,71 @@ library JubJub
     }
 
     /**
+     * @dev Double an ETEC point on the Baby-JubJub curve
+     * Using the `dbl-2008-hwcd` method
+     * https://www.hyperelliptic.org/EFD/g1p/auto-twisted-extended.html#doubling-dbl-2008-hwcd
+     */
+    function etecDouble(
+        uint256[4] memory _p1,
+        uint256[4] memory p2
+    )
+        internal
+        pure
+    {
+        assembly {
+            //let localA := 0x292FC
+            let localQ := 0x30644E72E131A029B85045B68181585D2833E84879B9709143E1F593F0000001
+            let x := mload(_p1)
+            let y := mload(add(_p1, 0x20))
+            // T, is not used
+            let z := mload(add(_p1, 0x60))
+
+            // a = self.x * self.x
+            let a := mulmod(x, x, localQ)
+
+            // b = self.y * self.y
+            let b := mulmod(y, y, localQ)
+
+            // t0 = self.z * self.z
+            // c = t0 * 2
+            let c := mulmod(mulmod(z, z, localQ), 2, localQ)
+
+            // d = JUBJUB_A * a
+            let d := mulmod(0x292FC, a, localQ)
+
+            // t1 = self.x + self.y
+            let e := add(x, y)
+            // t2 = t1 * t1
+            // t3 = t2 - a
+            // e = t3 - b
+            e := addmod(
+                    add(
+                        mulmod(e, e, localQ),
+                        sub(localQ, a)),
+                    sub(localQ, b),
+                    localQ)
+
+            // g = d + b
+            let g := add(d, b)
+
+            // f = g - c
+            let f := addmod(g, sub(localQ, c), localQ)
+
+            // h = d - b
+            let h := add(d, sub(localQ, b))
+
+            // x3 <- E * F
+            mstore(p2, mulmod(e, f, localQ))
+            // y3 <- G * H
+            mstore(add(p2, 0x20), mulmod(g, h, localQ))
+            // t3 <- E * H
+            mstore(add(p2, 0x40), mulmod(e, h, localQ))
+            // z3 <- F * G
+            mstore(add(p2, 0x60), mulmod(f, g, localQ))
+        }
+    }
+
+    /**
      * @dev Add 2 etec points on baby jubjub curve
      * x3 = (x1y2 + y1x2) * (z1z2 - dt1t2)
      * y3 = (y1y2 - ax1x2) * (z1z2 + dt1t2)
@@ -146,24 +271,12 @@ library JubJub
      */
     function etecAdd(
         uint256[4] memory _p1,
-        uint256[4] memory _p2
+        uint256[4] memory _p2,
+        uint256[4] memory p3
     ) 
         internal
         pure
-        returns (uint256[4] memory p3)
     {
-        /*
-        // inf + (x,y) = (x,y)
-        if (_p1[0] == 0 && _p1[1] == 1 && _p1[2] == 0 && _p1[3] == 1) {
-            return _p2;
-        }
-
-        // (x,y) + inf = (x,y)
-        if (_p2[0] == 0 && _p2[1] == 1 && _p2[2] == 0 && _p2[3] == 1) {
-            return _p1;
-        }
-        */
-
         assembly {
             let localQ := 0x30644E72E131A029B85045B68181585D2833E84879B9709143E1F593F0000001
             let y1 := mload(add(_p1, 0x20))
@@ -185,38 +298,15 @@ library JubJub
 
             // E <- (x1 + y1) * (x2 + y2) - A - B
             let e := addmod(mulmod(add(mload(_p1), y1), add(mload(_p2), y2), localQ), add(sub(localQ, a), sub(localQ, b)), localQ)
-            /*
-            if lt(e, add(a, 1)) {
-                e := add(e, localQ)
-            }
-            e := mod(sub(e, a), localQ)
-            if lt(e, add(b, 1)) {
-                e := add(e, localQ)
-            }
-            e := mod(sub(e, b), localQ)
-            */
+
             // F <- D - C
             let f := addmod(d, sub(localQ, c), localQ)
-            /*
-            let f := d
-            if lt(f, add(c, 1)) {
-                f := add(f, localQ)
-            }
-            f := mod(sub(f, c), localQ)
-            */
+
             // G <- D + C
             let g := add(d, c)
 
             // H <- B - a * A
             let h := add(b, sub(localQ, mulmod(0x292FC, a, localQ)))
-            /*
-            let aA := mulmod(localA, a, localQ)
-            let h := b
-            if lt(h, add(aA, 1)) {
-                h := add(h, localQ)
-            }
-            h := mod(sub(h, aA), localQ)
-            */
 
             // x3 <- E * F
             mstore(p3, mulmod(e, f, localQ))

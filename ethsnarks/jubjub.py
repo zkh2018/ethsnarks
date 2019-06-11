@@ -573,7 +573,8 @@ class EtecPoint(AbstractCurveOps, namedtuple('_EtecPoint', ('x', 'y', 't', 'z'))
 		return EtecPoint(e*f, g*h, e*h, f*g)
 
 
-def naf(k, width=2):
+def wNAF(k, width=2):
+	# windowed Non-Adjacent-Form
 	# https://bristolcrypto.blogspot.com/2015/04/52-things-number-26-describe-naf-scalar.html
 	# https://en.wikipedia.org/wiki/Elliptic_curve_point_multiplication#w-ary_non-adjacent_form_(wNAF)_method
 	k = int(k)
@@ -611,7 +612,7 @@ def naf_window(point, nbits):
 def mult_naf(point, scalar):
 	# Multiplication using NAF
 	a = point.infinity()
-	for k_i in naf(scalar):
+	for k_i in wNAF(scalar):
 		a = a.double()
 		if k_i == 1:
 			a = a.add(point)
@@ -624,7 +625,7 @@ def mult_naf_lut(point, scalar, width=2):
 	# Multipication using Windowed NAF, with an arbitrary sized window
 	a = point.infinity()
 	w = naf_window(point, width)
-	for k_i in naf(scalar, width):
+	for k_i in wNAF(scalar, width):
 		a = a.double()
 		p = w[k_i]
 		if p is not None:
