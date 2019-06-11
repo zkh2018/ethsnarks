@@ -92,9 +92,10 @@ library JubJub
         uint256 a = 1<<255;
         uint256 i = 0xFF;
 
+        uint256[4] memory r = [uint256(0), uint256(1), uint256(0), uint256(1)];
+
         // Window, [-1, R, 1], where R stores the result/accumulator
         uint256[4][3] memory w;
-        w[1] = [uint256(0), uint256(1), uint256(0), uint256(1)];
         pointToEtec(x, y, w[2]);
         // Negate first point in window
         // Twisted Edwards Curves Revisited - HWCD, pg 5, section 3
@@ -111,24 +112,23 @@ library JubJub
             int256 naf_b = int256((booth_double & a) >> i) - int256((value & a) >> i);
             a = a / 2;
             i -= 1;
-            // Then, convert Booth encoding window to NAF, without using IF statement (it's cheaper this way)
-            assembly {
-                let k := eq(add(naf_a, naf_b), 0)
-                naf_b := add(mul(naf_a, k), mul(naf_b, sub(1, k)))
-                naf_a := mul(naf_a, sub(1, k))
+
+            if( (naf_a + naf_b) == 0 ) {
+                naf_b = naf_a;
+                naf_a = 0;
             }
 
-            etecDouble(w[1], w[1]);
+            etecDouble(r, r);
             if( naf_a != 0 ) {
-                etecAdd(w[1], w[uint256(1 + naf_a)], w[1]);
+                etecAdd(r, w[uint256(1 + naf_a)], r);
             }
 
-            etecDouble(w[1], w[1]);
+            etecDouble(r, r);
             if( naf_b != 0 ) {
-                etecAdd(w[1], w[uint256(1 + naf_b)], w[1]);
+                etecAdd(r, w[uint256(1 + naf_b)], r);
             }
         }
-        return etecToPoint(w[1][0], w[1][1], w[1][2], w[1][3]);
+        return etecToPoint(r[0], r[1], r[2], r[3]);
     }
 
 
@@ -139,7 +139,6 @@ library JubJub
         pointToEtec(x, y, p);
 
         uint256[4] memory a = [uint256(0), uint256(1), uint256(0), uint256(1)];
-        uint256 i = 0;
 
         while (value != 0)
         {
@@ -151,8 +150,6 @@ library JubJub
             etecDouble(p, p);
 
             value = value / 2;
-
-            i += 1;
         }
 
         return etecToPoint(a[0], a[1], a[2], a[3]);
