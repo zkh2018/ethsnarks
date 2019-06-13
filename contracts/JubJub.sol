@@ -83,24 +83,290 @@ library JubJub
     }
 
 
+    function etecNegate( uint256[4] memory input_point, uint256[4] memory output_point )
+        internal pure
+    {
+        output_point[0] = Q - input_point[0];
+        output_point[1] = input_point[1];
+        output_point[2] = Q - input_point[2];
+        output_point[3] = input_point[3];
+    }
+
+
+    /**
+     * Note the result is stored as 256 bytes, encoded as 8x 256-bit words
+     * This prevents solidity from giving us a 20k gas overhead for memory allocation...
+     *
+     * This maps to an array of bytes, instead of a signed integer of ±(0..(2^w)-1))
+     * we have a range of (0..2^w) which maps directly into a 0-indexed table for the
+     * point to use for addition. This avoids signed integers entirely.
+     *
+     * The function returns the offset (in bytes) to start from within the result
+     */
+    function wnafSequence(uint256 value, uint256 width, uint256[8] memory result)
+        internal pure returns (uint256 out_offs)
+    {
+        uint a = 1<<width;
+        uint b = a >> 1;
+        uint k_i;
+        assembly {
+            a := shl(width, 1)
+            b := shr(1, a)
+            out_offs := add(result, 0xFF)
+
+            for {} gt(value, 0) {} {
+                k_i := 0
+                if gt(mod(value, 2), 0) {
+                    k_i := mod(value, a)
+                    k_i := sub(k_i, mul(a, gt(k_i, b))) // slightly cheaper than an IF
+                    value := sub(value, k_i)
+                }
+                mstore8(out_offs, add(b, k_i))
+                value := div(value, 2)
+                out_offs := sub(out_offs, 1)
+            }
+
+            out_offs := sub(out_offs, result)
+        }
+    }
+
+
+    /**
+    * 2-bit Window: [-1, ?, 1]
+    * b = 2
+    * mapped to:    [?, -1, ?, 1]
+    */
+    function wnafWindow2( uint256 x, uint256 y, uint256[4][4] memory w )
+        internal pure
+    {
+        pointToEtec(x, y, w[3]);
+        etecNegate(w[3], w[1]);
+    }
+
+    /**
+    * Value values are: [-3, -1, ?, 1, 3]
+    * b = 4
+    * mapped to: [?, -3, ?, -1, ?, 1, ?, 3]
+    */
+    function wnafWindow3( uint256 x, uint256 y, uint256[4][8] memory w )
+        internal pure
+    {
+        pointToEtec(x, y, w[5]);
+        etecDouble(w[5], w[6]);      // 2 = 1 + 1
+        etecAdd(w[5], w[6], w[7]);   // 3 = 2 + 1
+        etecNegate(w[5], w[3]);
+        etecNegate(w[7], w[1]);
+    }
+
+
+    /**
+    * Value values are: [-7, -5, -3, -1, 0, 1, 3, 5, 7]
+    * b = 8
+    * mapped to: [?, -7, ?, -5, ?, -3, ?, -1, ?, 1, ?, 3, ?, 5, ?, 7]
+    * 4 point computations
+    * 4 point negations
+    */
+    function wnafWindow4( uint256 x, uint256 y, uint256[4][16] memory w )
+        internal pure
+    {
+        pointToEtec(x, y, w[9]);
+        etecDouble(w[9], w[10]);      // 2 = 1 + 1
+        etecAdd(w[9], w[10], w[11]);  // 3 = 2 + 1
+        etecAdd(w[10], w[11], w[13]); // 5 = 2 + 3
+        etecAdd(w[10], w[13], w[15]); // 7 = 2 + 5
+        etecNegate(w[9], w[7]);
+        etecNegate(w[11], w[5]);
+        etecNegate(w[13], w[3]);
+        etecNegate(w[15], w[1]);
+    }
+
+
+    /**
+    * Value values are: [-15, -13, -11, -9, -7, -5, -3, -1, 0, 1, 3, 5, 7, 9, 11, 13, 15]
+    * b = 16
+    * 8 point computations
+    * 8 point negations
+    */
+    function wnafWindow5( uint256 x, uint256 y, uint256[4][32] memory w )
+        internal pure
+    {
+        pointToEtec(x, y, w[17]);
+        etecDouble(w[17], w[18]);     // 2 = 1 + 1
+        etecAdd(w[17], w[18], w[19]); // 3 = 2 + 1
+        etecAdd(w[17], w[19], w[21]); // 5 = 2 + 3
+        etecAdd(w[17], w[21], w[23]); // 7 = 2 + 5
+        etecAdd(w[17], w[23], w[25]); // 9 = 2 + 7
+        etecAdd(w[17], w[25], w[27]); // 11 = 2 + 9
+        etecAdd(w[17], w[27], w[29]); // 13 = 2 + 11
+        etecAdd(w[17], w[29], w[31]); // 15 = 2 + 13
+        etecNegate(w[31], w[1]);
+        etecNegate(w[29], w[3]);
+        etecNegate(w[27], w[5]);
+        etecNegate(w[25], w[7]);
+        etecNegate(w[23], w[9]);
+        etecNegate(w[21], w[11]);
+        etecNegate(w[19], w[13]);
+        etecNegate(w[17], w[15]);
+    }
+
+
+    function scalarMultNAF4(uint256 x, uint256 y, uint256 value)
+        internal view returns (uint256, uint256)
+    {
+        uint256[4] memory r = [uint256(0), uint256(1), uint256(0), uint256(1)];
+
+        uint256[4][16] memory w;
+        wnafWindow4(x, y, w);
+
+        uint256[8] memory wnaf_seq;
+        uint256 wnaf_offset;
+        wnaf_offset = wnafSequence(value, 4, wnaf_seq);
+        uint256 wnaf_item;
+        uint256 wnaf_offset2 = wnaf_offset;
+
+        assembly {
+            wnaf_offset2 := add(wnaf_offset2, wnaf_seq)
+        }
+
+        while( wnaf_offset <= 0xFF )
+        {
+            assembly {
+                wnaf_item := byte(0, mload(wnaf_offset2))  // There is no `mload8`
+                wnaf_offset2 := add(wnaf_offset2, 1)
+            }
+            wnaf_offset += 1;
+
+            etecDouble(r, r);
+            if( wnaf_item != 0 && wnaf_item != 8 ) {
+                etecAdd(r, w[wnaf_item], r);
+            }
+        }
+        return etecToPoint(r[0], r[1], r[2], r[3]);
+    }
+
+
+    function scalarMultNAF5(uint256 x, uint256 y, uint256 value)
+        internal view returns (uint256, uint256)
+    {
+        uint256[4] memory r = [uint256(0), uint256(1), uint256(0), uint256(1)];
+
+        uint256[4][32] memory w;
+        wnafWindow5(x, y, w);
+
+        uint256[8] memory wnaf_seq;
+        uint256 wnaf_offset;
+        wnaf_offset = wnafSequence(value, 5, wnaf_seq);
+        uint256 wnaf_item;
+        uint256 wnaf_offset2 = wnaf_offset;
+
+        assembly {
+            wnaf_offset2 := add(wnaf_offset2, wnaf_seq)
+        }
+
+        while( wnaf_offset <= 0xFF )
+        {
+            assembly {
+                wnaf_item := byte(0, mload(wnaf_offset2))  // There is no `mload8`
+                wnaf_offset2 := add(wnaf_offset2, 1)
+            }
+            wnaf_offset += 1;
+
+            etecDouble(r, r);
+            if( wnaf_item != 0 && wnaf_item != 8 ) {
+                etecAdd(r, w[wnaf_item], r);
+            }
+        }
+        return etecToPoint(r[0], r[1], r[2], r[3]);
+    }
+
+
+    function scalarMultNAF3(uint256 x, uint256 y, uint256 value)
+        internal view returns (uint256, uint256)
+    {
+        uint256[4] memory r = [uint256(0), uint256(1), uint256(0), uint256(1)];
+
+        uint256[4][8] memory w;
+        wnafWindow3(x, y, w);
+
+        uint256[8] memory wnaf_seq;
+        uint256 wnaf_offset;
+        wnaf_offset = wnafSequence(value, 3, wnaf_seq);
+        uint256 wnaf_item;
+        uint256 wnaf_offset2 = wnaf_offset;
+
+        assembly {
+            wnaf_offset2 := add(wnaf_offset2, wnaf_seq)
+        }
+
+        while( wnaf_offset <= 0xFF )
+        {
+            assembly {
+                wnaf_item := byte(0, mload(wnaf_offset2))  // There is no `mload8`
+                wnaf_offset2 := add(wnaf_offset2, 1)
+            }
+            wnaf_offset += 1;
+
+            etecDouble(r, r);
+            if( wnaf_item != 0 && wnaf_item != 8 ) {
+                etecAdd(r, w[wnaf_item], r);
+            }
+        }
+        return etecToPoint(r[0], r[1], r[2], r[3]);
+    }
+
+
+    function scalarMultNAF2(uint256 x, uint256 y, uint256 value)
+        internal view returns (uint256, uint256)
+    {        
+        uint256[4] memory r = [uint256(0), uint256(1), uint256(0), uint256(1)];
+
+        uint256[4][4] memory w;
+        wnafWindow2(x, y, w);
+
+        uint256[8] memory wnaf_seq;
+        uint256 wnaf_offset;
+        wnaf_offset = wnafSequence(value, 2, wnaf_seq);
+        uint256 wnaf_item;
+        uint256 wnaf_offset2 = wnaf_offset;
+
+        assembly {
+            wnaf_offset2 := add(wnaf_offset2, wnaf_seq)
+        }
+
+        while( wnaf_offset <= 0xFF )
+        {
+            assembly {
+                wnaf_item := byte(0, mload(wnaf_offset2))  // There is no `mload8`
+                wnaf_offset2 := add(wnaf_offset2, 1)
+            }
+            wnaf_offset += 1;
+
+            etecDouble(r, r);
+            if( wnaf_item != 0 && wnaf_item != 8 ) {
+                etecAdd(r, w[wnaf_item], r);
+            }
+        }
+        return etecToPoint(r[0], r[1], r[2], r[3]);
+    }
+
+
     function scalarMultNAF(uint256 x, uint256 y, uint256 value)
         internal view returns (uint256, uint256)
     {
-        uint256 booth_double = 2*value;
-        require( booth_double > value );
-
-        uint256 a = 1<<255;
-        uint256 i = 0xFF;
-
         uint256[4] memory r = [uint256(0), uint256(1), uint256(0), uint256(1)];
 
-        // Window, [-1, R, 1], where R stores the result/accumulator
+        // Window, [-1, ?, 1]
         uint256[4][3] memory w;
         pointToEtec(x, y, w[2]);
         // Negate first point in window
         // Twisted Edwards Curves Revisited - HWCD, pg 5, section 3
         //  -(X : Y : T : Z) = (-X : Y : -T : Z)
         w[0] = [Q-x, y, Q-w[2][2], 1];
+
+        uint256 booth_double = 2*value;
+        require( booth_double > value );
+        uint256 a = 1<<255;
+        uint256 i = 0xFF;
 
         while( a != 0 )
         {
@@ -198,6 +464,11 @@ library JubJub
      * @dev Double an ETEC point on the Baby-JubJub curve
      * Using the `dbl-2008-hwcd` method
      * https://www.hyperelliptic.org/EFD/g1p/auto-twisted-extended.html#doubling-dbl-2008-hwcd
+     *
+     * XXX: This uses unsafe optimisations, using `add` rather than `addmod`
+     *      We can add 254 bit integers together without them overflowing the 256bit word
+     *      so they can be passed into another function which performs a modulo
+     *      This only works because the Baby JubJub field modulus is 254 bits.
      */
     function etecDouble(
         uint256[4] memory _p1,
@@ -265,6 +536,11 @@ library JubJub
      * y3 = (y1y2 - ax1x2) * (z1z2 + dt1t2)
      * t3 = (y1y2 - ax1x2) * (x1y2 + y1x2)
      * z3 = (z1z2 - dt1t2) * (z1z2 + dt1t2)
+     *
+     * XXX: This uses unsafe optimisations, using `add` rather than `addmod`
+     *      We can add 254 bit integers together without them overflowing the 256bit word
+     *      so they can be passed into another function which performs a modulo
+     *      This only works because the Baby JubJub field modulus is 254 bits.
      */
     function etecAdd(
         uint256[4] memory _p1,
