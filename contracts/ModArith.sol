@@ -1,3 +1,6 @@
+// Copyright (c) 2018 @HarryR
+// License: LGPL-3.0+
+
 pragma solidity ^0.5.0;
 
 library ModArith
