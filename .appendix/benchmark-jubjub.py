@@ -1,30 +1,36 @@
 """
 Example output:
 
-a * x 0.13946
-b * x 0.01434
-c * x 0.01446
-mult_naf(a, x) 0.12216
-mult_naf(b, x) 0.01379
-mult_naf(c, x) 0.01266
-mult_naf_lut(a, x, 2) 0.12619
-mult_naf_lut(b, x, 2) 0.01323
-mult_naf_lut(c, x, 2) 0.01435
-mult_naf_lut(a, x, 3) 0.11867
-mult_naf_lut(b, x, 3) 0.01255
-mult_naf_lut(c, x, 3) 0.01143
-mult_naf_lut(a, x, 4) 0.12152
-mult_naf_lut(b, x, 4) 0.01244
-mult_naf_lut(c, x, 4) 0.0122
-mult_naf_lut(a, x, 5) 0.1344
-mult_naf_lut(b, x, 5) 0.01411
-mult_naf_lut(c, x, 5) 0.01319
-mult_naf_lut(a, x, 6) 0.17117
-mult_naf_lut(b, x, 6) 0.01765
-mult_naf_lut(c, x, 6) 0.01757
-mult_naf_lut(a, x, 7) 0.27296
-mult_naf_lut(b, x, 7) 0.02904
-mult_naf_lut(c, x, 7) 0.02754
+a * x 0.13714
+b * x 0.01573
+c * x 0.01436
+mult_naf(a, x) 0.12317
+mult_naf(b, x) 0.01271
+mult_naf(c, x) 0.01213
+mult_naf_lut(a, x, 2) 0.12492
+mult_naf_lut(b, x, 2) 0.013
+mult_naf_lut(c, x, 2) 0.01291
+mult_naf_lut(a, x, 3) 0.11661
+mult_naf_lut(b, x, 3) 0.0121
+mult_naf_lut(c, x, 3) 0.01146
+mult_naf_lut(a, x, 4) 0.11175
+mult_naf_lut(b, x, 4) 0.01177
+mult_naf_lut(c, x, 4) 0.01107
+mult_naf_lut(a, x, 5) 0.11282
+mult_naf_lut(b, x, 5) 0.0116
+mult_naf_lut(c, x, 5) 0.01066
+mult_naf_lut(a, x, 6) 0.11055
+mult_naf_lut(b, x, 6) 0.01152
+mult_naf_lut(c, x, 6) 0.01094
+mult_naf_lut(a, x, 7) 0.11351
+mult_naf_lut(b, x, 7) 0.01203
+mult_naf_lut(c, x, 7) 0.0114
+mult_naf_lut(a, x, 8) 0.12455
+mult_naf_lut(b, x, 8) 0.01385
+mult_naf_lut(c, x, 8) 0.01263
+mult_naf_lut(a, x, 9) 0.15009
+mult_naf_lut(b, x, 9) 0.01616
+mult_naf_lut(c, x, 9) 0.01561
 """
 
 def bench(s):
@@ -40,6 +46,6 @@ bench('c * x')
 bench('mult_naf(a, x)')
 bench('mult_naf(b, x)')
 bench('mult_naf(c, x)')
-for i in range(2,8):
+for i in range(2, 10):
 	for p in ['a', 'b', 'c']:
 		bench('mult_naf_lut(%s, x, %d)' % (p, i))

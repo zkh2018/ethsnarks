@@ -603,7 +603,14 @@ def naf_window(point, nbits):
 	a = (1<<nbits)//2
 	res = {0: None}
 	for n in list(range(0, a))[1:]:
-		p_n = point * n
+		if n == 1:
+			p_n = point
+		elif n == 2:
+			p_n = point.double()
+		elif n > 2 and n % 2 == 0:
+			continue
+		else:
+			p_n = res[n-2] + res[2]
 		res[n] = p_n
 		res[-n] = -p_n
 	return res
