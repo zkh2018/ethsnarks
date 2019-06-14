@@ -263,6 +263,9 @@ class Point(AbstractCurveOps, namedtuple('_Point', ('x', 'y'))):
 		y &= (1 << 255) - 1
 		return cls.from_y(FQ(y), sign)
 
+	def as_mont(self):
+		return MontPoint.from_edwards(self)
+
 	def as_proj(self):
 		return ProjPoint(self.x, self.y, FQ(1))
 
@@ -328,6 +331,9 @@ class ProjPoint(AbstractCurveOps, namedtuple('_ProjPoint', ('x', 'y', 'z'))):
 		(X, Y, Z) -> (X, Y, X*Y, Z)
 		"""
 		return EtecPoint(self.x, self.y, self.x*self.y, self.z)
+
+	def as_mont(self):
+		return self.as_point().as_mont()
 
 	def as_point(self):
 		assert self.z != 0
@@ -433,8 +439,43 @@ class MontPoint(AbstractCurveOps, namedtuple('_MontPoint', ('u', 'v'))):
 		if e.x == FQ.zero():
 			return MontPoint(FQ.zero(), FQ.zero())
 		u = (FQ.one() + e.y) / (FQ.one() - e.y)
-		v = u / x.e
-		return cls(self)(u, v)
+		v = u / e.x
+		return cls(u, v)
+
+	def as_point(self):
+		"""
+		See: https://eprint.iacr.org/2008/013.pdf
+		 - "Twisted Edwards Curves" (BBJLP'08)
+		 - Theorem 3.2 pg 4
+
+		 with inverse
+			(u, v) → (x, y) = (u/v, (u − 1)/(u + 1)).
+		"""
+		x = self.u / self.v
+		y = (self.u - 1) / (self.u + 1)
+		return Point(x, y)
+
+	def as_etec(self):
+		return self.as_point().as_etec()
+
+	def as_proj(self):
+		return self.as_point().as_proj()
+
+	def valid(self):
+		"""
+		See: https://eprint.iacr.org/2008/013.pdf
+		 - "Twisted Edwards Curves" (BBJLP'08)
+
+		Definition 3.1 (Montgomery curve). Fix a field k with char(k) 6= 2. Fix
+			A ∈ k \ {−2, 2} and B ∈ k \ {0}.
+
+		The Montgomery curve with coefficients A and B is the curve
+
+			E_{M,A,B} : B * (v^2) = u^3 + A*(u^2) + u
+		"""
+		lhs = MONT_B * (self.v ** 2)
+		rhs = (self.u ** 3) + MONT_A * (self.u ** 2) + self.u
+		return lhs == rhs
 
 	def as_mont(self):
 		return self
@@ -496,6 +537,9 @@ class EtecPoint(AbstractCurveOps, namedtuple('_EtecPoint', ('x', 'y', 't', 'z'))
 
 	def __hash__(self):
 		return hash((self.x, self.y, self.t, self.z))
+
+	def as_mont(self):
+		return self.as_point().as_mont()
 
 	def as_point(self):
 		"""

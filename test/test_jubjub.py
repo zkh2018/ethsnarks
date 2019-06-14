@@ -22,10 +22,10 @@ class TestJubjub(unittest.TestCase):
 		return Point(FQ(x), FQ(y))
 
 	def _verify_via_all(self, p):
-		points = [p.as_point(), p.as_etec(), p.as_proj()]
+		points = [p.as_point(), p.as_etec(), p.as_proj(), p.as_mont()]
 		for q in points:
 			self.assertTrue(q.valid())
-			qoints = [q.as_point(), q.as_etec(), q.as_proj()]
+			qoints = [q.as_point(), q.as_etec(), q.as_proj(), p.as_mont()]
 			for i, r in enumerate(qoints):
 				self.assertTrue(r.valid())
 				self.assertEqual(r.rescale(), points[i].rescale(), "Conversion between %r, %r and %r" % (type(q), type(r), type(points[i])))
