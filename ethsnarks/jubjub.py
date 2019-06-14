@@ -122,6 +122,9 @@ class AbstractCurveOps(object):
 	def sign(self):
 		return 1 if self.is_negative() else 0
 
+	def mult_wnaf(self, scalar, window=5):
+		return mult_naf_lut(self, scalar, window)
+
 	def mult(self, scalar):
 		if isinstance(scalar, FQ):
 			if scalar.m not in [SNARK_SCALAR_FIELD, JUBJUB_E, JUBJUB_L]:
@@ -480,12 +483,12 @@ class MontPoint(AbstractCurveOps, namedtuple('_MontPoint', ('u', 'v'))):
 	def as_mont(self):
 		return self
 
-	@staticmethod
-	def infinity():
-		return cls(self)(FQ(0), FQ(1))
+	@classmethod
+	def infinity(cls):
+		return cls(FQ(0), FQ(1))
 
 	def neg(self):
-		return cls(self)(self.u, -self.v)
+		return type(self)(self.u, -self.v)
 
 	def __eq__(self, other):
 		return self.u == other.u and self.v == other.v
@@ -506,7 +509,7 @@ class MontPoint(AbstractCurveOps, namedtuple('_MontPoint', ('u', 'v'))):
 		delta = (1 + (2*(MONT_A * self.u)) + usq + (usq*2)) / (2*self.v)
 		x3 = (delta*delta) - MONT_A - (2*self.u)
 		y3 = -((x3 - self.u) * delta + self.v)
-		return cls(self)(x3, y3)
+		return type(self)(x3, y3)
 
 	def add(self, other):
 		# https://github.com/zcash/librustzcash/blob/master/sapling-crypto/src/jubjub/montgomery.rs#L288
@@ -525,7 +528,7 @@ class MontPoint(AbstractCurveOps, namedtuple('_MontPoint', ('u', 'v'))):
 		delta = (other.v - self.v) / (other.u - self.u)
 		x3 = (delta*delta) - MONT_A - self.u - other.u
 		y3 = -((x3 - self.u) * delta + self.v)
-		return cls(self)(x3, y3)
+		return type(self)(x3, y3)
 
 
 class EtecPoint(AbstractCurveOps, namedtuple('_EtecPoint', ('x', 'y', 't', 'z'))):

@@ -251,19 +251,27 @@ class TestJubjub(unittest.TestCase):
 		q = p.mult(2)
 		self.assertEqual(q.as_point(), self._point_a_double())
 
-	def test_etec_mult_n(self):
-		p = self._point_a().as_etec()
-		q = p.mult(6890855772600357754907169075114257697580319025794532037257385534741338397365)
-		q = q.as_point()
-		self.assertEqual(q.x, 6317123931401941284657971611369077243307682877199795030160588338302336995127)
-		self.assertEqual(q.y, 17705894757276775630165779951991641206660307982595100429224895554788146104270)
+	def test_mult_all_known(self):
+		rp = self._point_a()
+		all_points = [rp, rp.as_proj(), rp.as_etec(), rp.as_mont()]
+		expected = Point(FQ(6317123931401941284657971611369077243307682877199795030160588338302336995127),
+						 FQ(17705894757276775630165779951991641206660307982595100429224895554788146104270))
+		for p in all_points:
+			q = p.mult(6890855772600357754907169075114257697580319025794532037257385534741338397365)
+			r = q.as_point()
+			self.assertEqual(r.x, expected.x)
+			self.assertEqual(r.y, expected.y)
 
-	def test_proj_mult_n(self):
-		p = self._point_a().as_proj()
-		q = p.mult(6890855772600357754907169075114257697580319025794532037257385534741338397365)
-		q = q.as_point()
-		self.assertEqual(q.x, 6317123931401941284657971611369077243307682877199795030160588338302336995127)
-		self.assertEqual(q.y, 17705894757276775630165779951991641206660307982595100429224895554788146104270)
+	def test_mult_all_random(self):
+		rp = self._point_a()
+		x = FQ.random(JUBJUB_L)
+		all_points = [rp, rp.as_proj(), rp.as_etec(), rp.as_mont()]
+		expected = rp * x
+		for p in all_points:
+			q = p.mult(x)
+			r = q.as_point()
+			self.assertEqual(r.x, expected.x)
+			self.assertEqual(r.y, expected.y)
 
 	def test_naf(self):
 		"""
