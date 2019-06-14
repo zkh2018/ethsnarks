@@ -3,7 +3,7 @@ import bitstring
 from math import floor, log2
 from struct import pack
 
-from .jubjub import Point, JUBJUB_L, JUBJUB_C
+from .jubjub import Point, EtecPoint, JUBJUB_L, JUBJUB_C
 
 
 MAX_SEGMENT_BITS = floor(log2(JUBJUB_L))
@@ -26,14 +26,14 @@ def pedersen_hash_basepoint(name, i):
 	if len(name) > 28:
 		raise ValueError("Name too long")
 	data = b"%-28s%04X" % (name, i)
-	return Point.from_hash(data)
+	return Point.from_hash(data).as_etec()
 
 
 def pedersen_hash_windows(name, windows):
 	# 62 is defined in the ZCash Sapling Specification, Theorem 5.4.1
 	# See: https://github.com/HarryR/ethsnarks/issues/121#issuecomment-499441289
 	n_windows = 62
-	result = Point.infinity()
+	result = EtecPoint.infinity()
 	for j, window in enumerate(windows):
 		if j % n_windows == 0:
 			current = pedersen_hash_basepoint(name, j//n_windows)
@@ -44,7 +44,7 @@ def pedersen_hash_windows(name, windows):
 		if window > 0b11:
 			segment = segment.neg()
 		result += segment
-	return result
+	return result.as_point()
 
 
 def pedersen_hash_bits(name, bits):
