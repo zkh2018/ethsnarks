@@ -1,47 +1,9 @@
-"""
-This module implements a Pedersen hash function.
-It can hash points, scalar values or blocks of message data.
-
-It is possible to create two variants, however only the
-non-homomorphic variant has been implemented.
-
-The homomorphic variant users the same base point for every
-input, whereas the non-homomorphic version uses a different
-base point for every input.
-
-For example to non-homomorphically hash the two points P1 and P2
-
-	Four base points are chosen (consistently)
-
-		B0, B1, B2, B3
-
-	The result of the hash is the point:
-
-		B0*P1.x + B1*P1.y + B2*P2.x + B3*P2.y
-
-To homomorphically hash the two points:
-
-	Two base points are chosen
-
-		BX, BY
-
-	The result of the hash is the point:
-
-		BX*P1.x + BY*P1.y + BX*P2.x + BY*P2.y
-
-	The hash will be the same if either point is swapped
-	with the other, e.g. H(P1,P2) is the same as H(P2,P1).
-
-	This provides a basis for 'chemeleon hashes', or where
-	malleability is a feature rather than a defect.
-"""
-
 import math
 import bitstring
 from math import floor, log2
 from struct import pack
 
-from .jubjub import Point, JUBJUB_L, JUBJUB_C
+from .jubjub import Point, EtecPoint, JUBJUB_L, JUBJUB_C
 
 
 MAX_SEGMENT_BITS = floor(log2(JUBJUB_L))
@@ -50,8 +12,7 @@ MAX_SEGMENT_BYTES = MAX_SEGMENT_BITS // 8
 
 def pedersen_hash_basepoint(name, i):
 	"""
-	Create a base point for use with the windowed pedersen
-	hash function.
+	Create a base point for use with the windowed pedersen hash function.
 	The name and sequence numbers are used a unique identifier.
 	Then HashToPoint is run on the name+seq to get the base point.
 	"""
@@ -65,24 +26,25 @@ def pedersen_hash_basepoint(name, i):
 	if len(name) > 28:
 		raise ValueError("Name too long")
 	data = b"%-28s%04X" % (name, i)
-	return Point.from_hash(data)
+	return Point.from_hash(data).as_etec()
 
 
 def pedersen_hash_windows(name, windows):
-	# TODO: define `62`,
-	# 248/62 == 4... ? CHUNKS_PER_BASE_POINT
-	result = Point.infinity()
+	# 62 is defined in the ZCash Sapling Specification, Theorem 5.4.1
+	# See: https://github.com/HarryR/ethsnarks/issues/121#issuecomment-499441289
+	n_windows = 62
+	result = EtecPoint.infinity()
 	for j, window in enumerate(windows):
-		if j % 62 == 0:
-			current = pedersen_hash_basepoint(name, j//62)
-		j = j % 62
+		if j % n_windows == 0:
+			current = pedersen_hash_basepoint(name, j//n_windows)
+		j = j % n_windows
 		if j != 0:
 			current = current.double().double().double().double()
 		segment = current * ((window & 0b11) + 1)
 		if window > 0b11:
 			segment = segment.neg()
 		result += segment
-	return result
+	return result.as_point()
 
 
 def pedersen_hash_bits(name, bits):

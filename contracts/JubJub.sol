@@ -4,6 +4,9 @@
 
 pragma solidity ^0.5.0;
 
+import "./ETEC.sol";
+import "./wNAF.sol";
+
 library JubJub
 {
     // A should be a square in Q
@@ -28,45 +31,115 @@ library JubJub
  2626589144620713026669568689430873010625803728049924121243784502389097019475];
     }
 
-
-    function submod(uint256 a, uint256 b, uint256 modulus)
-        internal pure returns (uint256)
+    /**
+    * Value values are: [-15, -13, -11, -9, -7, -5, -3, -1, 0, 1, 3, 5, 7, 9, 11, 13, 15]
+    * b = 16
+    * 8 point computations
+    * 8 point negations
+    */
+    function wnafWindow5( uint256 x, uint256 y, uint256[4][32] memory w )
+        internal pure
     {
-        uint256 n = a;
-
-        if (a <= b) {
-            n += modulus;
-        }
-
-        return (n - b) % modulus;
+        ETEC.pointToEtec(x, y, Q, w[17]);
+        etecDouble(w[17], w[18]);     // 2 = 1 + 1
+        etecAdd(w[17], w[18], w[19]); // 3 = 2 + 1
+        etecAdd(w[17], w[19], w[21]); // 5 = 2 + 3
+        etecAdd(w[17], w[21], w[23]); // 7 = 2 + 5
+        etecAdd(w[17], w[23], w[25]); // 9 = 2 + 7
+        etecAdd(w[17], w[25], w[27]); // 11 = 2 + 9
+        etecAdd(w[17], w[27], w[29]); // 13 = 2 + 11
+        etecAdd(w[17], w[29], w[31]); // 15 = 2 + 13
+        ETEC.etecNegate(w[31], w[1], Q);
+        ETEC.etecNegate(w[29], w[3], Q);
+        ETEC.etecNegate(w[27], w[5], Q);
+        ETEC.etecNegate(w[25], w[7], Q);
+        ETEC.etecNegate(w[23], w[9], Q);
+        ETEC.etecNegate(w[21], w[11], Q);
+        ETEC.etecNegate(w[19], w[13], Q);
+        ETEC.etecNegate(w[17], w[15], Q);
     }
 
 
-    function modexp(uint256 base, uint256 exponent, uint256 modulus)
-        internal view returns (uint256)
+    function scalarMultNAF5(uint256 x, uint256 y, uint256 value)
+        internal view returns (uint256, uint256)
     {
-        uint256[1] memory output;
-        uint256[6] memory input;
-        input[0] = 0x20;
-        input[1] = 0x20;
-        input[2] = 0x20;
-        input[3] = base;
-        input[4] = exponent;
-        input[5] = modulus;
+        uint256[4] memory r = [uint256(0), uint256(1), uint256(0), uint256(1)];
 
-        bool success;
+        uint256[4][1<<5] memory w;
+        wnafWindow5(x, y, w);
+
+        uint256[8] memory wnaf_seq;
+        uint256 wnaf_offset;
+        wnaf_offset = wNAF.wnafSequence(value, 5, wnaf_seq);
+        uint256 wnaf_item;
+        uint256 wnaf_offset2 = wnaf_offset;
+
         assembly {
-            success := staticcall(sub(gas, 2000), 5, input, 0xc0, output, 0x20)
+            wnaf_offset2 := add(wnaf_offset2, wnaf_seq)
         }
-        require(success);
-        return output[0];
+
+        while( wnaf_offset <= 0xFF )
+        {
+            assembly {
+                wnaf_item := byte(0, mload(wnaf_offset2))  // There is no `mload8`
+                wnaf_offset2 := add(wnaf_offset2, 1)
+            }
+            wnaf_offset += 1;
+
+            etecDouble(r, r);
+            if( wnaf_item != 0 && wnaf_item != 8 ) {
+                etecAdd(r, w[wnaf_item], r);
+            }
+        }
+        return ETEC.etecToPoint(r, Q);
     }
 
 
-    function inv(uint256 value, uint256 field_modulus)
-        internal view returns (uint256)
+    function scalarMultNAF(uint256 x, uint256 y, uint256 value)
+        internal view returns (uint256, uint256)
     {
-        return modexp(value, field_modulus - 2, field_modulus);
+        uint256[4] memory r = [uint256(0), uint256(1), uint256(0), uint256(1)];
+
+        // Window, [-1, ?, 1]
+        uint256[4][3] memory w;
+        ETEC.pointToEtec(x, y, Q, w[2]);
+        // Negate first point in window
+        // Twisted Edwards Curves Revisited - HWCD, pg 5, section 3
+        //  -(X : Y : T : Z) = (-X : Y : -T : Z)
+        w[0] = [Q-x, y, Q-w[2][2], 1];
+
+        uint256 booth_double = 2*value;
+        require( booth_double > value );
+        uint256 a = 1<<255;
+        uint256 i = 0xFF;
+
+        while( a != 0 )
+        {
+            // Calculate a two-bit window of the Booth encoding (in right-to-left form)
+            // See: https://eprint.iacr.org/2005/384.pdf
+            int256 naf_a = int256((booth_double & a) >> i) - int256((value & a) >> i);
+            a = a / 2;
+            i -= 1;
+            int256 naf_b = int256((booth_double & a) >> i) - int256((value & a) >> i);
+            a = a / 2;
+            i -= 1;
+
+            if( (naf_a + naf_b) == 0 ) {
+                naf_b = naf_a;
+                naf_a = 0;
+            }
+
+            etecDouble(r, r);
+            if( naf_a != 0 ) {
+                etecAdd(r, w[uint256(1 + naf_a)], r);
+            }
+
+            etecDouble(r, r);
+            if( naf_b != 0 ) {
+                etecAdd(r, w[uint256(1 + naf_b)], r);
+            }
+        }
+        return ETEC.etecToPoint(r, Q);
     }
 
 
@@ -74,68 +147,36 @@ library JubJub
         internal view returns (uint256, uint256)
     {
         uint256[4] memory p;
-        (p[0], p[1], p[2]) = pointToEac(x, y);
-        p[3] = 1;
+        ETEC.pointToEtec(x, y, Q, p);
 
         uint256[4] memory a = [uint256(0), uint256(1), uint256(0), uint256(1)];
-
-        uint256 i = 0;
 
         while (value != 0)
         {
             if ((value & 1) != 0)
             {
-                a = etecAdd(a, p);
+                ETEC.etecAdd(a, p, a, Q, JUBJUB_A, JUBJUB_D);
             }
 
-            p = etecAdd(p, p);
+            ETEC.etecDouble(p, p, Q, JUBJUB_A);
 
             value = value / 2;
-
-            i += 1;
         }
 
-        return etecToPoint(a[0], a[1], a[2], a[3]);
+        return ETEC.etecToPoint(a, Q);
     }
 
 
-    /**
-    * Project X,Y point to extended affine coordinates
-    */
-    function pointToEac( uint256 X, uint256 Y )
-        internal pure returns (uint256, uint256, uint256)
+    function etecDouble(
+        uint256[4] memory _p1,
+        uint256[4] memory p2
+    )
+        internal
+        pure
     {
-        return (X, Y, mulmod(X, Y, Q));
+        ETEC.etecDouble(_p1, p2, Q, JUBJUB_A);
     }
 
-
-    /**
-    * Extended twisted edwards coordinates to extended affine coordinates
-    */
-    function etecToEac( uint256 X, uint256 Y, uint256 T, uint256 Z )
-        internal view returns (uint256, uint256, uint256)
-    {
-        Z = inv(Z, Q);
-        return (mulmod(X, Z, Q), mulmod(Y, Z, Q), mulmod(T, Z, Q));
-    }
-
-
-    /**
-    * Extended twisted edwards coordinates to extended affine coordinates
-    */
-    function etecToPoint( uint256 X, uint256 Y, uint256 T, uint256 Z )
-        internal view returns (uint256, uint256)
-    {
-        Z = inv(Z, Q);
-        return (mulmod(X, Z, Q), mulmod(Y, Z, Q));
-    }
-
-
-    function eacToPoint( uint256 X, uint256 Y, uint256 T )
-        internal pure returns (uint256, uint256)
-    {
-        return (X, Y);
-    }
 
     /**
      * @dev Add 2 etec points on baby jubjub curve
@@ -143,115 +184,43 @@ library JubJub
      * y3 = (y1y2 - ax1x2) * (z1z2 + dt1t2)
      * t3 = (y1y2 - ax1x2) * (x1y2 + y1x2)
      * z3 = (z1z2 - dt1t2) * (z1z2 + dt1t2)
+     *
+     * XXX: This uses unsafe optimisations, using `add` rather than `addmod`
+     *      We can add 254 bit integers together without them overflowing the 256bit word
+     *      so they can be passed into another function which performs a modulo
+     *      This only works because the Baby JubJub field modulus is 254 bits.
      */
     function etecAdd(
         uint256[4] memory _p1,
-        uint256[4] memory _p2
+        uint256[4] memory _p2,
+        uint256[4] memory p3
     ) 
         internal
         pure
-        returns (uint256[4] memory p3)
     {
-        // inf + (x,y) = (x,y)
-        if (_p1[0] == 0 && _p1[1] == 1 && _p1[2] == 0 && _p1[3] == 1) {
-            return _p2;
-        }
-
-        // (x,y) + inf = (x,y)
-        if (_p2[0] == 0 && _p2[1] == 1 && _p2[2] == 0 && _p2[3] == 1) {
-            return _p1;
-        }
-
-        assembly {
-            let localQ := 0x30644E72E131A029B85045B68181585D2833E84879B9709143E1F593F0000001 
-            let localA := 0x292FC
-            let localD := 0x292F8 
-
-            // A <- x1 * x2
-            let a := mulmod(mload(_p1), mload(_p2), localQ)
-            // B <- y1 * y2
-            let b := mulmod(mload(add(_p1, 0x20)), mload(add(_p2, 0x20)), localQ)
-            // C <- d * t1 * t2
-            let c := mulmod(mulmod(localD, mload(add(_p1, 0x40)), localQ), mload(add(_p2, 0x40)), localQ)
-            // D <- z1 * z2
-            let d := mulmod(mload(add(_p1, 0x60)), mload(add(_p2, 0x60)), localQ)
-            // E <- (x1 + y1) * (x2 + y2) - A - B
-            let e := mulmod(addmod(mload(_p1), mload(add(_p1, 0x20)), localQ), addmod(mload(_p2), mload(add(_p2, 0x20)), localQ), localQ)
-            if lt(e, add(a, 1)) {
-                e := add(e, localQ)
-            }
-            e := mod(sub(e, a), localQ)
-            if lt(e, add(b, 1)) {
-                e := add(e, localQ)
-            }
-            e := mod(sub(e, b), localQ)
-            // F <- D - C
-            let f := d
-            if lt(f, add(c, 1)) {
-                f := add(f, localQ)
-            }
-            f := mod(sub(f, c), localQ)
-            // G <- D + C
-            let g := addmod(d, c, localQ)
-            // H <- B - a * A
-            let aA := mulmod(localA, a, localQ)
-            let h := b
-            if lt(h, add(aA, 1)) {
-                h := add(h, localQ)
-            }
-            h := mod(sub(h, aA), localQ)
-
-            // x3 <- E * F
-            mstore(p3, mulmod(e, f, localQ))
-            // y3 <- G * H
-            mstore(add(p3, 0x20), mulmod(g, h, localQ))
-            // t3 <- E * H
-            mstore(add(p3, 0x40), mulmod(e, h, localQ))
-            // z3 <- F * G
-            mstore(add(p3, 0x60), mulmod(f, g, localQ))
-        }
+        ETEC.etecAdd(_p1, _p2, p3, Q, JUBJUB_A, JUBJUB_D);
     }
 
+
     function pointAdd(uint256[2] memory self, uint256[2] memory other)
-        internal view returns (uint256[2] memory)
+        internal view returns (uint256[2] memory result_affine)
     {
-        if (self[0] == 0 && self[1] == 0) {
-            return other;
-        } else if (other[0] == 0 && other[1] == 0)
-        {
-            return self;
-        }
-
-        uint256 x1x2 = mulmod(self[0], other[0], Q);
-        uint256 y1y2 = mulmod(self[1], other[1], Q);
-
-        // ----------------     
-
-        //          (x1*y2 + y1*x2)
-        uint256 x3_lhs = addmod(mulmod(self[0], other[1], Q), mulmod(self[1], other[0], Q), Q);
-
-        //                                    JUBJUB_D*x1*x2*y1*y2
-        uint256 dx1x2y1y2 = mulmod(mulmod(JUBJUB_D, x1x2, Q), y1y2, Q);
-
-        //                          (Fq.ONE + JUBJUB_D*u1*u2*v1*v2)
-        uint256 x3_rhs = addmod(1, dx1x2y1y2, Q);
-
-        //                          (Fq.ONE - JUBJUB_D*u1*u2*v1*v2)
-        uint256 y3_rhs = submod(1, dx1x2y1y2, Q);
+        uint256[4] memory self_etec;
+        uint256[4] memory other_etec;
+        uint256[4] memory result_etec;
+        ETEC.pointToEtec(self[0], self[1], Q, self_etec);
+        ETEC.pointToEtec(other[0], other[1], Q, other_etec);
+        ETEC.etecAdd(self_etec, other_etec, result_etec, Q, JUBJUB_A, JUBJUB_D);
+        (result_affine[0], result_affine[1]) = ETEC.etecToPoint(result_etec, Q);
+    }
 
 
-        //          (y1*y2 - A*x1*x2)
-        uint256 y3_lhs = submod(y1y2, mulmod(JUBJUB_A, x1x2, Q), Q);
-
-        // ----------------
-
-        // lhs / rhs
-        return [
-            // x3 = (x1*y2 + y1*x2)   / (Fq.ONE + D*x1*x2*y1*y2)
-            mulmod(x3_lhs, inv(x3_rhs, Q), Q),
-
-            // y3 = (y1*y2 - A*x1*x2) / (Fq.ONE - D*x1*x2*y1*y2)
-            mulmod(y3_lhs, inv(y3_rhs, Q), Q)
-        ];
+    function pointDouble(uint256[2] memory point)
+        internal view returns (uint256[2] memory result_affine)
+    {
+        uint256[4] memory point_etec;
+        ETEC.pointToEtec(point[0], point[1], Q, point_etec);
+        ETEC.etecDouble(point_etec, point_etec, Q, JUBJUB_A);
+        (result_affine[0], result_affine[1]) = ETEC.etecToPoint(point_etec, Q);
     }
 }

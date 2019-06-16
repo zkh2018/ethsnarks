@@ -3,7 +3,7 @@ import unittest
 from os import urandom
 
 from ethsnarks.field import FQ
-from ethsnarks.jubjub import Point, EtecPoint, ProjPoint, JUBJUB_L, JUBJUB_C, MONT_A, MONT_B, JUBJUB_E
+from ethsnarks.jubjub import Point, EtecPoint, ProjPoint, JUBJUB_L, JUBJUB_C, MONT_A, MONT_B, JUBJUB_E, mult_naf_lut, mult_naf
 from ethsnarks.numbertheory import SquareRootError
 
 
@@ -22,10 +22,10 @@ class TestJubjub(unittest.TestCase):
 		return Point(FQ(x), FQ(y))
 
 	def _verify_via_all(self, p):
-		points = [p.as_point(), p.as_etec(), p.as_proj()]
+		points = [p.as_point(), p.as_etec(), p.as_proj(), p.as_mont()]
 		for q in points:
 			self.assertTrue(q.valid())
-			qoints = [q.as_point(), q.as_etec(), q.as_proj()]
+			qoints = [q.as_point(), q.as_etec(), q.as_proj(), p.as_mont()]
 			for i, r in enumerate(qoints):
 				self.assertTrue(r.valid())
 				self.assertEqual(r.rescale(), points[i].rescale(), "Conversion between %r, %r and %r" % (type(q), type(r), type(points[i])))
@@ -251,19 +251,44 @@ class TestJubjub(unittest.TestCase):
 		q = p.mult(2)
 		self.assertEqual(q.as_point(), self._point_a_double())
 
-	def test_etec_mult_n(self):
-		p = self._point_a().as_etec()
-		q = p.mult(6890855772600357754907169075114257697580319025794532037257385534741338397365)
-		q = q.as_point()
-		self.assertEqual(q.x, 6317123931401941284657971611369077243307682877199795030160588338302336995127)
-		self.assertEqual(q.y, 17705894757276775630165779951991641206660307982595100429224895554788146104270)
+	def test_mult_all_known(self):
+		rp = self._point_a()
+		all_points = [rp, rp.as_proj(), rp.as_etec(), rp.as_mont()]
+		expected = Point(FQ(6317123931401941284657971611369077243307682877199795030160588338302336995127),
+						 FQ(17705894757276775630165779951991641206660307982595100429224895554788146104270))
+		for p in all_points:
+			q = p.mult(6890855772600357754907169075114257697580319025794532037257385534741338397365)
+			r = q.as_point()
+			self.assertEqual(r.x, expected.x)
+			self.assertEqual(r.y, expected.y)
 
-	def test_proj_mult_n(self):
-		p = self._point_a().as_proj()
-		q = p.mult(6890855772600357754907169075114257697580319025794532037257385534741338397365)
-		q = q.as_point()
-		self.assertEqual(q.x, 6317123931401941284657971611369077243307682877199795030160588338302336995127)
-		self.assertEqual(q.y, 17705894757276775630165779951991641206660307982595100429224895554788146104270)
+	def test_mult_all_random(self):
+		rp = self._point_a()
+		x = FQ.random(JUBJUB_L)
+		all_points = [rp, rp.as_proj(), rp.as_etec(), rp.as_mont()]
+		expected = rp * x
+		for p in all_points:
+			q = p.mult(x)
+			r = q.as_point()
+			self.assertEqual(r.x, expected.x)
+			self.assertEqual(r.y, expected.y)
+
+	def test_naf(self):
+		"""
+		Verify that multiplying using w-NAF provides identical results with different windows
+		"""
+		for _ in range(5):
+			p = self._point_a()
+			e = p.as_etec()
+			x = FQ.random()
+			r = p * x
+			for w in range(2, 8):
+				y = mult_naf_lut(e, x, w)
+				z = y.as_point()
+				self.assertEqual(z, r)
+				if w == 2:
+					v = mult_naf(e, x)
+					self.assertEqual(v, y)
 
 	def test_loworder(self):
 		for p in Point.all_loworder_points():

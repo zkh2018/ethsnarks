@@ -263,6 +263,7 @@ add_library(
 )
 
 target_include_directories(ff PUBLIC
+  ${GMP_INCLUDE_DIR}
   ${DEPENDS_DIR_LIBSNARK} ${DEPENDS_DIR_LIBFF} ${DEPENDS_DIR_LIBFQFFT})
 
 set_property(TARGET ff PROPERTY CXX_STANDARD 11)
@@ -274,6 +275,7 @@ if("${DEBUG}" OR "${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
 endif()
 
 target_include_directories(ff INTERFACE
+  ${GMP_INCLUDE_DIR}
   ${DEPENDS_DIR_LIBSNARK} ${DEPENDS_DIR_LIBFF} ${DEPENDS_DIR_LIBFQFFT})
 
 

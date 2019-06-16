@@ -17,6 +17,7 @@ intermediate uses a much faster form.
 # XXX: none of these functions are constant time, they should not be used interactively!
 """
 
+from os import urandom
 from hashlib import sha256
 from collections import namedtuple
 
@@ -121,6 +122,9 @@ class AbstractCurveOps(object):
 	def sign(self):
 		return 1 if self.is_negative() else 0
 
+	def mult_wnaf(self, scalar, window=5):
+		return mult_naf_lut(self, scalar, window)
+
 	def mult(self, scalar):
 		if isinstance(scalar, FQ):
 			if scalar.m not in [SNARK_SCALAR_FIELD, JUBJUB_E, JUBJUB_L]:
@@ -180,6 +184,10 @@ class Point(AbstractCurveOps, namedtuple('_Point', ('x', 'y'))):
 		return cls(x, y)
 
 	@classmethod
+	def random(cls):
+		return cls.from_hash(urandom(32))
+
+	@classmethod
 	def from_hash(cls, entropy):
 		"""
 		HashToPoint (or Point.from_hash)
@@ -195,10 +203,10 @@ class Point(AbstractCurveOps, namedtuple('_Point', ('x', 'y'))):
 		Page 6:
 
 		   o  HashToBase(x, i).  This method is parametrized by p and H, where p
-      		  is the prime order of the base field Fp, and H is a cryptographic
-      		  hash function which outputs at least floor(log2(p)) + 2 bits.  The
- 			  function first hashes x, converts the result to an integer, and
-      		  reduces modulo p to give an element of Fp.
+			  is the prime order of the base field Fp, and H is a cryptographic
+			  hash function which outputs at least floor(log2(p)) + 2 bits.  The
+			  function first hashes x, converts the result to an integer, and
+			  reduces modulo p to give an element of Fp.
 		"""
 		assert isinstance(entropy, bytes)
 		entropy = sha256(entropy).digest()
@@ -257,6 +265,9 @@ class Point(AbstractCurveOps, namedtuple('_Point', ('x', 'y'))):
 		sign = y >> 255
 		y &= (1 << 255) - 1
 		return cls.from_y(FQ(y), sign)
+
+	def as_mont(self):
+		return MontPoint.from_edwards(self)
 
 	def as_proj(self):
 		return ProjPoint(self.x, self.y, FQ(1))
@@ -323,6 +334,9 @@ class ProjPoint(AbstractCurveOps, namedtuple('_ProjPoint', ('x', 'y', 'z'))):
 		(X, Y, Z) -> (X, Y, X*Y, Z)
 		"""
 		return EtecPoint(self.x, self.y, self.x*self.y, self.z)
+
+	def as_mont(self):
+		return self.as_point().as_mont()
 
 	def as_point(self):
 		assert self.z != 0
@@ -403,6 +417,120 @@ class ProjPoint(AbstractCurveOps, namedtuple('_ProjPoint', ('x', 'y', 'z'))):
 		return ProjPoint(x3, y3, z3)
 
 
+class MontPoint(AbstractCurveOps, namedtuple('_MontPoint', ('u', 'v'))):
+	@classmethod
+	def from_edwards(cls, e):
+		"""
+		The map from a twisted Edwards curve is defined as
+
+			(x, y) -> (u, v) where
+				u = (1 + y) / (1 - y)
+				v = u / x
+
+		This mapping is not defined for y = 1 and for x = 0.
+
+		We have that y != 1 above. If x = 0, the only
+		solutions for y are 1 (contradiction) or -1.
+
+		See: https://github.com/zcash/librustzcash/blob/master/sapling-crypto/src/jubjub/montgomery.rs#L121
+		"""
+		e = e.as_point()
+		if e.y == FQ.one():
+			# The only solution for y = 1 is x = 0. (0, 1) is
+			# the neutral element, so we map this to the point at infinity.
+			return MontPoint(FQ.zero(), FQ.one())
+		if e.x == FQ.zero():
+			return MontPoint(FQ.zero(), FQ.zero())
+		u = (FQ.one() + e.y) / (FQ.one() - e.y)
+		v = u / e.x
+		return cls(u, v)
+
+	def as_point(self):
+		"""
+		See: https://eprint.iacr.org/2008/013.pdf
+		 - "Twisted Edwards Curves" (BBJLP'08)
+		 - Theorem 3.2 pg 4
+
+		 with inverse
+			(u, v) → (x, y) = (u/v, (u − 1)/(u + 1)).
+		"""
+		x = self.u / self.v
+		y = (self.u - 1) / (self.u + 1)
+		return Point(x, y)
+
+	def as_etec(self):
+		return self.as_point().as_etec()
+
+	def as_proj(self):
+		return self.as_point().as_proj()
+
+	def valid(self):
+		"""
+		See: https://eprint.iacr.org/2008/013.pdf
+		 - "Twisted Edwards Curves" (BBJLP'08)
+
+		Definition 3.1 (Montgomery curve). Fix a field k with char(k) 6= 2. Fix
+			A ∈ k \ {−2, 2} and B ∈ k \ {0}.
+
+		The Montgomery curve with coefficients A and B is the curve
+
+			E_{M,A,B} : B * (v^2) = u^3 + A*(u^2) + u
+		"""
+		lhs = MONT_B * (self.v ** 2)
+		rhs = (self.u ** 3) + MONT_A * (self.u ** 2) + self.u
+		return lhs == rhs
+
+	def as_mont(self):
+		return self
+
+	@classmethod
+	def infinity(cls):
+		return cls(FQ(0), FQ(1))
+
+	def neg(self):
+		return type(self)(self.u, -self.v)
+
+	def __eq__(self, other):
+		return self.u == other.u and self.v == other.v
+
+	def __hash__(self):
+		return hash((self.u, self.v))
+
+	def double(self):
+		# https://github.com/zcash/librustzcash/blob/master/sapling-crypto/src/jubjub/montgomery.rs#L224
+		# See §4.3.2 The group law for Weierstrass curves
+		#  - Montgomery curves and the Montgomery Ladder
+		#  - Daniel J. Bernstein and Tanja Lange
+		#  @ https://cr.yp.to/papers/montladder-20170330.pdf
+		if self.v == FQ.zero():
+			return self.infinity()
+
+		usq = self.u * self.u
+		delta = (1 + (2*(MONT_A * self.u)) + usq + (usq*2)) / (2*self.v)
+		x3 = (delta*delta) - MONT_A - (2*self.u)
+		y3 = -((x3 - self.u) * delta + self.v)
+		return type(self)(x3, y3)
+
+	def add(self, other):
+		# https://github.com/zcash/librustzcash/blob/master/sapling-crypto/src/jubjub/montgomery.rs#L288
+		other = other.as_mont()
+		infinity = self.infinity()
+		if other == infinity:
+			return self
+		elif self == infinity:
+			return other
+
+		if self.u == other.u:
+			if self.v == other.v:
+				return self.double()
+			return infinity
+
+		delta = (other.v - self.v) / (other.u - self.u)
+		x3 = (delta*delta) - MONT_A - self.u - other.u
+		y3 = -((x3 - self.u) * delta + self.v)
+		return type(self)(x3, y3)
+
+
 class EtecPoint(AbstractCurveOps, namedtuple('_EtecPoint', ('x', 'y', 't', 'z'))):
 	def as_etec(self):
 		return self
@@ -412,6 +540,9 @@ class EtecPoint(AbstractCurveOps, namedtuple('_EtecPoint', ('x', 'y', 't', 'z'))
 
 	def __hash__(self):
 		return hash((self.x, self.y, self.t, self.z))
+
+	def as_mont(self):
+		return self.as_point().as_mont()
 
 	def as_point(self):
 		"""
@@ -487,3 +618,70 @@ class EtecPoint(AbstractCurveOps, namedtuple('_EtecPoint', ('x', 'y', 't', 'z'))
 		h = y1y2 - (JUBJUB_A * x1x2)
 
 		return EtecPoint(e*f, g*h, e*h, f*g)
+
+
+def wNAF(k, width=2):
+	# windowed Non-Adjacent-Form
+	# https://bristolcrypto.blogspot.com/2015/04/52-things-number-26-describe-naf-scalar.html
+	# https://en.wikipedia.org/wiki/Elliptic_curve_point_multiplication#w-ary_non-adjacent_form_(wNAF)_method
+	k = int(k)
+	a = 2**width
+	b = 2**(width-1)
+	output = []
+	while k > 0:
+		if (k % 2) == 1:
+			c = k % a
+			if c > b:
+				k_i = c - a
+			else:
+				k_i = c
+			k = k - k_i
+		else:
+			k_i = 0
+		output.append(k_i)
+		k = k // 2
+	return output[::-1]
+
+
+def naf_window(point, nbits):
+	"""
+	Return an n-bit window of points for use with w-NAF multiplication
+	"""
+	a = (1<<nbits)//2
+	res = {0: None}
+	for n in list(range(0, a))[1:]:
+		if n == 1:
+			p_n = point
+		elif n == 2:
+			p_n = point.double()
+		elif n > 2 and n % 2 == 0:
+			continue
+		else:
+			p_n = res[n-2] + res[2]
+		res[n] = p_n
+		res[-n] = -p_n
+	return res
+
+
+def mult_naf(point, scalar):
+	# Multiplication using NAF
+	a = point.infinity()
+	for k_i in wNAF(scalar):
+		a = a.double()
+		if k_i == 1:
+			a = a.add(point)
+		elif k_i == -1:
+			a = a.add(point.neg())
+	return a
+
+
+def mult_naf_lut(point, scalar, width=2):
+	# Multipication using Windowed NAF, with an arbitrary sized window
+	a = point.infinity()
+	w = naf_window(point, width)
+	for k_i in wNAF(scalar, width):
+		a = a.double()
+		p = w[k_i]
+		if p is not None:
+			a = a.add(p)
+	return a
