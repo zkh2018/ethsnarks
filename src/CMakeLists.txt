@@ -1,7 +1,7 @@
 include_directories(.)
 
 add_library(ethsnarks_common STATIC export.cpp import.cpp stubs.cpp utils.cpp)
-target_link_libraries(ethsnarks_common ff)
+target_link_libraries(ethsnarks_common ff nlohmann_json)
 target_include_directories(ethsnarks_common PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(verify verify.cpp)
@@ -17,5 +17,11 @@ endif()
 add_subdirectory(r1cs_gg_ppzksnark_zok)
 add_subdirectory(gadgets)
 add_subdirectory(jubjub)
-add_subdirectory(pinocchio)
-add_subdirectory(utils)
+
+if( NOT ${ETHSNARKS_DISABLE_PINOCCHIO} )
+	add_subdirectory(pinocchio)
+endif()
+
+if( NOT ${ETHSNARKS_DISABLE_UTILS} )
+	add_subdirectory(utils)
+endif()

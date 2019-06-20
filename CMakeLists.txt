@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 2.8)
 project(ethsnarks)
 
 option(ETHSNARKS_DISABLE_TESTS "Disable ethsnarks tests" OFF)
+option(ETHSNARKS_DISABLE_UTILS "Disable ethsnarks utilties" OFF)
+option(ETHSNARKS_DISABLE_PINOCCHIO "Disable pinocchio / xjsnark compatibility" OFF)
 
 
 if (CMAKE_VERSION VERSION_GREATER "3.0")
@@ -231,8 +233,6 @@ set_target_properties(
   IMPORTED_LOCATION ${GMPXX_LIBRARY}
   INTERFACE_INCLUDE_DIRECTORIES ${GMPXX_INCLUDE_DIR}
 )
-
-find_package(Boost REQUIRED program_options)
 
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OPT_FLAGS}")

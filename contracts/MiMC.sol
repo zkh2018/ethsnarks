@@ -24,6 +24,16 @@ library MiMC
         return MiMCpe7( in_x, in_k, uint256(keccak256("mimc")), 91 );
     }
 
+    /*
+    * Compatibility with signature from Iden3 implementation
+    *  @ https://github.com/iden3/circomlib/blob/master/src/mimc_gencontract.js
+    */
+    function MiMCpe7( uint256 in_x, uint256 in_k )
+        internal pure returns(uint256 out_x)
+    {
+        return MiMCpe7(in_x, in_k, uint256(keccak256("mimc")), 91);
+    }
+
     /**
     * MiMC-p/p with exponent of 7
     * 

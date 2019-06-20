@@ -11,3 +11,17 @@ target_link_libraries(sha3sum SHA3IUF)
 add_executable(sha3test ${DEPENDS_DIR_SHA3IUF}/sha3test.c)
 target_link_libraries(sha3test SHA3IUF)
 add_test(NAME run_sha3test COMMAND sha3test)
+
+
+add_library(nlohmann_json INTERFACE)
+if (${CMAKE_VERSION} VERSION_LESS "3.8.0")
+    target_compile_features(nlohmann_json INTERFACE cxx_range_for)
+else()
+    target_compile_features(nlohmann_json INTERFACE cxx_std_11)
+endif()
+
+target_include_directories(
+    nlohmann_json
+    INTERFACE
+    ${DEPENDS_DIR}/json/single_include/
+)
