@@ -244,9 +244,6 @@ else()
   add_definitions(-DNO_PROCPS)
 endif()
 
-set(OPENSSL_ROOT_DIR /usr/local/opt/openssl/)
-find_package(OpenSSL REQUIRED)
-
 
 add_library(
   ff

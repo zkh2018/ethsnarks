@@ -7,7 +7,7 @@
 #include "utils.hpp"
 #include "ethsnarks.hpp"
 
-#include <openssl/sha.h>
+#include "sha256.h"
 
 using ethsnarks::ppT;
 using ethsnarks::FieldT;

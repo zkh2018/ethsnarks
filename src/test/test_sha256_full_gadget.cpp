@@ -2,8 +2,7 @@
 #include "utils.hpp"
 
 
-#include <openssl/sha.h>
-#include <openssl/rand.h>
+#include "sha256.h"
 
 using libsnark::digest_variable;
 using libsnark::block_variable;
