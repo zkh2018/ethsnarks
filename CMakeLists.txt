@@ -2,7 +2,13 @@ cmake_minimum_required(VERSION 2.8)
 
 project(ethsnarks)
 
+if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.13")
+  cmake_policy(SET CMP0077 NEW) # ENABLE CMP0077: option() honors normal variables
+endif()
+
 option(ETHSNARKS_DISABLE_TESTS "Disable ethsnarks tests" OFF)
+option(ETHSNARKS_DISABLE_UTILS "Disable ethsnarks utilties" ON)
+option(ETHSNARKS_DISABLE_PINOCCHIO "Disable pinocchio / xjsnark compatibility" OFF)
 
 
 if (CMAKE_VERSION VERSION_GREATER "3.0")
@@ -194,7 +200,7 @@ endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   # Common compilation flags and warning configuration
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wfatal-errors -Wno-unused-variable")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused-variable")
     # Default optimizations flags (to override, use -DOPT_FLAGS=...)
 endif()
 
@@ -216,25 +222,6 @@ set_target_properties(
 )
 
 
-# Locate the gmpxx library and its includes
-find_path(GMPXX_INCLUDE_DIR gmpxx.h)
-find_library(GMPXX_LIBRARY gmpxx)
-if(GMPXX_LIBRARY MATCHES ${CMAKE_SHARED_LIBRARY_SUFFIX})
-  set(gmpxx_library_type SHARED)
-else()
-  set(gmpxx_library_type STATIC)
-endif()
-add_library(gmpxx ${gmpxx_library_type} IMPORTED)
-message(STATUS "GMPxx: ${GMPXX_LIBRARY}, ${GMPXX_INCLUDE_DIR}")
-set_target_properties(
-  gmpxx PROPERTIES
-  IMPORTED_LOCATION ${GMPXX_LIBRARY}
-  INTERFACE_INCLUDE_DIRECTORIES ${GMPXX_INCLUDE_DIR}
-)
-
-find_package(Boost REQUIRED program_options)
-
-
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OPT_FLAGS}")
 
 include(FindPkgConfig)
@@ -243,9 +230,6 @@ if("${WITH_PROCPS}")
 else()
   add_definitions(-DNO_PROCPS)
 endif()
-
-set(OPENSSL_ROOT_DIR /usr/local/opt/openssl/)
-find_package(OpenSSL REQUIRED)
 
 
 add_library(

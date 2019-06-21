@@ -97,7 +97,12 @@ def pairingProd(*inputs):
 
 class BaseProof(object):
     def to_json(self):
-        return json.dumps(self._asdict(), cls=CustomEncoder)
+        obj = self._asdict()
+        # Note, the inputs must be hex-encoded so they're JSON friendly
+        # The Custom JSON encoder doesn't handle them correctly
+        for field in self.FP_POINTS:
+            obj[field] = [hex(_) for _ in obj[field]]
+        return json.dumps(obj, cls=CustomEncoder)
 
     @classmethod
     def from_json(cls, json_data):
@@ -136,7 +141,6 @@ class Proof(_ProofStruct, BaseProof):
 
 class BaseVerifier(object):
     def to_json(self):
-        # TODO: encode fields as hex
         return json.dumps(self._asdict(), cls=CustomEncoder)
 
     @classmethod

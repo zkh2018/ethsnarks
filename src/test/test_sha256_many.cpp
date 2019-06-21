@@ -4,8 +4,7 @@
 #include "utils.hpp"
 
 
-#include <openssl/sha.h>
-#include <openssl/rand.h>
+#include "sha256.h"
 
 using libsnark::digest_variable;
 using libsnark::block_variable;
@@ -91,10 +90,18 @@ bool test_sha256_many(uint8_t *input_buffer, size_t input_len)
 bool test_sha256_rand(size_t n) {
     uint8_t *buffer = new uint8_t[n];
 
+    // Instead of using random, generate a predictable sequence of bytes
+    for( int i = 0; i < n; i++ ) {
+        buffer[i] = i % 0xFF;
+    }
+
+    /*
     if( RAND_bytes(buffer, n) != 1 ) {
         std::cerr << "Could not produce random bytes: " << n << std::endl;
         return false;
     }
+    */
+
     auto result = test_sha256_many(buffer, n);
 
     delete[] buffer;

@@ -1,9 +1,8 @@
 #include "gadgets/sha256_full.hpp"
 #include "utils.hpp"
+#include "stubs.hpp"
 
-
-#include <openssl/sha.h>
-#include <openssl/rand.h>
+#include "sha256.h"
 
 using libsnark::digest_variable;
 using libsnark::block_variable;
@@ -119,7 +118,11 @@ bool test_sha256_full_gadget()
     }
     printf("\n");
 
-    return pb.is_satisfied();
+    if( ! pb.is_satisfied() ) {
+        return false;
+    }
+
+    return stub_test_proof_verify( pb );
 }
 
 // namespace ethsnarks

@@ -5,3 +5,6 @@
 [submodule "depends/SHA3IUF"]
 	path = depends/SHA3IUF
 	url = https://github.com/harryr/SHA3IUF.git
+[submodule "depends/json"]
+	path = depends/json
+	url = https://github.com/nlohmann/json.git

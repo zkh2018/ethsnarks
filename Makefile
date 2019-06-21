@@ -135,8 +135,8 @@ python-pylint:
 	$(PYTHON) -mpylint $(NAME) || true
 
 python-clean:
-	find . -name '*.pyc' -exec rm -f '{}' ';'
-	find . -name '__pycache__' -exec rm -rf '{}' ';'
+	find . -name '*.pyc' -exec rm -f '{}' ';' || true
+	find . -name '__pycache__' -exec rm -rf '{}' ';' || true
 
 cxx-lint:
 	cppcheck -I depends/libsnark/ -I depends/libsnark/depends/libff/ -I depends/libsnark/depends/libfqfft/ -I src/ --enable=all src/ || true

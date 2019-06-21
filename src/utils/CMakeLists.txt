@@ -1,3 +1,5 @@
+find_package(Boost REQUIRED program_options)
+
 file(GLOB utils_sources "*.cpp")
 
 foreach(util_path ${utils_sources})
