@@ -40,8 +40,6 @@ Type `make` - the first time you run it will retrieve submodules, setup cmake an
  * cmake
  * g++ or clang++
  * gmp
- * libcrypto
- * boost
  * npm / nvm
 
 WebAssembly and JavaScript builds are partially supported via [ethsnarks-emscripten](https://github.com/harryr/ethsnarks-emscripten)
