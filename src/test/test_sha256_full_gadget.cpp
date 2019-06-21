@@ -1,6 +1,6 @@
 #include "gadgets/sha256_full.hpp"
 #include "utils.hpp"
-
+#include "stubs.hpp"
 
 #include "sha256.h"
 
@@ -118,7 +118,11 @@ bool test_sha256_full_gadget()
     }
     printf("\n");
 
-    return pb.is_satisfied();
+    if( ! pb.is_satisfied() ) {
+        return false;
+    }
+
+    return stub_test_proof_verify( pb );
 }
 
 // namespace ethsnarks
