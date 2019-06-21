@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 2.8)
 
 project(ethsnarks)
 
-cmake_policy(SET CMP0077 NEW)
+if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.13")
+  cmake_policy(SET CMP0077 NEW) # ENABLE CMP0077: option() honors normal variables
+endif()
 
 option(ETHSNARKS_DISABLE_TESTS "Disable ethsnarks tests" OFF)
 option(ETHSNARKS_DISABLE_UTILS "Disable ethsnarks utilties" ON)
