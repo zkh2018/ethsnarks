@@ -2,7 +2,7 @@
 #define ETHSNARKS_IMPORT_HPP_
 
 #include "ethsnarks.hpp"
-
+#include <nlohmann/json.hpp>
 #include "r1cs_gg_ppzksnark_zok/r1cs_gg_ppzksnark_zok.hpp"
 
 
@@ -35,6 +35,7 @@ T parse_bigint(const std::string &input)
 
 FqT parse_Fq(const std::string &input);
 FieldT parse_FieldT(const std::string &input);
+std::vector<FieldT> create_F_list( const nlohmann::json &in_tree );
 
 
 /**
