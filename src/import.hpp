@@ -2,7 +2,7 @@
 #define ETHSNARKS_IMPORT_HPP_
 
 #include "ethsnarks.hpp"
-
+#include <nlohmann/json.hpp>
 #include "r1cs_gg_ppzksnark_zok/r1cs_gg_ppzksnark_zok.hpp"
 
 
@@ -35,6 +35,7 @@ T parse_bigint(const std::string &input)
 
 FqT parse_Fq(const std::string &input);
 FieldT parse_FieldT(const std::string &input);
+std::vector<FieldT> create_F_list( const nlohmann::json &in_tree );
 
 
 /**
@@ -47,8 +48,11 @@ VerificationKeyT vk_from_json( std::stringstream &in_json );
 InputProofPairType proof_from_json( std::stringstream &in_json );
 
 G2T create_G2(std::string &in_X_c1, std::string &in_X_c0, std::string &in_Y_c1, std::string &in_Y_c0);
+G2T create_G2( const nlohmann::json &in_tree );
 
 G1T create_G1(std::string &in_X, std::string &in_Y);
+G1T create_G1( const nlohmann::json &in_tree );
+std::vector<G1T> create_G1_list( const nlohmann::json &in_tree );
 
 // ethsnarks
 }
