@@ -1,8 +1,9 @@
-// Copyright (c) 2018 HarryR
+// Copyright (c) 2019 HarryR
 // License: LGPL-3.0+
 
 #include "utils.hpp"
 #include "gadgets/poseidon.hpp"
+#include "stubs.hpp"
 
 using ethsnarks::ppT;
 using ethsnarks::FieldT;
@@ -10,6 +11,7 @@ using ethsnarks::ProtoboardT;
 using ethsnarks::VariableT;
 using ethsnarks::make_var_array;
 using ethsnarks::Poseidon128;
+using ethsnarks::stub_test_proof_verify;
 
 using std::cout;
 using std::cerr;
@@ -46,12 +48,32 @@ static bool test_constants( ) {
 }
 
 
+static bool test_prove_verify() {
+    ProtoboardT pb;
+
+    auto var_inputs = make_var_array(pb, "input", {1, 2});
+
+    Poseidon128<1,2> the_gadget(pb, var_inputs, "gadget");
+    the_gadget.generate_r1cs_witness();
+    the_gadget.generate_r1cs_constraints();
+    if( ! pb.is_satisfied() ) {
+        return false;
+    }
+
+    cout << pb.num_constraints() << " constraints\n";
+    return stub_test_proof_verify( pb );
+}
+
+
 int main( int argc, char **argv )
 {
     ppT::init_public_params();
 
     if( ! test_constants() )
         return 1;
+
+    if( ! test_prove_verify() )
+        return 2;
 
     const auto actual = Poseidon128<2,1>::permute({1, 2});
     const FieldT expected("12242166908188651009877250812424843524687801523336557272219921456462821518061");

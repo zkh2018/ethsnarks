@@ -1,6 +1,9 @@
 #ifndef ETHSNARKS_POSEIDON_HPP_
 #define ETHSNARKS_POSEIDON_HPP_
 
+// Copyright (c) 2019 HarryR
+// License: LGPL-3.0+
+
 #include "ethsnarks.hpp"
 #include "crypto/blake2b.h"
 
