@@ -53,12 +53,16 @@ static bool test_prove_verify() {
 
     auto var_inputs = make_var_array(pb, "input", {1, 2});
 
-    Poseidon128<1,2> the_gadget(pb, var_inputs, "gadget");
+    Poseidon128<1,2> the_gadget(pb, var_inputs, "gadget");    
     the_gadget.generate_r1cs_witness();
     the_gadget.generate_r1cs_constraints();
     if( ! pb.is_satisfied() ) {
         return false;
     }
+
+    #ifdef DEBUG
+    ethsnarks::dump_pb_r1cs_constraints(pb);
+    #endif
 
     cout << pb.num_constraints() << " constraints\n";
     return stub_test_proof_verify( pb );

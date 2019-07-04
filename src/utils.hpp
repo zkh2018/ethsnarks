@@ -44,6 +44,39 @@ FieldT bytes_to_FieldT_bigendian( const uint8_t *in_bytes, const size_t in_count
 FieldT bytes_to_FieldT_littleendian( const uint8_t *in_bytes, const size_t in_count );
 
 
+inline std::vector<libsnark::linear_combination<FieldT> > VariableArrayT_to_lc( const VariableArrayT& in_vars )
+{
+    std::vector<libsnark::linear_combination<FieldT> > ret;
+    ret.reserve(in_vars.size());
+    for( const auto& var : in_vars ) {
+        ret.emplace_back(var);
+    }
+    return ret;
+}
+
+
+inline FieldT lc_val( const ProtoboardT& pb, const libsnark::linear_combination<FieldT>& in_lc )
+{
+    FieldT sum = 0;
+    for ( const auto &term : in_lc.terms)
+    {
+        sum += term.coeff * pb.val(VariableT(term.index));
+    }
+    return sum;
+}
+
+
+inline std::vector<FieldT> lc_vals( const ProtoboardT& pb, const std::vector<libsnark::linear_combination<FieldT> > &in_lcs )
+{
+    std::vector<FieldT> ret;
+    ret.reserve(in_lcs.size());
+    for( const auto &lc : in_lcs )
+    {
+        ret.emplace_back(lc_val(pb, lc));
+    }
+    return ret;
+}
+
 /**
 * The following document was used as reference:
 * http://www.iwar.org.uk/comsec/resources/cipher/sha256-384-512.pdf

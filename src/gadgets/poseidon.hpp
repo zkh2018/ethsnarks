@@ -39,7 +39,7 @@ public:
 	{		
 	}
 
-	void generate_r1cs_constraints(const libsnark::linear_combination<FieldT>& x) const
+	void generate_r1cs_constraints(const linear_combination<FieldT>& x) const
 	{
 		pb.add_r1cs_constraint(ConstraintT(x, x, x2), ".x^2 = x * x");
 		pb.add_r1cs_constraint(ConstraintT(x2, x2, x4), ".x^4 = x2 * x2");
@@ -144,85 +144,36 @@ const PoseidonConstants& poseidon_params()
 */
 template<unsigned param_t, unsigned nSBox, unsigned nInputs, unsigned nOutputs>
 class Poseidon_Round : public GadgetT {
-public:	
-	const VariableArrayT outputs;
+public:		
 	const FieldT& C_i;
 	const std::vector<FieldT>& M;
-	const VariableArrayT state;
-	std::vector<FifthPower_gadget> sboxes;
+	const std::vector<libsnark::linear_combination<FieldT> > state;
+	const std::vector<FifthPower_gadget> sboxes;
+	const std::vector<libsnark::linear_combination<FieldT> > outputs;
 
-	Poseidon_Round(
-		ProtoboardT &pb,
+	static std::vector<FifthPower_gadget> make_sboxes(
+		ProtoboardT& in_pb,
+		const std::string& annotation_prefix )
+	{
+		std::vector<FifthPower_gadget> ret;
+
+		ret.reserve(nSBox);
+		for( unsigned h = 0; h < nSBox; h++ )
+		{
+			ret.emplace_back( in_pb, FMT(annotation_prefix, ".sbox[%u]", h) );
+		}
+
+		return ret;
+	}
+
+	static std::vector<libsnark::linear_combination<FieldT> > make_outputs(
+		ProtoboardT& in_pb,
 		const FieldT& in_C_i,
 		const std::vector<FieldT>& in_M,
-		const VariableArrayT& in_state,
-		const std::string& annotation_prefix
-	) :
-		GadgetT(pb, annotation_prefix),
-		outputs(make_var_array(pb, nOutputs, FMT(annotation_prefix, ".output"))),
-		C_i(in_C_i),
-		M(in_M),
-		state(in_state)
+		const std::vector<libsnark::linear_combination<FieldT> >& in_state,
+		const std::vector<FifthPower_gadget>& in_sboxes )
 	{
-		assert( nInputs <= param_t );
-		assert( nOutputs <= param_t );
-		//assert( nSBox <= nInputs );
-
-		// Initialise S-Boxes
-		sboxes.reserve(nSBox);
-		for( unsigned h = 0; h < nSBox; h++ )
-		{
-			sboxes.emplace_back( pb, FMT(annotation_prefix, ".sbox[%u]", h) );
-		}
-	}
-
-	void generate_r1cs_witness() const
-	{
-		for( unsigned h = 0; h < nSBox; h++ )
-		{
-			auto value = C_i;
-			if( h < nInputs ) {
-				value += this->pb.val(state[h]);
-			}
-			sboxes[h].generate_r1cs_witness( value );
-		}
-
-		for( unsigned i = 0; i < nOutputs; i++ )
-		{
-			FieldT result;
-			const unsigned M_offset = i * param_t;
-
-			// Output result of S-Boxes
-			for( unsigned s = 0; s < nSBox; s++ )
-			{
-				result += this->pb.val(sboxes[s].result()) * M[M_offset+s];
-			}
-
-			// Output inputs with round constants added
-			for( unsigned k = nSBox; k < param_t; k++ )
-			{
-				auto value = C_i;
-				if( k < nInputs ) {
-					value += this->pb.val(state[k]);
-				}
-				result += value * M[M_offset+k];
-			}
-
-			this->pb.val(outputs[i]) = result;
-		}
-	}
-
-	void generate_r1cs_constraints() const
-	{
-		for( unsigned h = 0; h < nSBox; h++ )
-		{
-			if( h < nInputs ) {
-				sboxes[h].generate_r1cs_constraints( state[h] + C_i );
-			}
-			else {
-				sboxes[h].generate_r1cs_constraints( C_i );
-			}
-		}
+		std::vector<libsnark::linear_combination<FieldT> > ret;
 
 		for( unsigned i = 0; i < nOutputs; i++ )
 		{
@@ -232,7 +183,7 @@ public:
 			// Can be accumulated separately as part of the constant term
 			FieldT constant_term;
 			for( unsigned j = nSBox; j < param_t; j++ ) {
-				constant_term += C_i * M[M_offset+j];
+				constant_term += in_C_i * in_M[M_offset+j];
 			}
 
 			linear_combination<FieldT> lc;
@@ -245,18 +196,72 @@ public:
 			// Add S-Boxes to the output row
 			for( unsigned s = 0; s < nSBox; s++ )
 			{
-				lc.add_term(sboxes[s].result(), M[M_offset+s]);
+				lc.add_term(in_sboxes[s].result(), in_M[M_offset+s]);
 			}
 
 			// Then add inputs (from the state) multiplied by the matrix element
 			for( unsigned k = nSBox; k < nInputs; k++ )
 			{
-				lc.add_term(state[k], M[M_offset+k]);
+				//lc.add_term(state[k], M[M_offset+k]);
+				lc = lc + (in_state[k] * in_M[M_offset+k]);
 			}
 
-			this->pb.add_r1cs_constraint(
-				ConstraintT(lc, libsnark::ONE, outputs[i]),
-				FMT(this->annotation_prefix, ".output[%u]", i));
+			ret.emplace_back(lc);
+		}
+		return ret;
+	}
+
+	Poseidon_Round(
+		ProtoboardT &in_pb,
+		const FieldT& in_C_i,
+		const std::vector<FieldT>& in_M,
+		const VariableArrayT& in_state,
+		const std::string& annotation_prefix
+	) :
+		Poseidon_Round(in_pb, in_C_i, in_M, VariableArrayT_to_lc(in_state), annotation_prefix)
+	{ }
+
+	Poseidon_Round(
+		ProtoboardT &in_pb,
+		const FieldT& in_C_i,
+		const std::vector<FieldT>& in_M,
+		const std::vector<libsnark::linear_combination<FieldT> >& in_state,
+		const std::string& annotation_prefix
+	) :
+		GadgetT(in_pb, annotation_prefix),
+		//outputs(make_var_array(pb, nOutputs, FMT(annotation_prefix, ".output"))),
+		C_i(in_C_i),
+		M(in_M),
+		state(in_state),
+		sboxes(make_sboxes(in_pb, annotation_prefix)),
+		outputs(make_outputs(in_pb, in_C_i, in_M, in_state, sboxes))
+	{
+		assert( nInputs <= param_t );
+		assert( nOutputs <= param_t );
+	}
+
+	void generate_r1cs_witness() const
+	{
+		for( unsigned h = 0; h < nSBox; h++ )
+		{
+			auto value = C_i;
+			if( h < nInputs ) {
+				value += lc_val(this->pb, state[h]); // this->pb.val(state[h]);
+			}
+			sboxes[h].generate_r1cs_witness( value );
+		}
+	}
+
+	void generate_r1cs_constraints()
+	{
+		for( unsigned h = 0; h < nSBox; h++ )
+		{
+			if( h < nInputs ) {
+				sboxes[h].generate_r1cs_constraints( state[h] + C_i );
+			}
+			else {
+				sboxes[h].generate_r1cs_constraints( C_i );
+			}
 		}
 	}
 };
@@ -279,21 +284,26 @@ public:
 	const VariableArrayT& inputs;
 	const PoseidonConstants& constants;
 	
-	const FirstRoundT first_round;	
-	const std::vector<FullRoundT> prefix_full_rounds;
-	const std::vector<PartialRoundT> partial_rounds;
-	const std::vector<FullRoundT> suffix_full_rounds;
-	const LastRoundT last_round;
+	FirstRoundT first_round;	
+	std::vector<FullRoundT> prefix_full_rounds;
+	std::vector<PartialRoundT> partial_rounds;
+	std::vector<FullRoundT> suffix_full_rounds;
+	LastRoundT last_round;
 
 	template<typename T>
-	static const std::vector<T> make_rounds(unsigned n_begin, unsigned n_end, ProtoboardT& pb, const VariableArrayT& inputs, const PoseidonConstants& constants, const std::string& annotation_prefix)
+	static const std::vector<T> make_rounds(
+		unsigned n_begin, unsigned n_end,
+		ProtoboardT& pb,
+		const std::vector<libsnark::linear_combination<FieldT> >& inputs,
+		const PoseidonConstants& constants,
+		const std::string& annotation_prefix)
 	{
 		std::vector<T> result;
 		result.reserve(n_end - n_begin);
 
 		for( unsigned i = n_begin; i < n_end; i++ )
 		{
-			const VariableArrayT& state = (i == n_begin) ? inputs : result.back().outputs;
+			const auto& state = (i == n_begin) ? inputs : result.back().outputs;
 			result.emplace_back(pb, constants.C[i], constants.M, state, FMT(annotation_prefix, ".round[%u]", i));
 		}
 
@@ -307,8 +317,9 @@ public:
 		assert( inputs.size() == nInputs );
 		auto var_inputs = make_var_array(pb, "input", inputs);
 
-		Poseidon_gadget_T<param_t, param_c, param_F, param_P, nInputs, nOutputs> gadget(pb, var_inputs, "gadget");
+		Poseidon_gadget_T<param_t, param_c, param_F, param_P, nInputs, nOutputs> gadget(pb, var_inputs, "gadget");		
 		gadget.generate_r1cs_witness();
+		gadget.generate_r1cs_constraints();
 
 		/*
 		gadget.generate_r1cs_constraints();
@@ -368,7 +379,7 @@ public:
 		std::cout << pb.num_constraints() << " constraints" << std::endl;
 		*/
 
-		return gadget.outputs().get_vals(pb);
+		return lc_vals(pb, gadget.outputs()); // gadget.outputs().get_vals(pb);
 	}
 
 	Poseidon_gadget_T(
@@ -397,7 +408,7 @@ public:
 	{
 	}
 
-	const VariableArrayT outputs() const
+	const std::vector<libsnark::linear_combination<FieldT> >& outputs() const
 	{
 		return last_round.outputs;
 	}
