@@ -2,7 +2,7 @@
 #include "utils.hpp"
 #include "stubs.hpp"
 
-#include "sha256.h"
+#include "crypto/sha256.h"
 
 using libsnark::digest_variable;
 using libsnark::block_variable;

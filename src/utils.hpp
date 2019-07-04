@@ -37,6 +37,13 @@ libff::bit_vector int_list_to_bits(const std::initializer_list<unsigned long> &l
 */
 libff::bit_vector bytes_to_bv(const uint8_t *in_bytes, const size_t in_count);
 
+/** Create FieldT from bytes (big-endian format) */
+FieldT bytes_to_FieldT_bigendian( const uint8_t *in_bytes, const size_t in_count );
+
+/** Create FieldT from bytes (little-endian format) */
+FieldT bytes_to_FieldT_littleendian( const uint8_t *in_bytes, const size_t in_count );
+
+
 /**
 * The following document was used as reference:
 * http://www.iwar.org.uk/comsec/resources/cipher/sha256-384-512.pdf
@@ -72,6 +79,16 @@ inline const VariableArrayT make_var_array( ProtoboardT &in_pb, size_t n, const 
     VariableArrayT x;
     x.allocate(in_pb, n, annotation);
     return x;
+}
+
+inline const VariableArrayT make_var_array( ProtoboardT &in_pb, const std::string &annotation, std::vector<FieldT> values )
+{
+    auto vars = make_var_array(in_pb, values.size(), annotation);
+    for( unsigned i = 0; i < values.size(); i++ )
+    {
+        in_pb.val(vars[i]) = values[i];
+    }    
+    return vars;
 }
 
 

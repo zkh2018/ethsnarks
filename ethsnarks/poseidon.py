@@ -106,7 +106,6 @@ def poseidon_matrix(p, seed, t):
     Also:
      - https://en.wikipedia.org/wiki/Cauchy_matrix     
     """
-    # TODO: use a different set of constants
     c = list(poseidon_constants(p, seed, t * 2))
     return [[pow((c[i] - c[t+j]) % p, p - 2, p) for j in range(t)]
             for i in range(t)]
@@ -124,7 +123,7 @@ def poseidon_sbox(state, i, params):
      - the middle R_P rounds have a partial S-Box layer (i.e., 1 S-Box layer),
      - the last R_f rounds have a full S-Box layer
     """
-    half_F, nRoundsF = params.nRoundsF // 2, params.nRoundsP
+    half_F = params.nRoundsF // 2
     e, p = params.e, params.p
     if i < half_F or i >= (half_F + params.nRoundsP):
         for j, _ in enumerate(state):
@@ -142,21 +141,57 @@ def poseidon_mix(state, M, p):
              for i in range(len(M)) ]
 
 
-def poseidon(inputs, params=None):
+def poseidon(inputs, chained=False, params=None):
+    """
+    Main instansiation of the Poseidon permutation
+
+    The state is `t` elements wide, there are `F` full-rounds
+    followed by `P` partial rounds, then `F` full rounds again.
+
+        [    ARK    ]    --,
+         | | | | | |       |
+        [    SBOX   ]       -  Full Round
+         | | | | | |       |
+        [    MIX    ]    --`
+
+
+        [    ARK    ]    --,
+         | | | | | |       |
+        [    SBOX   ]       -  Partial Round
+                   |       |   Only 1 element is substituted in partial round
+        [    MIX    ]    --`
+
+    There are F+P rounds for the full permutation.
+
+    You can provide `r = N - 2s` bits of input per round, where `s` is the desired
+    security level, in most cases this means you can provide `t-1` inputs with
+    appropriately chosen parameters. The permutation can be 'chained' together
+    to form a sponge construct.
+    """
     if params is None:
         params = DefaultParams
     assert isinstance(params, _PoseidonParams)
-    assert len(inputs) > 0 and len(inputs) < params.t
+    assert len(inputs) > 0
+    if not chained:
+        # Don't allow inputs to exceed the rate, unless in chained mode
+        assert len(inputs) < params.t
     state = [0] * params.t
     state[:len(inputs)] = inputs
     for i, C_i in enumerate(params.constants_C):
         state = [_ + C_i for _ in state]  # ARK(.)
         poseidon_sbox(state, i, params)
-        state = poseidon_mix(state, params.constants_M, params.p)
+        state = poseidon_mix(state, params.constants_M, params.p)        
+        for j, val in enumerate(state):
+            print('o[%d][%d]' % (i, j), '=', val)
+    if chained:
+        # Provide the full state as output in 'chained' mode
+        return state
     return state[0]
 
 
 if __name__ == "__main__":
     assert DefaultParams.constants_C[0] == 14397397413755236225575615486459253198602422701513067526754101844196324375522
+    assert DefaultParams.constants_C[-1] == 10635360132728137321700090133109897687122647659471659996419791842933639708516
     assert DefaultParams.constants_M[0][0] == 19167410339349846567561662441069598364702008768579734801591448511131028229281
-    assert poseidon([1,2], DefaultParams) == 12242166908188651009877250812424843524687801523336557272219921456462821518061
+    assert DefaultParams.constants_M[-1][-1] == 20261355950827657195644012399234591122288573679402601053407151083849785332516
+    assert poseidon([1,2]) == 12242166908188651009877250812424843524687801523336557272219921456462821518061

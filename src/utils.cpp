@@ -68,6 +68,44 @@ std::vector<unsigned long> bit_list_to_ints(std::vector<bool> bit_list, const si
 }
 
 
+static FieldT bytes_to_FieldT( const uint8_t *in_bytes, const size_t in_count, int order )
+{
+    const unsigned n_bits_roundedup = FieldT::size_in_bits() + (8 - (FieldT::size_in_bits()%8));
+    const unsigned n_bytes = n_bits_roundedup / 8;
+
+    assert( in_count <= n_bytes );
+
+    // Import bytes as big-endian
+    mpz_t result_as_num;
+    mpz_init(result_as_num);
+    mpz_import(result_as_num,       // rop
+               in_count,            // count
+               order,               // order
+               1,                   // size
+               0,                   // endian
+               0,                   // nails
+               in_bytes);           // op
+
+    // Convert to bigint, within F_p
+    libff::bigint<FieldT::num_limbs> item(result_as_num);
+    assert( sizeof(item.data) == n_bytes );
+    mpz_clear(result_as_num);
+
+    return FieldT(item);
+}
+
+
+FieldT bytes_to_FieldT_bigendian( const uint8_t *in_bytes, const size_t in_count )
+{
+    return bytes_to_FieldT(in_bytes, in_count, 1);
+}
+
+/** Create FieldT from bytes (little-endian format) */
+FieldT bytes_to_FieldT_littleendian( const uint8_t *in_bytes, const size_t in_count )
+{
+    return bytes_to_FieldT(in_bytes, in_count, -1);
+}
+
 
 /*
 * begin with the original message of length L bits
