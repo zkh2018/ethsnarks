@@ -4,6 +4,8 @@
 #include "ethsnarks.hpp"
 #include "crypto/blake2b.h"
 
+#include <mutex>
+
 namespace ethsnarks {
 
 using libsnark::linear_combination;
