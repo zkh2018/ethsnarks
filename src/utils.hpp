@@ -66,7 +66,7 @@ inline FieldT lc_val( const ProtoboardT& pb, const libsnark::linear_combination<
 }
 
 
-inline std::vector<FieldT> lc_vals( const ProtoboardT& pb, const std::vector<libsnark::linear_combination<FieldT> > &in_lcs )
+inline std::vector<FieldT> vals( const ProtoboardT& pb, const std::vector<libsnark::linear_combination<FieldT> > &in_lcs )
 {
     std::vector<FieldT> ret;
     ret.reserve(in_lcs.size());
@@ -75,6 +75,11 @@ inline std::vector<FieldT> lc_vals( const ProtoboardT& pb, const std::vector<lib
         ret.emplace_back(lc_val(pb, lc));
     }
     return ret;
+}
+
+inline std::vector<FieldT> vals( const ProtoboardT& pb, const VariableArrayT &in_vars )
+{
+    return in_vars.get_vals(pb);
 }
 
 /**

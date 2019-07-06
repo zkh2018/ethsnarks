@@ -60,9 +60,11 @@ static bool test_prove_verify() {
         return false;
     }
 
+    /*
     #ifdef DEBUG
     ethsnarks::dump_pb_r1cs_constraints(pb);
     #endif
+    */
 
     cout << pb.num_constraints() << " constraints\n";
     return stub_test_proof_verify( pb );

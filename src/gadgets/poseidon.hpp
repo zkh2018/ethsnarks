@@ -202,7 +202,6 @@ public:
 			// Then add inputs (from the state) multiplied by the matrix element
 			for( unsigned k = nSBox; k < nInputs; k++ )
 			{
-				//lc.add_term(state[k], M[M_offset+k]);
 				lc = lc + (in_state[k] * in_M[M_offset+k]);
 			}
 
@@ -229,7 +228,6 @@ public:
 		const std::string& annotation_prefix
 	) :
 		GadgetT(in_pb, annotation_prefix),
-		//outputs(make_var_array(pb, nOutputs, FMT(annotation_prefix, ".output"))),
 		C_i(in_C_i),
 		M(in_M),
 		state(in_state),
@@ -252,7 +250,7 @@ public:
 		}
 	}
 
-	void generate_r1cs_constraints()
+	void generate_r1cs_constraints() const
 	{
 		for( unsigned h = 0; h < nSBox; h++ )
 		{
@@ -267,7 +265,7 @@ public:
 };
 
 
-template<unsigned param_t, unsigned param_c, unsigned param_F, unsigned param_P, unsigned nInputs, unsigned nOutputs>
+template<unsigned param_t, unsigned param_c, unsigned param_F, unsigned param_P, unsigned nInputs, unsigned nOutputs, bool constrainOutputs=true>
 class Poseidon_gadget_T : public GadgetT
 {
 protected:
@@ -275,6 +273,11 @@ protected:
 	typedef Poseidon_Round<param_t, param_c, param_t, param_t> PartialRoundT;  // partial round only runs sbox on `c` elements (capacity)
 	typedef Poseidon_Round<param_t, param_t, param_t, param_t> FullRoundT;     // full bandwidth
 	typedef Poseidon_Round<param_t, param_t, param_t, nOutputs> LastRoundT;   // squeezes state into `nOutputs`
+
+	typedef const std::vector<libsnark::linear_combination<FieldT> >& lc_outputs_t;
+	typedef const libsnark::linear_combination<FieldT>& lc_output_t;
+	typedef const VariableT& var_output_t;
+	typedef const VariableArrayT& var_outputs_t;
 
 	static constexpr unsigned partial_begin = (param_F/2);
 	static constexpr unsigned partial_end = (partial_begin + param_P);
@@ -289,6 +292,9 @@ public:
 	std::vector<PartialRoundT> partial_rounds;
 	std::vector<FullRoundT> suffix_full_rounds;
 	LastRoundT last_round;
+
+	// When `constrainOutputs==true`, need variables to store outputs
+	const VariableArrayT _output_vars;
 
 	template<typename T>
 	static const std::vector<T> make_rounds(
@@ -319,9 +325,9 @@ public:
 
 		Poseidon_gadget_T<param_t, param_c, param_F, param_P, nInputs, nOutputs> gadget(pb, var_inputs, "gadget");		
 		gadget.generate_r1cs_witness();
-		gadget.generate_r1cs_constraints();
 
 		/*
+		// Debugging statements
 		gadget.generate_r1cs_constraints();
 
 		unsigned i = 0;
@@ -379,7 +385,7 @@ public:
 		std::cout << pb.num_constraints() << " constraints" << std::endl;
 		*/
 
-		return lc_vals(pb, gadget.outputs()); // gadget.outputs().get_vals(pb);
+		return vals(pb, gadget.results());
 	}
 
 	Poseidon_gadget_T(
@@ -403,17 +409,40 @@ public:
 			make_rounds<FullRoundT>(
 				partial_end, total_rounds-1, pb,
 				partial_rounds.back().outputs, constants, annotation_prefix)),
-		last_round(pb, constants.C.back(), constants.M, suffix_full_rounds.back().outputs, FMT(annotation_prefix, ".round[%u]", total_rounds-1))
-
+		last_round(pb, constants.C.back(), constants.M, suffix_full_rounds.back().outputs, FMT(annotation_prefix, ".round[%u]", total_rounds-1)),
+		_output_vars(constrainOutputs ? make_var_array(pb, nOutputs, ".output") : VariableArrayT())
 	{
 	}
 
-	const std::vector<libsnark::linear_combination<FieldT> >& outputs() const
+	template<bool x = constrainOutputs>
+	typename std::enable_if<!x, lc_outputs_t>::type
+	results() const
 	{
 		return last_round.outputs;
 	}
 
-	void generate_r1cs_constraints()
+	template<bool x = constrainOutputs>
+	typename std::enable_if<x, var_outputs_t>::type
+	results() const
+	{
+		return _output_vars;
+	}
+
+	template<bool x = constrainOutputs, unsigned n = nOutputs>
+	typename std::enable_if<!x && n == 1 , lc_output_t>::type
+	result() const
+	{
+		return last_round.outputs[0];
+	}
+
+	template<bool x = constrainOutputs, unsigned n = nOutputs>
+	typename std::enable_if<x && n == 1, var_output_t>::type
+	result() const
+	{
+		return _output_vars[0];
+	}
+
+	void generate_r1cs_constraints() const
 	{
 		first_round.generate_r1cs_constraints();
 
@@ -430,10 +459,22 @@ public:
 		}
 
 		last_round.generate_r1cs_constraints();
+
+		if( constrainOutputs )
+		{
+			unsigned i = 0;
+			for( const auto &lc : last_round.outputs )
+			{
+				this->pb.add_r1cs_constraint(
+					ConstraintT(lc, libsnark::ONE, _output_vars[i]),
+					FMT(this->annotation_prefix, ".output[%u] = last_round.output[%u]", i, i));
+				i += 1;
+			}
+		}
 	}
 
 
-	void generate_r1cs_witness()
+	void generate_r1cs_witness() const
 	{
 		first_round.generate_r1cs_witness();
 
@@ -450,12 +491,22 @@ public:
 		}
 
 		last_round.generate_r1cs_witness();
+
+		// When outputs are constrained, fill in the variable
+		if( constrainOutputs )
+		{
+			unsigned i = 0;
+			for( const auto &value : vals(pb, last_round.outputs) )
+			{
+				this->pb.val(_output_vars[i++]) = value;
+			}
+		}
 	}
 };
 
 
-template<unsigned nInputs, unsigned nOutputs>
-using Poseidon128 = Poseidon_gadget_T<6, 1, 8, 57, nInputs, nOutputs>;
+template<unsigned nInputs, unsigned nOutputs, bool constrainOutputs=true>
+using Poseidon128 = Poseidon_gadget_T<6, 1, 8, 57, nInputs, nOutputs, constrainOutputs>;
 
 
 // namespace ethsnarks
