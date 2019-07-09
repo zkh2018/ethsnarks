@@ -14,7 +14,7 @@ class TestMerkleTree(unittest.TestCase):
 
         previous_root = None
         hasher = hashlib.sha256()
-        for n in range(0, n_items):
+        for n in range(n_items):
             hasher.update(bytes([n]) * 32)
             item = int.from_bytes(hasher.digest(), 'big') % SNARK_SCALAR_FIELD
             tree.append(item)
@@ -25,7 +25,7 @@ class TestMerkleTree(unittest.TestCase):
             self.assertTrue(proof.verify(tree.root))
 
             # Then verify all existing items can also be proven to be in the tree
-            for m in range(0, len(tree) - 1):
+            for m in range(len(tree) - 1):
                 self.assertTrue(tree.proof(m).verify(tree.root))
 
     def test_known1(self):
@@ -76,6 +76,7 @@ class TestMerkleTree(unittest.TestCase):
 
         item_a = 3703141493535563179657531719960160174296085208671919316200479060314459804651
         tree.append(item_a)
+        self.assertEqual(tree.root, 5635502254919888512883611961327385811173415612631829359029947885796109426800)
 
         item_b = 134551314051432487569247388144051420116740427803855572138106146683954151557
         tree.append(item_b)

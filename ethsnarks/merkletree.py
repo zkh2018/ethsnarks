@@ -1,43 +1,31 @@
-# Copyright (c) 2018 HarryR
+# Copyright (c) 2018-2019 HarryR
 # License: LGPL-3.0+
 
 import hashlib
 import math
+from collections import namedtuple
 
 from .mimc import mimc_hash
 from .field import FQ, SNARK_SCALAR_FIELD
 
 
-class MerkleProof(object):
-    __slots__ = ('leaf', 'address', 'path', '_hasher')
-    def __init__(self, leaf, address, path, hasher):
-        self.leaf = leaf
-        self.address = address
-        self.path = path
-        self._hasher = hasher
-
+class MerkleProof(namedtuple('_MerkleProof', ('leaf', 'address', 'path', 'hasher', 'width'))):
     def verify(self, root):
         item = self.leaf
-        depth = 0
-        for bit, node in zip(self.address, self.path):
-            if bit:
-                item = self._hasher.hash_pair(depth, node, item)
-            else:
-                item = self._hasher.hash_pair(depth, item, node)
-            depth += 1
+        for depth, (index, proof) in enumerate(zip(self.address, self.path)):
+            hasher_args = proof[::] if isinstance(proof, list) else [proof]
+            hasher_args.insert(index, item)
+            item = self.hasher.hash_node(depth, *hasher_args)
         return root == item
 
 
-class MerkleHasher_MiMC(object):
-    def __init__(self, tree_depth):
-        self._tree_depth = tree_depth
-        self._IVs = self._make_IVs()
-
-    def hash_pair(self, depth, left, right):
-        IV = self._IVs[depth]
-        return mimc_hash([left, right], IV)
-
+class Abstract_MerkleHasher(object):
     def unique(self, depth, index):
+        """
+        Derive a unique hash for a leaf which doesn't exist in the tree
+        This allows for an incremental tree to be constructed, where the
+        remaining nodes which don't exist yet are 'filled-in' with these placeholders
+        """
         assert depth < self._tree_depth
         item = int(depth).to_bytes(2, 'big') + int(index).to_bytes(30, 'big')
         hasher = hashlib.sha256()
@@ -47,7 +35,7 @@ class MerkleHasher_MiMC(object):
     def _make_IVs(self):
         out = []
         hasher = hashlib.sha256()
-        for i in range(0, self._tree_depth):
+        for i in range(self._tree_depth):
             item = int(i).to_bytes(2, 'little')
             hasher.update(b'MerkleTree-' + item)
             digest = int.from_bytes(hasher.digest(), 'big') % SNARK_SCALAR_FIELD
@@ -57,13 +45,51 @@ class MerkleHasher_MiMC(object):
     def valid(self, item):
         return isinstance(item, int) and item > 0 and item < SNARK_SCALAR_FIELD
 
+
+class MerkleHasher_MiMC(Abstract_MerkleHasher):
+    def __init__(self, tree_depth, node_width=2):
+        if node_width != 2:
+            raise ValueError("Invalid node width %r, must be 2" % (node_width,))
+        self._tree_depth = tree_depth
+        self._IVs = self._make_IVs()
+
+    def hash_node(self, depth, *args):
+        return mimc_hash(args, self._IVs[depth])
+
+
 DEFAULT_HASHER = MerkleHasher_MiMC
 
+
 class MerkleTree(object):
-    def __init__(self, n_items):
-        assert n_items > 1
-        self._tree_depth = math.ceil(math.log2(n_items))
-        self._hasher = DEFAULT_HASHER(self._tree_depth)
+    """
+    With a tree of depth 2 and width 4, contains 16 items:
+
+        offsets:  0 1 2 3   4 5 6 7   8 9 . .   . . . .
+        level 0: [A B C D] [E F G H] [I J K L] [M N O P]
+        level 1: [Q R S T]
+        level 2: [U]
+
+    Our item is `G`, which is at position `[1][2]`
+    The tree is equivalent to:
+
+        level1: [Q=H(A,B,C,D) R=H(E,F G H) S=H(I,J,K,L) T=H(M,N,O,P)]
+        level2: [U=H(Q,R,S,T)]
+
+    The proof for our item `G` will be:
+
+        [(2, [E F H]), (1, [Q S T])]
+
+    Each element of the proof supplies the index that the previous output will be inserted
+    into the list of other elements in the hash to re-construct the root
+    """
+    def __init__(self, n_items, width=2, tree_hasher=None):
+        assert n_items >= width
+        assert (n_items % width) == 0
+        if tree_hasher is None:
+            tree_hasher = DEFAULT_HASHER
+        self._width = width
+        self._tree_depth = int(math.log(n_items, width))
+        self._hasher = tree_hasher(self._tree_depth, width)
         self._n_items = n_items
         self._cur = 0
         self._leaves = [list() for _ in range(0, self._tree_depth + 1)]
@@ -75,7 +101,7 @@ class MerkleTree(object):
         if isinstance(leaf, FQ):
             leaf = leaf.n
         if not isinstance(leaf, int):
-            raise TypeError("Invalid key")
+            raise TypeError("Invalid leaf")
         assert leaf >= 0 and leaf < SNARK_SCALAR_FIELD
         if (len(self._leaves[0]) - 1) < index:
             raise KeyError("Out of bounds")
@@ -109,33 +135,32 @@ class MerkleTree(object):
     def index(self, leaf):
         return self._leaves[0].index(leaf)
 
+    def _make_node(self, depth, index):
+        node_start = index - (index % self._width)
+        return [self.leaf(depth, _) for _ in range(node_start, node_start + self._width)]
+
     def proof(self, index):
         leaf = self[index]
         if index >= self._cur:
             raise RuntimeError("Proof for invalid item!")
         address_bits = list()
         merkle_proof = list()
-        for i in range(0, self._tree_depth):
-            if index % 2 == 0:
-                proof_item = self.leaf(i, index + 1)
-            else:
-                proof_item = self.leaf(i, index - 1)
-            address_bits.append( index % 2 )
-            merkle_proof.append( proof_item )
-            index = index // 2
-        return MerkleProof(leaf, address_bits, merkle_proof, self._hasher)
+        for depth in range(self._tree_depth):
+            proof_items = self._make_node(depth, index)
+            proof_items.remove(proof_items[index % self._width])
+            if len(proof_items) == 1:
+                proof_items = proof_items[0]
+            address_bits.append( index % self._width )
+            merkle_proof.append( proof_items )
+            index = index // self._width
+        return MerkleProof(leaf, address_bits, merkle_proof, self._hasher, self._width)
 
     def _updateTree(self, cur_index=None):
         cur_index = self._cur if cur_index is None else cur_index
-        for depth in range(0, self._tree_depth):
-            next_index = cur_index // 2
-            if cur_index % 2 == 0:
-                leaf1 = self._leaves[depth][cur_index]
-                leaf2 = self.leaf(depth, cur_index + 1)
-            else:
-                leaf1 = self.leaf(depth, cur_index - 1)
-                leaf2 = self._leaves[depth][cur_index]
-            node = self._hasher.hash_pair(depth, leaf1, leaf2)
+        for depth in range(self._tree_depth):
+            next_index = cur_index // self._width
+            node_items = self._make_node(depth, cur_index)
+            node = self._hasher.hash_node(depth, *node_items)
             if len(self._leaves[depth+1]) == next_index:
                 self._leaves[depth+1].append(node)
             else:
@@ -144,10 +169,8 @@ class MerkleTree(object):
 
     def leaf(self, depth, offset):
         if offset >= len(self._leaves[depth]):
-            leaf = self._hasher.unique(depth, offset)
-        else:
-            leaf = self._leaves[depth][offset]
-        return leaf
+            return self._hasher.unique(depth, offset)
+        return self._leaves[depth][offset]
 
     @property
     def root(self):
