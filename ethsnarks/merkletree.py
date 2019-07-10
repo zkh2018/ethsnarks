@@ -5,6 +5,7 @@ import hashlib
 import math
 from collections import namedtuple
 
+from .poseidon import poseidon, DefaultParams as poseidon_DefaultParams
 from .mimc import mimc_hash
 from .field import FQ, SNARK_SCALAR_FIELD
 
@@ -46,6 +47,7 @@ class Abstract_MerkleHasher(object):
         return isinstance(item, int) and item > 0 and item < SNARK_SCALAR_FIELD
 
 
+# TODO: move to ethsnarks.mimc ?
 class MerkleHasher_MiMC(Abstract_MerkleHasher):
     def __init__(self, tree_depth, node_width=2):
         if node_width != 2:
@@ -55,6 +57,25 @@ class MerkleHasher_MiMC(Abstract_MerkleHasher):
 
     def hash_node(self, depth, *args):
         return mimc_hash(args, self._IVs[depth])
+
+
+# TODO: move to ethsnarks.poseidon?
+class MerkleHasher_Poseidon(Abstract_MerkleHasher):
+    def __init__(self, params, depth, node_width=2):
+        assert node_width > 0
+        if params is None:
+            params = poseidon_DefaultParams
+        if node_width >= (params.t - 1) or node_width <= 0:
+            raise ValueError("Node width must be in range: 0 < width < (t-1)")
+        self._params = params
+        self._tree_depth = depth
+
+    @classmethod
+    def factory(cls, params=None):
+        return lambda *args, **kwa: cls(params, *args, **kwa)
+
+    def hash_node(self, depth, *args):
+        return poseidon(args, params=self._params)
 
 
 DEFAULT_HASHER = MerkleHasher_MiMC
@@ -82,14 +103,14 @@ class MerkleTree(object):
     Each element of the proof supplies the index that the previous output will be inserted
     into the list of other elements in the hash to re-construct the root
     """
-    def __init__(self, n_items, width=2, tree_hasher=None):
+    def __init__(self, n_items, width=2, hasher=None):
         assert n_items >= width
         assert (n_items % width) == 0
-        if tree_hasher is None:
-            tree_hasher = DEFAULT_HASHER
+        if hasher is None:
+            hasher = DEFAULT_HASHER
         self._width = width
         self._tree_depth = int(math.log(n_items, width))
-        self._hasher = tree_hasher(self._tree_depth, width)
+        self._hasher = hasher(self._tree_depth, width)
         self._n_items = n_items
         self._cur = 0
         self._leaves = [list() for _ in range(0, self._tree_depth + 1)]
