@@ -47,30 +47,37 @@ class TestMerkleTree(unittest.TestCase):
 
     def test_update(self):
         # Verify that items in the tree can be updated
-        for hasher in [DEFAULT_HASHER, MerkleHasher_Poseidon.factory()]:
-            tree = MerkleTree(2, hasher=hasher)
-            tree.append(FQ.random())
-            tree.append(FQ.random())
-            proof_0_before = tree.proof(0)
-            proof_1_before = tree.proof(1)
-            root_before = tree.root
-            self.assertTrue(proof_0_before.verify(tree.root))
-            self.assertTrue(proof_1_before.verify(tree.root))
+        poseidon_factory = MerkleHasher_Poseidon.factory()
+        for hasher in [DEFAULT_HASHER, poseidon_factory]:
+            widths = [2]
+            if hasher == poseidon_factory:
+                widths += [3, 4]
+            for width in widths:
+                sizes = [width, width**2, width**3]
+                for n_items in sizes:
+                    tree = MerkleTree(n_items, width=width, hasher=hasher)
+                    tree.append(FQ.random())
+                    tree.append(FQ.random())
+                    proof_0_before = tree.proof(0)
+                    proof_1_before = tree.proof(1)
+                    root_before = tree.root
+                    self.assertTrue(proof_0_before.verify(tree.root))
+                    self.assertTrue(proof_1_before.verify(tree.root))
 
-            leaf_0_after = FQ.random()
-            tree.update(0, leaf_0_after)
-            root_after_0 = tree.root
-            proof_0_after = tree.proof(0)
-            self.assertTrue(proof_0_after.verify(tree.root))
-            self.assertNotEqual(root_before, root_after_0)
+                    leaf_0_after = FQ.random()
+                    tree.update(0, leaf_0_after)
+                    root_after_0 = tree.root
+                    proof_0_after = tree.proof(0)
+                    self.assertTrue(proof_0_after.verify(tree.root))
+                    self.assertNotEqual(root_before, root_after_0)
 
-            leaf_1_after = FQ.random()
-            tree.update(1, leaf_1_after)
-            root_after_1 = tree.root
-            proof_1_after = tree.proof(1)
-            self.assertTrue(proof_1_after.verify(tree.root))
-            self.assertNotEqual(root_before, root_after_1)
-            self.assertNotEqual(root_after_0, root_after_1)
+                    leaf_1_after = FQ.random()
+                    tree.update(1, leaf_1_after)
+                    root_after_1 = tree.root
+                    proof_1_after = tree.proof(1)
+                    self.assertTrue(proof_1_after.verify(tree.root))
+                    self.assertNotEqual(root_before, root_after_1)
+                    self.assertNotEqual(root_after_0, root_after_1)
 
     def test_known_2pow28(self):
         tree = MerkleTree(2<<28)
