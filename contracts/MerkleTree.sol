@@ -76,7 +76,7 @@ library MerkleTree
 
         uint256 offset = self.cur;
 
-        require (offset != MAX_LEAF_COUNT - 1);
+        require (offset < MAX_LEAF_COUNT);
 
         self.leaves[0][offset] = leaf;
 
