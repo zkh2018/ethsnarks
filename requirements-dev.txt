@@ -2,3 +2,4 @@ coverage
 pyflakes
 pylint
 web3
+eth_tester
