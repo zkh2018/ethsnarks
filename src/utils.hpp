@@ -37,6 +37,51 @@ libff::bit_vector int_list_to_bits(const std::initializer_list<unsigned long> &l
 */
 libff::bit_vector bytes_to_bv(const uint8_t *in_bytes, const size_t in_count);
 
+/** Create FieldT from bytes (big-endian format) */
+FieldT bytes_to_FieldT_bigendian( const uint8_t *in_bytes, const size_t in_count );
+
+/** Create FieldT from bytes (little-endian format) */
+FieldT bytes_to_FieldT_littleendian( const uint8_t *in_bytes, const size_t in_count );
+
+
+inline std::vector<libsnark::linear_combination<FieldT> > VariableArrayT_to_lc( const VariableArrayT& in_vars )
+{
+    std::vector<libsnark::linear_combination<FieldT> > ret;
+    ret.reserve(in_vars.size());
+    for( const auto& var : in_vars ) {
+        ret.emplace_back(var);
+    }
+    return ret;
+}
+
+
+inline FieldT lc_val( const ProtoboardT& pb, const libsnark::linear_combination<FieldT>& in_lc )
+{
+    FieldT sum = 0;
+    for ( const auto &term : in_lc.terms)
+    {
+        sum += term.coeff * pb.val(VariableT(term.index));
+    }
+    return sum;
+}
+
+
+inline std::vector<FieldT> vals( const ProtoboardT& pb, const std::vector<libsnark::linear_combination<FieldT> > &in_lcs )
+{
+    std::vector<FieldT> ret;
+    ret.reserve(in_lcs.size());
+    for( const auto &lc : in_lcs )
+    {
+        ret.emplace_back(lc_val(pb, lc));
+    }
+    return ret;
+}
+
+inline std::vector<FieldT> vals( const ProtoboardT& pb, const VariableArrayT &in_vars )
+{
+    return in_vars.get_vals(pb);
+}
+
 /**
 * The following document was used as reference:
 * http://www.iwar.org.uk/comsec/resources/cipher/sha256-384-512.pdf
@@ -72,6 +117,16 @@ inline const VariableArrayT make_var_array( ProtoboardT &in_pb, size_t n, const 
     VariableArrayT x;
     x.allocate(in_pb, n, annotation);
     return x;
+}
+
+inline const VariableArrayT make_var_array( ProtoboardT &in_pb, const std::string &annotation, std::vector<FieldT> values )
+{
+    auto vars = make_var_array(in_pb, values.size(), annotation);
+    for( unsigned i = 0; i < values.size(); i++ )
+    {
+        in_pb.val(vars[i]) = values[i];
+    }    
+    return vars;
 }
 
 

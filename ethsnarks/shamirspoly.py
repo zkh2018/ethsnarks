@@ -40,3 +40,13 @@ def lagrange(points, x):
         coefficient = g(i, n)
         total = total + (yi * coefficient)
     return total
+
+
+def inverse_lagrange(points, y):
+    x = 0
+    for i, (x_i, y_i) in enumerate(points):
+        for j, (x_j, y_j) in enumerate(points):
+            if j != i:
+                x_i = x_i * (y - y_j) / (y_i - y_j)
+        x += x_i 
+    return x

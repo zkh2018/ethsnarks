@@ -3,7 +3,7 @@
 
 #include "jubjub/point.hpp"
 #include "utils.hpp"
-#include "sha256.h"
+#include "crypto/sha256.h"
 
 using libff::bigint;
 

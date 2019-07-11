@@ -60,6 +60,7 @@ The following gadgets are available
  * [2-bit lookup table](src/gadgets/lookup_2bit.cpp)
  * [3-bit lookup table](src/gadgets/lookup_3bit.cpp)
  * [MiMC](https://eprint.iacr.org/2016/492) hash and cipher
+ * [Poseidon](https://eprint.iacr.org/2019/458.pdf) hash function
  * [Miyaguchi-Preneel one-way function](https://en.wikipedia.org/wiki/One-way_compression_function)
  * Merkle tree
  * SHA256 (Ethereum compatible, full round)

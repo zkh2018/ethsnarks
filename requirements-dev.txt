@@ -1,3 +1,5 @@
 coverage
 pyflakes
 pylint
+web3
+eth-tester[py-evm]

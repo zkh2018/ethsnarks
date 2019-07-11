@@ -1,7 +1,7 @@
 import unittest
 
 import hashlib
-from ethsnarks.merkletree import MerkleTree, DEFAULT_HASHER
+from ethsnarks.merkletree import MerkleTree, DEFAULT_HASHER, MerkleHasher_Poseidon
 from ethsnarks.field import FQ, SNARK_SCALAR_FIELD
 
 
@@ -14,7 +14,7 @@ class TestMerkleTree(unittest.TestCase):
 
         previous_root = None
         hasher = hashlib.sha256()
-        for n in range(0, n_items):
+        for n in range(n_items):
             hasher.update(bytes([n]) * 32)
             item = int.from_bytes(hasher.digest(), 'big') % SNARK_SCALAR_FIELD
             tree.append(item)
@@ -25,7 +25,7 @@ class TestMerkleTree(unittest.TestCase):
             self.assertTrue(proof.verify(tree.root))
 
             # Then verify all existing items can also be proven to be in the tree
-            for m in range(0, len(tree) - 1):
+            for m in range(len(tree) - 1):
                 self.assertTrue(tree.proof(m).verify(tree.root))
 
     def test_known1(self):
@@ -47,35 +47,44 @@ class TestMerkleTree(unittest.TestCase):
 
     def test_update(self):
         # Verify that items in the tree can be updated
-        tree = MerkleTree(2)
-        tree.append(FQ.random())
-        tree.append(FQ.random())
-        proof_0_before = tree.proof(0)
-        proof_1_before = tree.proof(1)
-        root_before = tree.root
-        self.assertTrue(proof_0_before.verify(tree.root))
-        self.assertTrue(proof_1_before.verify(tree.root))
+        poseidon_factory = MerkleHasher_Poseidon.factory()
+        for hasher in [DEFAULT_HASHER, poseidon_factory]:
+            widths = [2]
+            if hasher == poseidon_factory:
+                widths += [3, 4]
+            for width in widths:
+                sizes = [width, width**2, width**3]
+                for n_items in sizes:
+                    tree = MerkleTree(n_items, width=width, hasher=hasher)
+                    tree.append(FQ.random())
+                    tree.append(FQ.random())
+                    proof_0_before = tree.proof(0)
+                    proof_1_before = tree.proof(1)
+                    root_before = tree.root
+                    self.assertTrue(proof_0_before.verify(tree.root))
+                    self.assertTrue(proof_1_before.verify(tree.root))
 
-        leaf_0_after = FQ.random()
-        tree.update(0, leaf_0_after)
-        root_after_0 = tree.root
-        proof_0_after = tree.proof(0)
-        self.assertTrue(proof_0_after.verify(tree.root))
-        self.assertNotEqual(root_before, root_after_0)
+                    leaf_0_after = FQ.random()
+                    tree.update(0, leaf_0_after)
+                    root_after_0 = tree.root
+                    proof_0_after = tree.proof(0)
+                    self.assertTrue(proof_0_after.verify(tree.root))
+                    self.assertNotEqual(root_before, root_after_0)
 
-        leaf_1_after = FQ.random()
-        tree.update(1, leaf_1_after)
-        root_after_1 = tree.root
-        proof_1_after = tree.proof(1)
-        self.assertTrue(proof_1_after.verify(tree.root))
-        self.assertNotEqual(root_before, root_after_1)
-        self.assertNotEqual(root_after_0, root_after_1)
+                    leaf_1_after = FQ.random()
+                    tree.update(1, leaf_1_after)
+                    root_after_1 = tree.root
+                    proof_1_after = tree.proof(1)
+                    self.assertTrue(proof_1_after.verify(tree.root))
+                    self.assertNotEqual(root_before, root_after_1)
+                    self.assertNotEqual(root_after_0, root_after_1)
 
     def test_known_2pow28(self):
         tree = MerkleTree(2<<28)
 
         item_a = 3703141493535563179657531719960160174296085208671919316200479060314459804651
         tree.append(item_a)
+        self.assertEqual(tree.root, 5635502254919888512883611961327385811173415612631829359029947885796109426800)
 
         item_b = 134551314051432487569247388144051420116740427803855572138106146683954151557
         tree.append(item_b)
