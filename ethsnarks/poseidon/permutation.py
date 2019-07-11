@@ -14,7 +14,7 @@ Other implementations:
  - https://github.com/dusk-network/poseidon252
 """
 
-from math import log2
+from math import log2, floor
 from collections import namedtuple
 from pyblake2 import blake2b
 from ..field import SNARK_SCALAR_FIELD
@@ -27,16 +27,16 @@ def poseidon_params(p, t, nRoundsF, nRoundsP, seed, e, constants_C=None, constan
     assert nRoundsF % 2 == 0 and nRoundsF > 0
     assert nRoundsP > 0
     assert t >= 2
-    assert isinstance(seed, bytes)
+    assert isinstance(seed, bytes)    
 
+    n = floor(log2(p))
     if security_target is None:
-        M = 128  # security target, in bits
+        M = n  # security target, in bits
     else:
         M = security_target
-
-    n = log2(p)
     assert n >= M
 
+    # Size of the state (in bits)
     N = n * t
 
     if p % 2 == 3:        
@@ -117,7 +117,7 @@ def poseidon_matrix(p, seed, t):
             for i in range(t)]
 
 
-DefaultParams = poseidon_params(SNARK_SCALAR_FIELD, 6, 8, 57, b'poseidon', 5)
+DefaultParams = poseidon_params(SNARK_SCALAR_FIELD, 6, 8, 57, b'poseidon', 5, security_target=126)
 
 
 def poseidon_sbox(state, i, params):
