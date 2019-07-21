@@ -30,6 +30,8 @@ typedef libsnark::r1cs_gg_ppzksnark_zok_verification_key<ppT> VerificationKeyT;
 typedef libsnark::r1cs_gg_ppzksnark_zok_primary_input<ppT> PrimaryInputT;
 typedef libsnark::r1cs_gg_ppzksnark_zok_auxiliary_input<ppT> AuxiliaryInputT;
 
+static constexpr auto ProverF = libsnark::r1cs_gg_ppzksnark_zok_generator<ppT>;
+
 }
 
 #endif

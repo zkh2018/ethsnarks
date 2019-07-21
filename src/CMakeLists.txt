@@ -1,6 +1,6 @@
 include_directories(.)
 
-add_library(ethsnarks_common STATIC export.cpp import.cpp stubs.cpp utils.cpp crypto/sha256.c crypto/blake2b.c)
+add_library(ethsnarks_common STATIC export.cpp import.cpp stubs.cpp utils.cpp websnark.cpp crypto/sha256.c crypto/blake2b.c)
 target_link_libraries(ethsnarks_common ff nlohmann_json ${CMAKE_THREAD_LIBS_INIT})
 target_include_directories(ethsnarks_common PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 

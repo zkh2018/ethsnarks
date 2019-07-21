@@ -91,7 +91,7 @@ bool test_sha256_rand(size_t n) {
     uint8_t *buffer = new uint8_t[n];
 
     // Instead of using random, generate a predictable sequence of bytes
-    for( int i = 0; i < n; i++ ) {
+    for( size_t i = 0; i < n; i++ ) {
         buffer[i] = i % 0xFF;
     }
 
