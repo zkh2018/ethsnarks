@@ -6,6 +6,10 @@ if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.13")
   cmake_policy(SET CMP0077 NEW) # ENABLE CMP0077: option() honors normal variables
 endif()
 
+if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.9")
+  cmake_policy(SET CMP0069 NEW) # Enable IPO for compilers other than only Intel C++ on Linux
+endif()
+
 option(ETHSNARKS_DISABLE_TESTS "Disable ethsnarks tests" OFF)
 option(ETHSNARKS_DISABLE_UTILS "Disable ethsnarks utilties" ON)
 option(ETHSNARKS_DISABLE_PINOCCHIO "Disable pinocchio / xjsnark compatibility" OFF)
@@ -71,7 +75,7 @@ set(
 
 set(
   DEPENDS_DIR_LIBFQFFT
-  "${DEPENDS_DIR_LIBSNARK}/depends/libfqfft/"
+  "${DEPENDS_DIR}/libfqfft/"
   CACHE
   STRING
   "Optionally specify the dependency installation directory relative to the source directory (default: inside dependency folder)"
