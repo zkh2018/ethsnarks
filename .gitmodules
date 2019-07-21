@@ -10,4 +10,4 @@
 	url = https://github.com/nlohmann/json.git
 [submodule "depends/libfqfft"]
 	path = depends/libfqfft
-	url = git@github.com:Ethsnarks/libfqfft.git
+	url = https://github.com/Ethsnarks/libfqfft.git
