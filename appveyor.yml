@@ -30,7 +30,7 @@ install:
   - set PATH=%BOOST_LIBRARYDIR%;%PATH%
   - if "%CMAKE_GENERATOR%" equ "Ninja" (choco install ninja)
   - if defined MINGW_ROOT set PATH=%MINGW_ROOT%\bin;C:\msys64\usr\bin\;%PATH%
-  - if defined MINGW_ARCH bash -lc "pacman --needed --noconfirm -S mingw-w64-%MINGW_ARCH%-boost mingw-w64-%MINGW_ARCH%-gmp"
+  - if defined MINGW_ARCH bash -lc "pacman --needed --noconfirm -S mingw-w64-%MINGW_ARCH%-gmp"
   - if defined MSVC_ARCH call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %MSVC_ARCH%
   - if [%COMPILER%]==[MinGW] mingw-get install mingw32-gmp
 
@@ -38,7 +38,7 @@ before_build:
   # Rename sh.exe as sh.exe in PATH interferes with MinGW
   - if [%COMPILER%]==[MinGW] rename "C:\Program Files\Git\usr\bin\sh.exe" "sh2.exe"
   - cmake -E make_directory build
-  - cmake -E chdir build cmake -G "%CMAKE_GENERATOR%" ..
+  - cmake -E chdir build cmake -G "%CMAKE_GENERATOR%" -DUSE_ASM=OFF ..
 
 build_script:
   - cmake --build build --config Release

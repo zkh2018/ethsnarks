@@ -49,11 +49,17 @@ cmake-debug: build
 cmake-release: build
 	cd build && cmake -DCMAKE_BUILD_TYPE=Release ..
 
+cmake-performance: build
+	cd build && cmake -DCMAKE_BUILD_TYPE=Release -DPERFORMANCE=ON ..
+
 cmake-openmp-debug: build
 	cd build && cmake -DCMAKE_BUILD_TYPE=Debug -DMULTICORE=1 ..
 
 cmake-openmp-release: build
 	cd build && cmake -DCMAKE_BUILD_TYPE=Release -DMULTICORE=1 ..
+
+cmake-openmp-performance: build
+	cd build && cmake -DCMAKE_BUILD_TYPE=Release -DMULTICORE=1 -DPERFORMANCE=ON ..
 
 release: cmake-release all
 
