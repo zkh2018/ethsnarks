@@ -14,8 +14,10 @@ option(ETHSNARKS_DISABLE_TESTS "Disable ethsnarks tests" OFF)
 option(ETHSNARKS_DISABLE_UTILS "Disable ethsnarks utilties" ON)
 option(ETHSNARKS_DISABLE_PINOCCHIO "Disable pinocchio / xjsnark compatibility" OFF)
 
-find_package(Threads REQUIRED)
-
+option(ETHSNARKS_NO_THREADS "Disable testing for threads support" OFF)
+if( NOT ${ETHSNARKS_NO_THREADS} )
+  find_package(Threads REQUIRED)
+endif()
 
 if (CMAKE_VERSION VERSION_GREATER "3.0")
   set(CMAKE_CXX_STANDARD 11)
