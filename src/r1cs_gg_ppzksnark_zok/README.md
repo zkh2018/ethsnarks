@@ -21,7 +21,7 @@ e(a1, b1) * ... * e(ak, bk) = 1
 Note that the right side of the equation is the element 1 of `G_T`.
 
 ## The Groth16 verifier
-In the Groth16 scheme, veriying a proof is done in the following way:
+In the Groth16 scheme, verifying a proof is done in the following way:
 
 For a circuit over `F_p` with `p` a prime and `n` the number of public inputs:
 
