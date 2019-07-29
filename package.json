@@ -1,19 +1,21 @@
 {
 	"name": "ethsnarks",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"description": "zkSNARKS for Ethereum",
 	"main": "truffle.js",
 	"repository": "https://github.com/HarryR/ethsnarks.git",
 	"author": "HarryR@noreply.users.gihub.com",
 	"license": "LGPL-3.0+",
 	"dependencies": {
-		"solc": "^0.5.9",
-		"truffle": "^5.0.22"
+		"rlp": "^2.2.3",
+		"solc": "^0.5.10",
+		"truffle": "^5.0.29"
 	},
 	"devDependencies": {
 		"ganache-cli": "^6.4.4",
 		"solhint": "^1.5.1",
-		"solidity-coverage": "^0.5.11"
+		"solidity-coverage": "^0.5.11",
+		"eth-gas-reporter": "^0.2.4"
 	},
 	"scripts": {
 		"compile": "truffle compile",

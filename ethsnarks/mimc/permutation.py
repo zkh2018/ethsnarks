@@ -1,16 +1,10 @@
 # Copyright (c) 2018 HarryR
 # License: LGPL-3.0+
 
-try:
-    # pysha3
-    from sha3 import keccak_256
-except ImportError:
-    # pycryptodome
-    from Crypto.Hash import keccak
-    keccak_256 = lambda *args: keccak.new(*args, digest_bits=256)
+from ..sha3 import keccak_256
+from ..field import SNARK_SCALAR_FIELD
 
 
-SNARK_SCALAR_FIELD = 0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001
 DEFAULT_EXPONENT = 7
 DEFAULT_ROUNDS = 91
 DEFAULT_SEED = b'mimc'
@@ -127,6 +121,28 @@ def mimc_hash(x, k=0, seed=DEFAULT_SEED, p=SNARK_SCALAR_FIELD, e=DEFAULT_EXPONEN
     for x_i in x:
         r = mimc(x_i, k, seed, p, e, R)
         k = (k + x_i + r) % p
+    return k
+
+
+"""
+Merkle-Damgard structure, used to turn a cipher into a one-way-compression function
+
+              m_i
+               |
+               |
+               v
+   k_{i-1} -->[E]
+               |
+               |
+               v
+              k_i
+
+The output is used as the key for the next message
+The last output is used as the result
+"""
+def mimc_hash_md(x, k=0, seed=DEFAULT_SEED, p=SNARK_SCALAR_FIELD, e=DEFAULT_EXPONENT, R=DEFAULT_ROUNDS):
+    for x_i in x:
+        k = mimc(x_i, k, seed, p, e, R)
     return k
 
 
