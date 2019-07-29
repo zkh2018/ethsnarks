@@ -158,11 +158,11 @@ const std::vector<VariableArrayT> bits2blocks_padded(ProtoboardT& in_pb, const V
             // Set the bit immediately after the input bits to 1
             if( in_bits_offset == in_bits.size() ) {
                 in_pb.val(block[j]) = FieldT::one();
-                in_pb.add_r1cs_constraint(ConstraintT(block[j], FieldT::one(), FieldT::one()));
+                in_pb.add_r1cs_constraint(ConstraintT(block[j], FieldT::one(), FieldT::one()), "First padding bit is 1");
             }
             else if( in_bits_offset < (block_end - length_bits) ) {
                 // Enforce padding bits are zero
-                in_pb.add_r1cs_constraint(ConstraintT(block[j], FieldT::zero(), FieldT::zero()));
+                in_pb.add_r1cs_constraint(ConstraintT(block[j], FieldT::zero(), FieldT::zero()), "Remaining padding bits are zero");
             }
 
             j += 1;
@@ -188,7 +188,7 @@ const std::vector<VariableArrayT> bits2blocks_padded(ProtoboardT& in_pb, const V
     for( size_t j = (block_size - length_bits); j < block_size; j++ )
     {
         const auto value = FieldT(bitlen_bits[k++]);
-        in_pb.add_r1cs_constraint(ConstraintT(last_block[j], 1, value));
+        in_pb.add_r1cs_constraint(ConstraintT(last_block[j], 1, value), "Length suffix consistency");
         in_pb.val(last_block[j]) = value;
     }
 

@@ -290,7 +290,7 @@ public:
         sha3_Update(&ctx, seed, strlen(seed));
         memcpy(output_digest, sha3_Finalize(&ctx), DIGEST_SIZE_BYTES);
 
-        for( int i = 0; i < RoundT::N_ROUNDS; i++ )
+        for( size_t i = 0; i < RoundT::N_ROUNDS; i++ )
         {
             // Derive a sequence of hashes to use as round constants
             sha3_Init256(&ctx);
