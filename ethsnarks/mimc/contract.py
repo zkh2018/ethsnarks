@@ -142,27 +142,31 @@ def main(*args):
     if len(args) < 2:
         print("Usage: %s <abi|contract> <exponent> [outfile]" % (args[0],))
         return 1
+
     command = args[1]
     exponent = int(args[2])
     if exponent not in (5, 7):
         print("Error: exponent must be 5 or 7")
         return 2
+
     outfile = sys.stdout
     if len(args) > 3:
         outfile = open(args[3], 'wb')
+
     if command == "abi":
         outfile.write(json.dumps(mimc_abi(exponent)) + "\n")
-        return 0
     elif command == "contract":
         data = mimc_contract(exponent)
         if outfile == sys.stdout:            
             data = '0x' + hexlify(data).decode('ascii')
         outfile.write(data)
-        return 0
     else:
         print("Error: unknown command", command)
+
     if outfile != sys.stdout:
         outfile.close()
+
+    return 0
 
 
 if __name__ == "__main__":

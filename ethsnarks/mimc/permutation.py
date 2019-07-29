@@ -32,12 +32,12 @@ def H(*args):
 assert H(123) == 38632140595220392354280998614525578145353818029287874088356304829962854601866
 
 
-"""
-Generate a sequence of round constants
-
-These can hard-coded into circuits or generated on-demand
-"""
 def mimc_constants(seed=DEFAULT_SEED, p=SNARK_SCALAR_FIELD, R=DEFAULT_ROUNDS):
+    """
+    Generate a sequence of round constants
+
+    These can hard-coded into circuits or generated on-demand
+    """
     if isinstance(seed, str):
         seed = seed.encode('ascii')
     if isinstance(seed, bytes):
@@ -51,37 +51,37 @@ def mimc_constants(seed=DEFAULT_SEED, p=SNARK_SCALAR_FIELD, R=DEFAULT_ROUNDS):
         yield seed
 
 
-"""
-The MiMC cipher: https://eprint.iacr.org/2016/492
-
- First round
-
-            x    k
-            |    |
-            |    |
-           (+)---|     X[0] = x + k
-            |    |
-    C[0] --(+)   |     Y[0] = X[0] + C[0]
-            |    |
-          (n^7)  |     Z[0] = Y[0]^7
-            |    |
-*****************************************
- per-round  |    |
-            |    |
-           (+)---|     X[i] = Z[i-1] + k
-            |    |
-    C[i] --(+)   |     Y[i] = X[i] + C[i]
-            |    |
-          (n^7)  |     Z[i] = Y[i]^7
-            |    |
-*****************************************
- Last round
-            |    |
-           (+)---'     result = Z.back() + k
-            |
-          result
-"""
 def mimc(x, k, seed=DEFAULT_SEED, p=SNARK_SCALAR_FIELD, e=DEFAULT_EXPONENT, R=DEFAULT_ROUNDS):
+    """
+    The MiMC cipher: https://eprint.iacr.org/2016/492
+
+     First round
+
+                x    k
+                |    |
+                |    |
+               (+)---|     X[0] = x + k
+                |    |
+        C[0] --(+)   |     Y[0] = X[0] + C[0]
+                |    |
+              (n^7)  |     Z[0] = Y[0]^7
+                |    |
+    *****************************************
+     per-round  |    |
+                |    |
+               (+)---|     X[i] = Z[i-1] + k
+                |    |
+        C[i] --(+)   |     Y[i] = X[i] + C[i]
+                |    |
+              (n^7)  |     Z[i] = Y[i]^7
+                |    |
+    *****************************************
+     Last round
+                |    |
+               (+)---'     result = Z.back() + k
+                |
+              result
+    """
     assert R > 2
     # TODO: assert gcd(p-1, e) == 1
     for c_i in list(mimc_constants(seed, p, R)):
@@ -90,57 +90,57 @@ def mimc(x, k, seed=DEFAULT_SEED, p=SNARK_SCALAR_FIELD, e=DEFAULT_EXPONENT, R=DE
     return (x + k) % p
 
 
-"""
-The Miyaguchi–Preneel single-block-length one-way compression
-function is an extended variant of Matyas–Meyer–Oseas. It was
-independently proposed by Shoji Miyaguchi and Bart Preneel.
-
-H_i = E_{H_{i-1}}(m_i) + {H_{i-1}} + m_i
-
-The previous output is used as the key for
-the next iteration.
-
-or..
-
-             m_i
-              |
-              |----,
-              |    |
-              v    |
-H_{i-1}--,-->[E]   |
-         |    |    |
-         `-->(+)<--'
-              |
-              v
-             H_i
-
-@param x list of inputs
-@param k initial key
-"""
 def mimc_hash(x, k=0, seed=DEFAULT_SEED, p=SNARK_SCALAR_FIELD, e=DEFAULT_EXPONENT, R=DEFAULT_ROUNDS):
+    """
+    The Miyaguchi–Preneel single-block-length one-way compression
+    function is an extended variant of Matyas–Meyer–Oseas. It was
+    independently proposed by Shoji Miyaguchi and Bart Preneel.
+
+    H_i = E_{H_{i-1}}(m_i) + {H_{i-1}} + m_i
+
+    The previous output is used as the key for
+    the next iteration.
+
+    or..
+
+                 m_i
+                  |
+                  |----,
+                  |    |
+                  v    |
+    H_{i-1}--,-->[E]   |
+             |    |    |
+             `-->(+)<--'
+                  |
+                  v
+                 H_i
+
+    @param x list of inputs
+    @param k initial key
+    """
     for x_i in x:
         r = mimc(x_i, k, seed, p, e, R)
         k = (k + x_i + r) % p
     return k
 
 
-"""
-Merkle-Damgard structure, used to turn a cipher into a one-way-compression function
-
-              m_i
-               |
-               |
-               v
-   k_{i-1} -->[E]
-               |
-               |
-               v
-              k_i
-
-The output is used as the key for the next message
-The last output is used as the result
-"""
 def mimc_hash_md(x, k=0, seed=DEFAULT_SEED, p=SNARK_SCALAR_FIELD, e=DEFAULT_EXPONENT, R=DEFAULT_ROUNDS):
+    """
+    Merkle-Damgard structure, used to turn a cipher into a one-way-compression function
+
+                  m_i
+                   |
+                   |
+                   v
+       k_{i-1} -->[E]
+                   |
+                   |
+                   v
+                  k_i
+
+    The output is used as the key for the next message
+    The last output is used as the result
+    """
     for x_i in x:
         k = mimc(x_i, k, seed, p, e, R)
     return k
