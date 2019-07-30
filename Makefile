@@ -171,6 +171,13 @@ mac-dependencies:
 
 #######################################################################
 
+
+contracts/MiMCpe5_generated.sol:
+	$(PYTHON) -methsnarks.mimc.contract_sol 5 > $@
+
+contracts/MiMCpe7_generated.sol:
+	$(PYTHON) -methsnarks.mimc.contract_sol 7 > $@
+
 build/evm:
 	mkdir -p $@
 
@@ -207,7 +214,7 @@ truffle-test: $(TRUFFLE) build/contracts build/evm/MiMCpe
 truffle-migrate: $(TRUFFLE)
 	$(TRUFFLE) migrate
 
-truffle-compile: $(TRUFFLE) build/evm/MiMCpe
+truffle-compile: $(TRUFFLE) build/evm/MiMCpe contracts/MiMCpe5_generated.sol contracts/MiMCpe7_generated.sol
 	$(TRUFFLE) compile
 
 testrpc: $(TRUFFLE)

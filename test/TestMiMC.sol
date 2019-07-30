@@ -2,6 +2,7 @@ pragma solidity ^0.5.0;
 
 import "truffle/Assert.sol";
 import "../contracts/MiMC_permutation.sol";
+import "../contracts/MiMCpe7_generated.sol";
 import "../contracts/MiMC_hash.sol";
 
 
@@ -18,6 +19,15 @@ contract TestMiMC
 		uint256 k = 134551314051432487569247388144051420116740427803855572138106146683954151557;
 		uint256 expected = 11437467823393790387399137249441941313717686441929791910070352316474327319704;
 		uint256 result = MiMC_permutation.MiMCpe7(x, k);
+		Assert.equal(result, expected, "Unexpected result");
+	}
+
+	function testEncipher_generated () public
+	{
+		uint256 x = 3703141493535563179657531719960160174296085208671919316200479060314459804651;
+		uint256 k = 134551314051432487569247388144051420116740427803855572138106146683954151557;
+		uint256 expected = 11437467823393790387399137249441941313717686441929791910070352316474327319704;
+		uint256 result = MiMCpe7_generated.MiMCpe7(x, k);
 		Assert.equal(result, expected, "Unexpected result");
 	}
 

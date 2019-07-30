@@ -4,7 +4,8 @@
 pragma solidity ^0.5.0;
 
 
-import "./MiMC_permutation.sol";
+//import "./MiMC_permutation.sol";
+import "./MiMCpe7_generated.sol";
 
 
 library MiMC_hash
@@ -23,7 +24,7 @@ library MiMC_hash
 
         for ( uint256 i = 0; i < in_x.length; i++ )
         {
-            r = (r + in_x[i] + MiMC_permutation.MiMCpe7(in_x[i], r)) % localQ;
+            r = (r + in_x[i] + MiMCpe7_generated.MiMCpe7(in_x[i], r)) % localQ;
         }
         
         return r;
@@ -34,7 +35,7 @@ library MiMC_hash
     {
         for ( uint256 i = 0; i < in_x.length; i++ )
         {
-            in_k = MiMC_permutation.MiMCpe7(in_x[i], in_k);
+            in_k = MiMCpe7_generated.MiMCpe7(in_x[i], in_k);
         }
         
         return in_k;
