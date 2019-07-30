@@ -19,6 +19,7 @@
 	"scripts": {
 		"compile": "truffle compile",
 		"test": "truffle test",
+		"test-testrpc": "truffle test --network testrpc",
 		"testrpc": "ganache-cli",
 		"coverage": "truffle-coverage",
 		"lint": "solhint contracts/**/*.sol",

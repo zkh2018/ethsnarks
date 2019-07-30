@@ -207,7 +207,7 @@ truffle-test: $(TRUFFLE) build/contracts build/evm/MiMCpe
 truffle-migrate: $(TRUFFLE)
 	$(TRUFFLE) migrate
 
-truffle-compile: $(TRUFFLE) evm/MiMCpe
+truffle-compile: $(TRUFFLE) build/evm/MiMCpe
 	$(TRUFFLE) compile
 
 testrpc: $(TRUFFLE)
