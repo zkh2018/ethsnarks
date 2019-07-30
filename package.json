@@ -7,21 +7,21 @@
 	"author": "HarryR@noreply.users.gihub.com",
 	"license": "LGPL-3.0+",
 	"dependencies": {
-		"rlp": "^2.2.3",
-		"solc": "^0.5.10",
 		"truffle": "^5.0.29"
 	},
 	"devDependencies": {
-		"ganache-cli": "^6.4.4",
+		"ganache-cli": "^6.5.0",
 		"solhint": "^1.5.1",
-		"solidity-coverage": "^0.5.11",
-		"eth-gas-reporter": "^0.2.4"
+		"solidity-coverage": "^0.6.3",
+		"eth-gas-reporter": "^0.2.8",
+		"truffle-artifactor": "^4.0.25"
 	},
 	"scripts": {
 		"compile": "truffle compile",
 		"test": "truffle test",
 		"testrpc": "ganache-cli",
 		"coverage": "truffle-coverage",
-		"lint": "solhint contracts/**/*.sol"
+		"lint": "solhint contracts/**/*.sol",
+		"generate-artifacts": "node utils/generate-artifacts.js"
 	}
 }

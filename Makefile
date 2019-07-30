@@ -171,6 +171,17 @@ mac-dependencies:
 
 #######################################################################
 
+build/evm:
+	mkdir -p $@
+
+.PHONY: build/evm/MiMCpe
+build/evm/MiMCpe: build/evm/MiMCpe7.abi build/evm/MiMCpe7.contract build/evm/MiMCpe5.abi build/evm/MiMCpe5.contract build/contracts/MiMCpe5_evm.json
+
+build/evm/MiMCpe%: build/evm ethsnarks/mimc/contract.py
+	$(PYTHON) -methsnarks.mimc.contract $(subst .,,$(suffix $(@F))) $(subst MiMCpe,,$(subst $(suffix $(@F)),,$(@F))) > $@
+
+build/contracts/MiMCpe5_evm.json:
+	$(NPM) run generate-artifacts
 
 solidity-lint:
 	$(NPM) run lint
@@ -186,14 +197,17 @@ nvm-install:
 node_modules:
 	$(NPM) install
 
+build/contracts:
+	mkdir -p $@
+
 .PHONY: truffle-test
-truffle-test: $(TRUFFLE)
+truffle-test: $(TRUFFLE) build/contracts build/evm/MiMCpe
 	$(NPM) run test
 
 truffle-migrate: $(TRUFFLE)
 	$(TRUFFLE) migrate
 
-truffle-compile: $(TRUFFLE)
+truffle-compile: $(TRUFFLE) evm/MiMCpe
 	$(TRUFFLE) compile
 
 testrpc: $(TRUFFLE)

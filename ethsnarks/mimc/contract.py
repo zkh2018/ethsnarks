@@ -139,7 +139,7 @@ def mimc_contract(exponent):
 
 
 def main(*args): 
-    if len(args) < 2:
+    if len(args) < 3:
         print("Usage: %s <abi|contract> <exponent> [outfile]" % (args[0],))
         return 1
 

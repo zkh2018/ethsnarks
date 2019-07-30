@@ -4,7 +4,7 @@
 pragma solidity ^0.5.0;
 
 library wNAF {
-	/**
+    /**
      * Note the result is stored as 256 bytes, encoded as 8x 256-bit words
      * This prevents solidity from giving us a 20k gas overhead for memory allocation...
      *
