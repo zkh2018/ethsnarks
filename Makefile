@@ -32,7 +32,7 @@ PINOCCHIO_TESTS=$(wildcard test/pinocchio/*.circuit)
 all: node_modules build/src/verify truffle-compile
 
 clean: coverage-clean python-clean
-	rm -rf build
+	rm -rf build node_modules
 
 
 #######################################################################

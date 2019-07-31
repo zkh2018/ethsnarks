@@ -16,7 +16,7 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]] || [[ "$TRAVIS_OS_NAME" == "linux" ]]; then nvm install --lts ; fi
   - make PIP_ARGS= python-dependencies
 script:
-  - make debug -j 2
+  - make debug
   - make test
 after_success:
   - make coverage
