@@ -1,5 +1,6 @@
 ROOT_DIR := $(shell dirname $(realpath $(MAKEFILE_LIST)))
 
+# Depending on the system, the file extension for loadable modules is different
 ifeq ($(OS),Windows_NT)
 	detected_OS := Windows
 	DLL_EXT := .dll
@@ -7,9 +8,6 @@ else
 	detected_OS := $(shell uname -s)
 	ifeq ($(detected_OS),Darwin)
 		DLL_EXT := .dylib
-		export LD_LIBRARY_PATH := /usr/local/opt/openssl/lib:"$(LD_LIBRARY_PATH)"
-		export CPATH := /usr/local/opt/openssl/include:"$(CPATH)"
-		export PKG_CONFIG_PATH := /usr/local/opt/openssl/lib/pkgconfig:"$(PKG_CONFIG_PATH)"
 	else
 		DLL_EXT := .so
 	endif
@@ -62,6 +60,10 @@ cmake-openmp-performance: build
 	cd build && cmake -DCMAKE_BUILD_TYPE=Release -DMULTICORE=1 -DPERFORMANCE=ON ..
 
 release: cmake-release all
+
+performance: cmake-performance all
+
+openmp: cmake-openmp-performance all
 
 debug: cmake-debug all
 
@@ -145,7 +147,7 @@ python-clean:
 	find . -name '__pycache__' -exec rm -rf '{}' ';' || true
 
 cxx-lint:
-	cppcheck -I depends/libsnark/ -I depends/libsnark/depends/libff/ -I depends/libsnark/depends/libfqfft/ -I src/ --enable=all src/ || true
+	cppcheck -I depends/libsnark/ -I depends/libsnark/depends/libff/ -I depends/libfqfft/ -I src/ --enable=all src/ || true
 
 
 #######################################################################
@@ -160,34 +162,34 @@ requirements-dev:
 	$(PYTHON) -m pip install $(PIP_ARGS) -r requirements-dev.txt
 
 fedora-dependencies:
-	dnf install procps-ng-devel gmp-devel boost-devel cmake g++ python3-pip
+	dnf install procps-ng-devel gmp-devel cmake g++ python3-pip
 
 ubuntu-dependencies:
-	apt-get install cmake make g++ libgmp-dev libboost-all-dev libprocps-dev python3-pip
+	apt-get install cmake make g++ libgmp-dev libprocps-dev python3-pip
 
 mac-dependencies:
-	brew install python3 pkg-config boost cmake gmp openssl || true
+	brew install python3 pkg-config cmake gmp || true
 
 
 #######################################################################
 
 
 contracts/MiMCpe5_generated.sol:
-	$(PYTHON) -methsnarks.mimc.contract_sol 5 > $@
+	$(PYTHON) -m$(NAME).mimc.contract_sol 5 > $@
 
 contracts/MiMCpe7_generated.sol:
-	$(PYTHON) -methsnarks.mimc.contract_sol 7 > $@
+	$(PYTHON) -m$(NAME).mimc.contract_sol 7 > $@
 
 build/evm:
 	mkdir -p $@
 
 .PHONY: build/evm/MiMCpe
-build/evm/MiMCpe: build/evm/MiMCpe7.abi build/evm/MiMCpe7.contract build/evm/MiMCpe5.abi build/evm/MiMCpe5.contract build/contracts/MiMCpe5_evm.json
+build/evm/MiMCpe: build/contracts/MiMCpe5_evm.json
 
-build/evm/MiMCpe%: build/evm ethsnarks/mimc/contract.py
-	$(PYTHON) -methsnarks.mimc.contract $(subst .,,$(suffix $(@F))) $(subst MiMCpe,,$(subst $(suffix $(@F)),,$(@F))) > $@
+build/evm/MiMCpe%: build/evm $(NAME)/mimc/contract.py
+	$(PYTHON) -m$(NAME).mimc.contract $(subst .,,$(suffix $(@F))) $(subst MiMCpe,,$(subst $(suffix $(@F)),,$(@F))) > $@
 
-build/contracts/MiMCpe5_evm.json:
+build/contracts/MiMCpe5_evm.json: build/evm/MiMCpe7.abi build/evm/MiMCpe7.contract build/evm/MiMCpe5.abi build/evm/MiMCpe5.contract
 	$(NPM) run generate-artifacts
 
 solidity-lint:
@@ -207,14 +209,16 @@ node_modules:
 build/contracts:
 	mkdir -p $@
 
+TRUFFLE_PREREQS = build/contracts build/evm/MiMCpe contracts/MiMCpe5_generated.sol contracts/MiMCpe7_generated.sol
+
 .PHONY: truffle-test
-truffle-test: $(TRUFFLE) build/contracts build/evm/MiMCpe
+truffle-test: $(TRUFFLE) $(TRUFFLE_PREREQS)
 	$(NPM) run test
 
 truffle-migrate: $(TRUFFLE)
 	$(TRUFFLE) migrate
 
-truffle-compile: $(TRUFFLE) build/evm/MiMCpe contracts/MiMCpe5_generated.sol contracts/MiMCpe7_generated.sol
+truffle-compile: $(TRUFFLE) $(TRUFFLE_PREREQS)
 	$(TRUFFLE) compile
 
 testrpc: $(TRUFFLE)
