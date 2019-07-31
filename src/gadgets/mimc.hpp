@@ -44,12 +44,77 @@ namespace ethsnarks {
 */
 
 
-#define MIMC_ROUNDS 91
 #define MIMC_SEED "mimc"
+
+
+class MiMCe5_round : public GadgetT {
+public:
+    static constexpr size_t N_ROUNDS = 110;
+    const VariableT x;
+    const VariableT k;
+    const FieldT& C;
+    const bool add_k_to_result;
+    const VariableT a;
+    const VariableT b;
+    const VariableT c;
+
+public:
+    MiMCe5_round(
+        ProtoboardT& pb,
+        const VariableT in_x,
+        const VariableT in_k,
+        const FieldT& in_C,
+        const bool in_add_k_to_result,
+        const std::string &annotation_prefix
+    ) :
+        GadgetT(pb, annotation_prefix),
+        x(in_x), k(in_k), C(in_C),
+        add_k_to_result(in_add_k_to_result),
+        a(make_variable(pb, FMT(annotation_prefix, ".a"))),
+        b(make_variable(pb, FMT(annotation_prefix, ".b"))),
+        c(make_variable(pb, FMT(annotation_prefix, ".c")))
+    { }
+
+    const VariableT& result() const
+    {
+        return c;
+    }
+
+    void generate_r1cs_constraints()
+    {
+        auto t = x + k + C;
+        this->pb.add_r1cs_constraint(ConstraintT(t, t, a), ".a = t*t"); // x^2
+        this->pb.add_r1cs_constraint(ConstraintT(a, a, b), ".b = a*a"); // x^4
+
+        if( add_k_to_result )
+        {
+            this->pb.add_r1cs_constraint(ConstraintT(t, b, c - k), ".c = (b*t) + k"); // x^5
+        }
+        else {
+            this->pb.add_r1cs_constraint(ConstraintT(t, b, c), ".c = b*t"); // x^5
+        }
+    }
+
+    void generate_r1cs_witness() const
+    {
+        const auto val_k = this->pb.val(k);
+        const auto t = this->pb.val(x) + val_k + C;
+
+        const auto val_a = t * t;
+        this->pb.val(a) = val_a;
+
+        const auto val_b = val_a * val_a;
+        this->pb.val(b) = val_b;
+
+        const FieldT result = (val_b * t) + (add_k_to_result ? val_k : FieldT::zero());
+        this->pb.val(c) = result;
+    }
+};
 
 
 class MiMCe7_round : public GadgetT {
 public:
+    static constexpr size_t N_ROUNDS = 91;
     const VariableT x;
     const VariableT k;
     const FieldT& C;
@@ -85,16 +150,16 @@ public:
     void generate_r1cs_constraints()
     {
         auto t = x + k + C;       
-        this->pb.add_r1cs_constraint(ConstraintT(t, t, a), ".a = t*t"); // x^2
-        this->pb.add_r1cs_constraint(ConstraintT(a, a, b), ".b = a*a"); // x^4
-        this->pb.add_r1cs_constraint(ConstraintT(a, b, c), ".c = a*b"); // x^6
+        this->pb.add_r1cs_constraint(ConstraintT(t, t, a), ".a = t*t == t^2"); // x^2
+        this->pb.add_r1cs_constraint(ConstraintT(a, a, b), ".b = a*a == t^4"); // x^4
+        this->pb.add_r1cs_constraint(ConstraintT(a, b, c), ".c = a*b == t^6"); // x^6
 
         if( add_k_to_result )
         {
-            this->pb.add_r1cs_constraint(ConstraintT(t, c, d - k), ".d = (c*t) + k"); // x^7
+            this->pb.add_r1cs_constraint(ConstraintT(t, c, d - k), ".d = (c*t) + k == t^7 + k"); // x^7
         }
         else {
-            this->pb.add_r1cs_constraint(ConstraintT(t, c, d), ".d = c*t"); // x^7
+            this->pb.add_r1cs_constraint(ConstraintT(t, c, d), ".d = c*t == t^7"); // x^7
         }
     }
 
@@ -118,10 +183,11 @@ public:
 };
 
 
-class MiMCe7_gadget : public GadgetT
+template<typename RoundT>
+class MiMC_gadget : public GadgetT
 {
 public:
-    std::vector<MiMCe7_round> m_rounds;
+    std::vector<RoundT> m_rounds;
     const VariableT k;
 
     void _setup_gadgets(
@@ -142,7 +208,7 @@ public:
     }
 
 public:
-    MiMCe7_gadget(
+    MiMC_gadget(
         ProtoboardT& pb,
         const VariableT in_x,
         const VariableT in_k,
@@ -155,7 +221,7 @@ public:
         _setup_gadgets(in_x, in_k, in_round_constants);
     }
 
-    MiMCe7_gadget(
+    MiMC_gadget(
         ProtoboardT& pb,
         const VariableT in_x,
         const VariableT in_k,
@@ -196,17 +262,12 @@ public:
     */
     static const std::vector<FieldT>& static_constants ()
     {
-        static bool filled = false;
         static std::vector<FieldT> round_constants;
-        static std::mutex fill_lock;
+        static std::once_flag flag;
 
-        if( ! filled )
-        {
-            fill_lock.lock();
+        std::call_once(flag, [](){
             constants_fill(round_constants);
-            filled = true;
-            fill_lock.unlock();
-        }
+        });
 
         return round_constants;
     }
@@ -214,12 +275,12 @@ public:
     /**
     * Generate a sequence of round constants from an initial seed value.
     */
-    static void constants_fill( std::vector<FieldT>& round_constants, const char* seed = MIMC_SEED, int round_count = MIMC_ROUNDS )
+    static void constants_fill( std::vector<FieldT>& round_constants, const char* seed = MIMC_SEED )
     {
         // XXX: replace '32' with digest size in bytes
         const size_t DIGEST_SIZE_BYTES = 32;
 
-        round_constants.reserve(round_count);
+        round_constants.reserve(RoundT::N_ROUNDS);
 
         unsigned char output_digest[DIGEST_SIZE_BYTES];
 
@@ -229,7 +290,7 @@ public:
         sha3_Update(&ctx, seed, strlen(seed));
         memcpy(output_digest, sha3_Finalize(&ctx), DIGEST_SIZE_BYTES);
 
-        for( int i = 0; i < round_count; i++ )
+        for( size_t i = 0; i < RoundT::N_ROUNDS; i++ )
         {
             // Derive a sequence of hashes to use as round constants
             sha3_Init256(&ctx);
@@ -256,36 +317,40 @@ public:
         }
     }
 
-    static const std::vector<FieldT> constants( const char* seed = MIMC_SEED, int round_count = MIMC_ROUNDS )
+    static const std::vector<FieldT> constants( const char* seed = MIMC_SEED )
     {
         std::vector<FieldT> round_constants;
 
-        constants_fill(round_constants, seed, round_count);
+        constants_fill(round_constants, seed);
 
         return round_constants;
     }
 };
 
 
-using MiMC_gadget = MiMCe7_gadget;
+using MiMC_e5_gadget = MiMC_gadget<MiMCe5_round>;
+using MiMC_e7_gadget = MiMC_gadget<MiMCe7_round>;
 
 
-class MiMC_hash_MiyaguchiPreneel_gadget : public MiyaguchiPreneel_OWF<MiMC_gadget>
+template<typename GadgetT>
+class MiMC_hash_MiyaguchiPreneel_gadget : public MiyaguchiPreneel_OWF<GadgetT>
 {
 public:
-    using MiyaguchiPreneel_OWF<MiMC_gadget>::MiyaguchiPreneel_OWF;
+    using MiyaguchiPreneel_OWF<GadgetT>::MiyaguchiPreneel_OWF;
 };
 
 
-class MiMC_hash_MerkleDamgard_gadget : public MerkleDamgard_OWF<MiMC_gadget>
+template<typename GadgetT>
+class MiMC_hash_MerkleDamgard_gadget : public MerkleDamgard_OWF<GadgetT>
 {
 public:
-    using MerkleDamgard_OWF<MiMC_gadget>::MerkleDamgard_OWF;
+    using MerkleDamgard_OWF<GadgetT>::MerkleDamgard_OWF;
 };
 
 
 // generic aliases for 'MiMC', masks specific implementation
-using MiMC_hash_gadget = MiMC_hash_MiyaguchiPreneel_gadget;
+using MiMC_e7_hash_gadget = MiMC_hash_MiyaguchiPreneel_gadget<MiMC_e7_gadget>;
+using MiMC_e5_hash_gadget = MiMC_hash_MiyaguchiPreneel_gadget<MiMC_e5_gadget>;
 
 
 
@@ -297,7 +362,7 @@ const FieldT mimc( const std::vector<FieldT>& round_constants, const FieldT& x, 
     const VariableT var_k = make_variable(pb, k, "k");
     pb.set_input_sizes(2);
 
-    MiMC_gadget the_gadget(pb, var_x, var_k, round_constants, "the_gadget");
+    MiMC_e7_gadget the_gadget(pb, var_x, var_k, round_constants, "the_gadget");
     the_gadget.generate_r1cs_witness();
     the_gadget.generate_r1cs_constraints();
 
@@ -307,7 +372,7 @@ const FieldT mimc( const std::vector<FieldT>& round_constants, const FieldT& x, 
 
 const FieldT mimc( const FieldT& x, const FieldT& k )
 {
-    return mimc(MiMC_gadget::static_constants(), x, k);
+    return mimc(MiMC_e7_gadget::static_constants(), x, k);
 }
 
 
@@ -325,7 +390,7 @@ const FieldT mimc_hash( const std::vector<FieldT>& m, const FieldT& k )
     const auto var_k = make_variable(pb, k, "k");
     pb.set_input_sizes(m.size() + 1);
 
-    MiMC_hash_gadget the_gadget(pb, var_k, var_m, "the_gadget");
+    MiMC_e7_hash_gadget the_gadget(pb, var_k, var_m, "the_gadget");
     the_gadget.generate_r1cs_witness();
     the_gadget.generate_r1cs_constraints();
 

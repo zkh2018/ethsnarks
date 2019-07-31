@@ -20,7 +20,7 @@ bool test_mimc_hash()
     // Private inputs
     VariableT iv = make_variable(pb, FieldT("918403109389145570117360101535982733651217667914747213867238065296420114726"), "iv");
 
-    MiMC_hash_gadget the_gadget(pb, iv, {m_0, m_1}, "gadget");
+    MiMC_e7_hash_gadget the_gadget(pb, iv, {m_0, m_1}, "gadget");
     the_gadget.generate_r1cs_witness();
     the_gadget.generate_r1cs_constraints();
 

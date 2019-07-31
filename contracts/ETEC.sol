@@ -8,7 +8,7 @@ import "./ModArith.sol";
 
 library ETEC
 {
-	/**
+    /**
     * Extended twisted edwards coordinates to extended affine coordinates
     */
     function etecToPoint( uint256[4] memory point, uint256 Q )
@@ -30,7 +30,7 @@ library ETEC
         output[3] = 1;
     }
 
-	function etecNegate( uint256[4] memory input_point, uint256[4] memory output_point, uint256 Q )
+    function etecNegate( uint256[4] memory input_point, uint256[4] memory output_point, uint256 Q )
         internal pure
     {
         output_point[0] = Q - input_point[0];
@@ -140,23 +140,23 @@ library ETEC
 
             // C <- d * t1 * t2
             let c := mulmod(
-            			mulmod(localD, mload(add(_p1, 0x40)), localQ),
-            			mload(add(_p2, 0x40)),
-            			localQ)
+                        mulmod(localD, mload(add(_p1, 0x40)), localQ),
+                        mload(add(_p2, 0x40)),
+                        localQ)
 
             // D <- z1 * z2
             let d := mulmod(mload(add(_p1, 0x60)), mload(add(_p2, 0x60)), localQ)
 
             // E <- (x1 + y1) * (x2 + y2) - A - B
             let e := addmod(
-            			mulmod(
-            				addmod(mload(_p1), mload(add(_p1, 0x20)), localQ),
-            				addmod(mload(_p2), mload(add(_p2, 0x20)), localQ),
-            				localQ),
-            			addmod(sub(localQ, a),
-            				   sub(localQ, b),
-            				   localQ),
-            			localQ)
+                        mulmod(
+                            addmod(mload(_p1), mload(add(_p1, 0x20)), localQ),
+                            addmod(mload(_p2), mload(add(_p2, 0x20)), localQ),
+                            localQ),
+                        addmod(sub(localQ, a),
+                               sub(localQ, b),
+                               localQ),
+                        localQ)
 
             // F <- D - C
             let f := addmod(d, sub(localQ, c), localQ)
@@ -166,8 +166,8 @@ library ETEC
 
             // H <- B - a * A
             let h := addmod(b,
-            				sub(localQ, mulmod(localA, a, localQ)),
-            				localQ)
+                            sub(localQ, mulmod(localA, a, localQ)),
+                            localQ)
 
             // x3 <- E * F
             mstore(p3, mulmod(e, f, localQ))

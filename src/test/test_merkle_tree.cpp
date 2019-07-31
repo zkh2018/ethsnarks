@@ -83,7 +83,7 @@ bool test_merkle_path_authenticator() {
 	pb.val(expected_root) = root;
 
 	size_t tree_depth = 1;
-	merkle_path_authenticator<MiMC_hash_gadget> auth(
+	merkle_path_authenticator<MiMC_e7_hash_gadget> auth(
 		pb, tree_depth, address_bits,
 		merkle_tree_IVs(pb),
 		leaf, expected_root, path,

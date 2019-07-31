@@ -8,7 +8,7 @@ using ethsnarks::ppT;
 using ethsnarks::FieldT;
 using ethsnarks::ProtoboardT;
 using ethsnarks::VariableT;
-using ethsnarks::MiMC_gadget;
+using ethsnarks::MiMC_e7_gadget;
 using ethsnarks::make_variable;
 
 
@@ -28,7 +28,7 @@ bool test_MiMC(const MiMC_TestCase& test_case)
     const VariableT in_k = make_variable(pb, test_case.key, "k");
     pb.set_input_sizes(2);
 
-    MiMC_gadget the_gadget(pb, in_x, in_k, "the_gadget");
+    MiMC_e7_gadget the_gadget(pb, in_x, in_k, "the_gadget");
     the_gadget.generate_r1cs_witness();
     the_gadget.generate_r1cs_constraints();
 
