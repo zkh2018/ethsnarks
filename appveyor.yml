@@ -18,10 +18,10 @@ install:
 
 before_build:
   - cmake -E make_directory build
-  - cmake -E chdir build cmake ..
+  - cmake -E chdir build cmake -DCMAKE_BUILD_TYPE=Debug ..
 
 build_script:
-  - cmake --build build --config Debug
+  - cmake --build build
 
 test_script:
   - set CTEST_OUTPUT_ON_FAILURE=ON
