@@ -5,7 +5,7 @@ environment:
    - COMPILER: msys64
      MINGW_ARCH: x86_64
      MINGW_ROOT: C:\msys64\mingw64
-     CMAKE_GENERATOR: 'MSYS Makefiles'
+#     CMAKE_GENERATOR: 'MSYS Makefiles'
 
 install:
   # Use cygwin to checkout source code, due to characters in sub-repo that mingw git can't handle
@@ -14,11 +14,11 @@ install:
   - C:\cygwin\bin\git submodule update --init --recursive
   - set PATH=%OLD_PATH%
   - if defined MINGW_ROOT set PATH=%MINGW_ROOT%\bin;C:\msys64\usr\bin\;%PATH%
-  - if defined MINGW_ARCH bash -lc "pacman --noconfirm -S -y make gmp gmp-devel gcc git cmake"
+  - if defined MINGW_ARCH bash -lc "pacman --noconfirm -S make gmp gmp-devel gcc git cmake"
 
 before_build:
   - cmake -E make_directory build
-  - cmake -E chdir build cmake -G "%CMAKE_GENERATOR%" ..
+  - cmake -E chdir build cmake ..
 
 build_script:
   - cmake --build build --config Debug
