@@ -56,6 +56,7 @@ Then install the Python dependencies, via Pip, into the local user directory:
 
 Then build and test the project:
 
+ * `git submodule update --init --recursive`
  * `make`
 
 ### Windows (64-bit)
@@ -66,6 +67,7 @@ Install MSYS2 from https://www.msys2.org/ then open the MSYS2 Shell and run:
 pacman --noconfirm -S make gmp gmp-devel gcc git cmake
 git clone git@github.com:HarryR/ethsnarks.git
 cd ethsnarks
+git submodule update --init --recursive
 cmake -E make_directory build
 cmake -E chdir build cmake -DCMAKE_BUILD_TYPE=Debug ..
 cmake --build build
