@@ -27,22 +27,55 @@ EthSnarks is participating in the Ethereum Foundation's grants program, developm
 
 ## Building
 
-[![Build Status](https://travis-ci.org/HarryR/ethsnarks.svg?branch=master)](https://travis-ci.org/HarryR/ethsnarks) [![BCH compliance](https://bettercodehub.com/edge/badge/HarryR/ethsnarks?branch=master)](https://bettercodehub.com/)
+[![Build Status](https://travis-ci.org/HarryR/ethsnarks.svg?branch=master)](https://travis-ci.org/HarryR/ethsnarks) [![Build status](https://ci.appveyor.com/api/projects/status/yk08x7xtk9te10vo/branch/master?svg=true)](https://ci.appveyor.com/project/harryr/ethsnarks/branch/master)
 
-```
-git clone git@github.com:HarryR/ethsnarks.git
-cd ethsnarks
-make
-```
+### Unix Flavours (Linux, OSX, Ubuntu, CentOS etc.)
 
-Type `make` - the first time you run it will retrieve submodules, setup cmake and build everything, for more information about the build process see the [Travis-CI build logs](https://travis-ci.org/HarryR/ethsnarks).
+The following dependencies are required to build Ethsnarks:
 
  * cmake
  * g++ or clang++
  * gmp
  * npm / nvm
 
-WebAssembly and JavaScript builds are partially supported via [ethsnarks-emscripten](https://github.com/harryr/ethsnarks-emscripten)
+Check-out the source-code using:
+
+```bash
+git clone git@github.com:HarryR/ethsnarks.git && cd ethsnarks
+```
+
+After checking-out the repository you need to install the necessary dependencies, the `Makefile` includes pre-determined rules for different platforms:
+
+ * `make fedora-dependencies` (CentOS, Fedora, RHEL etc. requires `dnf`)
+ * `make ubuntu-dependencies` (Ubuntu, Debian etc.)
+ * `make mac-dependencies` (OSX, requires [Homebrew](https://brew.sh/))
+
+Then install the Python dependencies, via Pip, into the local user directory:
+
+ * `make python-dependencies`
+
+Then build and test the project:
+
+ * `make`
+
+### Windows (64-bit)
+
+Install MSYS2 from https://www.msys2.org/ then open the MSYS2 Shell and run:
+
+```bash
+pacman --noconfirm -S make gmp gmp-devel gcc git cmake
+git clone git@github.com:HarryR/ethsnarks.git
+cd ethsnarks
+cmake -E make_directory build
+cmake -E chdir build cmake -DCMAKE_BUILD_TYPE=Debug ..
+cmake --build build
+```
+
+Building under 32-bit MinGW32, MSYS (not MSYS2) and Microsoft Visual Studio may be supported in future depending upon demand, but currently are probably broken.
+
+### WASM / Browser
+
+WebAssembly, WASM and JavaScript builds are partially supported via [ethsnarks-emscripten](https://github.com/harryr/ethsnarks-emscripten) and [ethsnarks-cheerp](https://github.com/Ethsnarks/ethsnarks-cheerp). The build process is more complex...
 
 # Requests and Contributions
 
