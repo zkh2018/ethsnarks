@@ -13,6 +13,7 @@ install:
   - set PATH=%PATH%;C:\cygwin\bin
   - C:\cygwin\bin\git submodule update --init --recursive
   - set PATH=%OLD_PATH%
+  - PATH=C:\msys64\usr\bin\;%PATH%
   - bash -lc "pacman --noconfirm -S make gmp gmp-devel gcc git cmake"
 #  - PATH=%MINGW_ROOT%\bin;C:\msys64\usr\bin\;%PATH%
 
