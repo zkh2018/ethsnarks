@@ -13,16 +13,15 @@ install:
   - set PATH=%PATH%;C:\cygwin\bin
   - C:\cygwin\bin\git submodule update --init --recursive
   - set PATH=%OLD_PATH%
-  - if defined MINGW_ROOT set PATH=%MINGW_ROOT%\bin;C:\msys64\usr\bin\;%PATH%
-  - if defined MINGW_ARCH bash -lc "pacman --noconfirm -S make gmp gmp-devel gcc git cmake"
+  - bash -lc "pacman --noconfirm -S make gmp gmp-devel gcc git cmake"
+#  - PATH=%MINGW_ROOT%\bin;C:\msys64\usr\bin\;%PATH%
 
 before_build:
-  - cmake -E make_directory build
-  - cmake -E chdir build cmake -DCMAKE_BUILD_TYPE=Debug ..
+  - bash -lc "cmake -E make_directory build"
+  - bash -lc "cmake -E chdir build cmake -DCMAKE_BUILD_TYPE=Debug .."
 
 build_script:
-  - cmake --build build
+  - bash -lc "cmake --build build"
 
 test_script:
-  - set CTEST_OUTPUT_ON_FAILURE=ON
-  - cmake --build build --target test
+  - bash -lc "cmake --build build --target test"
