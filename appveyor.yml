@@ -12,17 +12,14 @@ install:
   - set OLD_PATH=%PATH%
   - set PATH=%PATH%;C:\cygwin\bin
   - C:\cygwin\bin\git submodule update --init --recursive
-  - set PATH=%OLD_PATH%
-  - PATH=C:\msys64\usr\bin\;%PATH%
+  - set PATH=C:\msys64\usr\bin\;%OLD_PATH%
   - bash -lc "pacman --noconfirm -S make gmp gmp-devel gcc git cmake"
-#  - PATH=%MINGW_ROOT%\bin;C:\msys64\usr\bin\;%PATH%
 
 before_build:
-  - bash -lc "cmake -E make_directory build"
-  - bash -lc "cmake -E chdir build cmake -DCMAKE_BUILD_TYPE=Debug .."
+  - bash -lc "cd $APPVEYOR_BUILD_FOLDER && cmake -E make_directory build && cmake -E chdir build cmake -DCMAKE_BUILD_TYPE=Debug .."
 
 build_script:
-  - bash -lc "cmake --build build"
+  - bash -lc "cd $APPVEYOR_BUILD_FOLDER && cmake --build build"
 
 test_script:
-  - bash -lc "cmake --build build --target test"
+  - bash -lc "cd $APPVEYOR_BUILD_FOLDER && cmake --build build --target test"
