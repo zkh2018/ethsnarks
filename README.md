@@ -44,10 +44,10 @@ Check-out the source-code using:
 git clone git@github.com:HarryR/ethsnarks.git && cd ethsnarks
 ```
 
-After checking-out the repository you need to install the necessary dependencies, the `Makefile` includes pre-determined rules for different platforms:
+After checking-out the repository you need to install the necessary dependencies, the `Makefile` includes pre-determined rules for different platforms, you need to run this as `root` or an administrator user (i.e. for Brew on OSX):
 
  * `make fedora-dependencies` (CentOS, Fedora, RHEL etc. requires `dnf`)
- * `make ubuntu-dependencies` (Ubuntu, Debian etc.)
+ * `make ubuntu-dependencies` (Ubuntu, Debian etc. requires `apt-get`)
  * `make mac-dependencies` (OSX, requires [Homebrew](https://brew.sh/))
 
 Then install the Python dependencies, via Pip, into the local user directory:
@@ -71,11 +71,11 @@ cmake -E chdir build cmake -DCMAKE_BUILD_TYPE=Debug ..
 cmake --build build
 ```
 
-Building under 32-bit MinGW32, MSYS (not MSYS2) and Microsoft Visual Studio may be supported in future depending upon demand, but currently are probably broken.
+Building under 32-bit MinGW32, MSYS (not MSYS2) and Microsoft Visual Studio may be supported in future depending upon demand, but currently it's probably broken...
 
 ### WASM / Browser
 
-WebAssembly, WASM and JavaScript builds are partially supported via [ethsnarks-emscripten](https://github.com/harryr/ethsnarks-emscripten) and [ethsnarks-cheerp](https://github.com/Ethsnarks/ethsnarks-cheerp). The build process is more complex...
+WebAssembly, WASM and JavaScript builds are partially supported via [ethsnarks-emscripten](https://github.com/harryr/ethsnarks-emscripten) and [ethsnarks-cheerp](https://github.com/Ethsnarks/ethsnarks-cheerp). The build process is similar, but using the Emscripten and Cheerp toolchains.
 
 # Requests and Contributions
 
