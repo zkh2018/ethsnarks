@@ -1,6 +1,6 @@
 [submodule "depends/libsnark"]
 	path = depends/libsnark
-	url = https://github.com/scipr-lab/libsnark.git
+	url = https://github.com/Ethsnarks/libsnark.git
 	ignore = dirty
 [submodule "depends/SHA3IUF"]
 	path = depends/SHA3IUF
