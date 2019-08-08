@@ -63,7 +63,7 @@ public:
 };
 
 
-void poseidon_constants_fill(const std::string &seed, unsigned n_constants, std::vector<FieldT> &result )
+static void poseidon_constants_fill(const std::string &seed, unsigned n_constants, std::vector<FieldT> &result )
 {
 	blake2b_ctx ctx;
 
@@ -84,7 +84,7 @@ void poseidon_constants_fill(const std::string &seed, unsigned n_constants, std:
 }
 
 
-const std::vector<FieldT> poseidon_constants(const std::string &seed, unsigned n_constants)
+static const std::vector<FieldT> poseidon_constants(const std::string &seed, unsigned n_constants)
 {
 	std::vector<FieldT> result;
 	poseidon_constants_fill(seed, n_constants, result);
@@ -92,7 +92,7 @@ const std::vector<FieldT> poseidon_constants(const std::string &seed, unsigned n
 }
 
 
-void poseidon_matrix_fill(const std::string &seed, unsigned t, std::vector<FieldT> &result)
+static void poseidon_matrix_fill(const std::string &seed, unsigned t, std::vector<FieldT> &result)
 {
 	const std::vector<FieldT> c = poseidon_constants(seed, t*2);
 
@@ -108,7 +108,7 @@ void poseidon_matrix_fill(const std::string &seed, unsigned t, std::vector<Field
 }
 
 
-const std::vector<FieldT> poseidon_matrix(const std::string &seed, unsigned t)
+static const std::vector<FieldT> poseidon_matrix(const std::string &seed, unsigned t)
 {
 	std::vector<FieldT> result;
 	poseidon_matrix_fill(seed, t, result);
