@@ -20,6 +20,7 @@
 using namespace libff;
 using namespace libsnark;
 
+
 const multi_exp_method method = multi_exp_method_bos_coster;
 //const multi_exp_method method = multi_exp_method_BDLO12;
 const size_t num_limbs = 4;
@@ -526,3 +527,129 @@ alt_bn128_libsnark::read_pt_ECpe(const var *mem) {
     return new alt_bn128_libsnark::G2{ .data =read_pt<alt_bn128_libsnark::G2>(cmem) };
 }
 
+
+template<typename ppT>
+class groth16_parameters {
+  public:
+    size_t d;
+    size_t m;
+    std::vector<libff::alt_bn128_G1> A, B1, L, H;
+    std::vector<libff::alt_bn128_G2> B2;
+
+  groth16_parameters(const char* path) {
+    FILE* params = fopen(path, "r");
+    d = read_size_t(params);
+    m = read_size_t(params);
+    for (size_t i = 0; i <= m; ++i) { A.emplace_back(read_g1<ppT>(params)); }
+    for (size_t i = 0; i <= m; ++i) { B1.emplace_back(read_g1<ppT>(params)); }
+    for (size_t i = 0; i <= m; ++i) { B2.emplace_back(read_g2<ppT>(params)); }
+    for (size_t i = 0; i < m-1; ++i) { L.emplace_back(read_g1<ppT>(params)); }
+    for (size_t i = 0; i < d; ++i) { H.emplace_back(read_g1<ppT>(params)); }
+    fclose(params);
+  }
+};
+
+template<typename ppT>
+void write_g1_vec(FILE *out, const std::vector<G1<ppT>> &vec) {
+    for (const auto &P : vec)
+        write_g1<ppT>(out, P);
+}
+
+template<typename ppT>
+void write_g2_vec(FILE *out, const std::vector<G2<ppT>> &vec) {
+    for (const auto &P : vec)
+        write_g2<ppT>(out, P);
+}
+
+template<typename ppT>
+void output_g1_multiples(int C, const std::vector<G1<ppT>> &vec, FILE *output) {
+    // If vec = [P0, ..., Pn], then multiples holds an array
+    //
+    // [    P0, ...,     Pn,
+    //     2P0, ...,    2Pn,
+    //     3P0, ...,    3Pn,
+    //          ...,
+    //  2^(C-1) P0, ..., 2^(C-1) Pn]
+    std::vector<G1<ppT>> multiples;
+    size_t len = vec.size();
+    multiples.resize(len * ((1U << C) - 1));
+    std::copy(vec.begin(), vec.end(), multiples.begin());
+
+    for (size_t i = 1; i < (1U << C) - 1; ++i) {
+        size_t prev_row_offset = (i-1)*len;
+        size_t curr_row_offset = i*len;
+#ifdef MULTICORE
+#pragma omp parallel for
+#endif
+        for (size_t j = 0; j < len; ++j)
+           multiples[curr_row_offset + j] = vec[j] + multiples[prev_row_offset + j];
+    }
+
+    if (multiples.size() != ((1U << C) - 1)*len) {
+        fprintf(stderr, "Broken preprocessing table: got %zu, expected %zu\n",
+                multiples.size(), ((1U << C) - 1) * len);
+        abort();
+    }
+    write_g1_vec<ppT>(output, multiples);
+}
+
+template<typename ppT>
+void output_g2_multiples(int C, const std::vector<G2<ppT>> &vec, FILE *output) {
+    // If vec = [P0, ..., Pn], then multiples holds an array
+    //
+    // [    P0, ...,     Pn,
+    //     2P0, ...,    2Pn,
+    //     3P0, ...,    3Pn,
+    //          ...,
+    //  2^(C-1) P0, ..., 2^(C-1) Pn]
+    std::vector<G2<ppT>> multiples;
+    size_t len = vec.size();
+    multiples.resize(len * ((1U << C) - 1));
+    std::copy(vec.begin(), vec.end(), multiples.begin());
+
+    for (size_t i = 1; i < (1U << C) - 1; ++i) {
+        size_t prev_row_offset = (i-1)*len;
+        size_t curr_row_offset = i*len;
+#ifdef MULTICORE
+#pragma omp parallel for
+#endif
+        for (size_t j = 0; j < len; ++j)
+           multiples[curr_row_offset + j] = vec[j] + multiples[prev_row_offset + j];
+    }
+
+    if (multiples.size() != ((1U << C) - 1)*len) {
+        fprintf(stderr, "Broken preprocessing table: got %zu, expected %zu\n",
+                multiples.size(), ((1U << C) - 1) * len);
+        abort();
+    }
+    write_g2_vec<ppT>(output, multiples);
+}
+
+void run_preprocess(const char *params_path, const char *output_path)
+{
+    libff::alt_bn128_pp::init_public_params();
+
+    const groth16_parameters<libff::alt_bn128_pp> params(params_path);
+
+    // We will produce 2^C precomputed points [i]P for i = 1..2^C
+    // for every input point P
+    static constexpr size_t C = 5;
+
+    size_t d = params.d, m =  params.m;
+    printf("d = %zu, m = %zu, C = %zu\n", d, m, C);
+
+    FILE *output = fopen(output_path, "w");
+
+    printf("Processing A...\n");
+    output_g1_multiples<libff::alt_bn128_pp>(C, params.A, output);
+    printf("Processing B1...\n");
+    output_g1_multiples<libff::alt_bn128_pp>(C, params.B1, output);
+    printf("Processing B2...\n");
+    output_g2_multiples<libff::alt_bn128_pp>(C, params.B2, output);
+    printf("Processing L...\n");
+    output_g1_multiples<libff::alt_bn128_pp>(C, params.L, output);
+    printf("Processing H...\n");
+    output_g1_multiples<libff::alt_bn128_pp>(C, params.H, output);
+
+    fclose(output);
+}
