@@ -648,8 +648,8 @@ void run_preprocess(const char *params_path, const char *output_path)
     output_g2_multiples<libff::alt_bn128_pp>(C, params.B2, output);
     printf("Processing L...\n");
     output_g1_multiples<libff::alt_bn128_pp>(C, params.L, output);
-    printf("Processing H...\n");
-    output_g1_multiples<libff::alt_bn128_pp>(C, params.H, output);
+    //printf("Processing H...\n");
+    //output_g1_multiples<libff::alt_bn128_pp>(C, params.H, output);
 
     fclose(output);
 }
