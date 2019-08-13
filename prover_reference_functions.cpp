@@ -385,6 +385,9 @@ alt_bn128_libsnark::vector_Fr *alt_bn128_libsnark::vector_Fr_zeros(size_t length
           .offset = 0};
 }
 
+size_t alt_bn128_libsnark::get_domain_m(alt_bn128_libsnark::evaluation_domain *domain) {
+    return domain->data->m;
+}
 void alt_bn128_libsnark::domain_iFFT(alt_bn128_libsnark::evaluation_domain *domain,
                                    alt_bn128_libsnark::vector_Fr *a) {
   std::vector<Fr<alt_bn128_pp>> &data = *a->data;

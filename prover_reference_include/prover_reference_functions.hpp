@@ -49,6 +49,7 @@ public:
                                   size_t length);
   static vector_Fr *vector_Fr_zeros(size_t length);
 
+  static size_t get_domain_m(evaluation_domain *domain);
   static void domain_iFFT(evaluation_domain *domain, vector_Fr *a);
   static void domain_cosetFFT(evaluation_domain *domain, vector_Fr *a);
   static void domain_icosetFFT(evaluation_domain *domain, vector_Fr *a);
