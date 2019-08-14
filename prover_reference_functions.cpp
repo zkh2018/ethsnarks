@@ -507,15 +507,93 @@ void alt_bn128_libsnark::delete_evaluation_domain(
   delete a;
 }
 
+
+std::string HexStringFromBigint(libff::bigint<libff::alt_bn128_r_limbs> _x){
+    mpz_t value;
+    ::mpz_init(value);
+
+    _x.to_mpz(value);
+    char *value_out_hex = mpz_get_str(nullptr, 16, value);
+
+    std::string str(value_out_hex);
+
+    ::mpz_clear(value);
+    ::free(value_out_hex);
+
+    return str;
+}
+
+template<typename ppT>
+std::string outputPointG1AffineAsHex(G1<ppT> _p)
+{
+        auto aff = _p;
+        aff.to_affine_coordinates();
+        return "\"0x" +  HexStringFromBigint(aff.X.as_bigint()) + "\", \"0x" + HexStringFromBigint(aff.Y.as_bigint()) + "\""; 
+}
+
+template<typename ppT>
+std::string outputPointG2AffineAsHex(G2<ppT> _p)
+{
+        G2<ppT> aff = _p;
+
+        if (aff.Z.c0.as_bigint() != "0" && aff.Z.c1.as_bigint() != "0" ) {
+            aff.to_affine_coordinates();
+        }
+        return "[\"0x" +
+                HexStringFromBigint(aff.X.c1.as_bigint()) + "\", \"0x" +
+                HexStringFromBigint(aff.X.c0.as_bigint()) + "\"],\n [\"0x" + 
+                HexStringFromBigint(aff.Y.c1.as_bigint()) + "\", \"0x" +
+                HexStringFromBigint(aff.Y.c0.as_bigint()) + "\"]"; 
+}
+
+template<typename ppT>
+std::string proof_to_json(G1<ppT> A, G2<ppT> B, G1<ppT> C) {
+    std::stringstream ss;
+
+    ss << "{\n";
+    ss << " \"A\" :[" << outputPointG1AffineAsHex<ppT>(A) << "],\n";
+    ss << " \"B\"  :[" << outputPointG2AffineAsHex<ppT>(B)<< "],\n";
+    ss << " \"C\"  :[" << outputPointG1AffineAsHex<ppT>(C)<< "],\n";
+    ss << " \"input\" :" << "["; //1 should always be the first variavle passed
+
+#if 0
+    for (size_t i = 0; i < input.size(); ++i)
+    {   
+        ss << "\"0x" << HexStringFromBigint(input[i].as_bigint()) << "\""; 
+        if ( i < input.size() - 1 ) { 
+            ss<< ", ";
+        }
+    }
+    ss << "]\n";
+    ss << "}";
+
+#endif
+    ss.rdbuf()->pubseekpos(0, std::ios_base::out);
+
+    return(ss.str());
+}
+
 void alt_bn128_libsnark::groth16_output_write(alt_bn128_libsnark::G1 *A,
                                             alt_bn128_libsnark::G2 *B,
                                             alt_bn128_libsnark::G1 *C,
                                             const char *output_path) {
+#if 0
   FILE *out = fopen(output_path, "w");
   write_g1<alt_bn128_pp>(out, A->data);
   write_g2<alt_bn128_pp>(out, B->data);
   write_g1<alt_bn128_pp>(out, C->data);
   fclose(out);
+#else
+  auto jProof = proof_to_json<libff::alt_bn128_pp>(A->data, B->data, C->data);
+  
+  std::ofstream fproof(output_path);
+  if (!fproof.is_open())
+  {
+      return;
+  }
+  fproof << jProof;
+  fproof.close();
+#endif
 }
 
 alt_bn128_libsnark::G1 *
