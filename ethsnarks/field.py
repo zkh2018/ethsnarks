@@ -37,9 +37,10 @@ if sys.version_info.major > 2:
 else:
     int_types = (int, long)  # noqa: F821
 
-
+# Fq is the base field of Jubjub
 SNARK_SCALAR_FIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617
-
+# Fr is the scalar field of Jubjub
+FR_ORDER = 21888242871839275222246405745257275088614511777268538073601725287587578984328
 
 # A class for field elements in FQ. Wrap a number in this class,
 # and it becomes a field element.
@@ -203,3 +204,8 @@ class FQ(object):
         if isinstance(modulus, FQ):
             modulus = modulus.m
         return FQ(0, modulus)
+
+class FR(FQ):
+    def __init__(self, n, field_modulus=FR_ORDER):
+        FQ.__init__(self, n, field_modulus)
+
