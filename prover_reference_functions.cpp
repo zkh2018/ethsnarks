@@ -174,7 +174,7 @@ typename ff_dict<EC>::EC read_pt(const char *&mem) {
     FF y = D::read_ff(mem);
     FF z = D::read_ff(mem);
     // Convert point representation from Jacobian to projective
-    return typename D::EC(x * z, y, z * z * z);
+    return typename D::EC(x, y, z);
 }
 
 template <typename G, typename Fr>
