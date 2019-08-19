@@ -41,8 +41,9 @@ public:
   static G1 *G1_add(G1 *a, G1 *b);
   static G1 *G1_scale(field *a, G1 *b);
 
-  static void vector_Fr_muleq(vector_Fr *a, vector_Fr *b, size_t size);
+  static void vector_Fr_muleq(vector_Fr *H, vector_Fr *a, vector_Fr *b, size_t size);
   static void vector_Fr_subeq(vector_Fr *a, vector_Fr *b, size_t size);
+  static void vector_Fr_add(vector_Fr *H, vector_Fr *a, vector_Fr *b, size_t size);
   static vector_Fr *vector_Fr_offset(vector_Fr *a, size_t offset);
   static vector_G2 *vector_G2_offset(vector_G2 *a, size_t offset);
   static void vector_Fr_copy_into(vector_Fr *src, vector_Fr *dst,

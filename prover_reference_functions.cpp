@@ -332,15 +332,16 @@ alt_bn128_libsnark::G1 *alt_bn128_libsnark::G1_scale(field *a, G1 *b) {
   return new G1{.data = a->data * b->data};
 }
 
-void alt_bn128_libsnark::vector_Fr_muleq(alt_bn128_libsnark::vector_Fr *a,
+void alt_bn128_libsnark::vector_Fr_muleq(alt_bn128_libsnark::vector_Fr *H_tmp,
+                                       alt_bn128_libsnark::vector_Fr *a,
                                        alt_bn128_libsnark::vector_Fr *b,
                                        size_t size) {
-  size_t a_off = a->offset, b_off = b->offset;
+  size_t h_off = H_tmp->offset, a_off = a->offset, b_off = b->offset;
 #ifdef MULTICORE
 #pragma omp parallel for
 #endif
   for (size_t i = 0; i < size; i++) {
-    a->data->at(i + a_off) = a->data->at(i + a_off) * b->data->at(i + b_off);
+    H_tmp->data->at(i + a_off) = a->data->at(i + a_off) * b->data->at(i + b_off);
   }
 }
 
@@ -360,6 +361,19 @@ alt_bn128_libsnark::vector_Fr *
 alt_bn128_libsnark::vector_Fr_offset(alt_bn128_libsnark::vector_Fr *a,
                                    size_t offset) {
   return new vector_Fr{.data = a->data, .offset = offset};
+}
+
+void alt_bn128_libsnark::vector_Fr_add(alt_bn128_libsnark::vector_Fr *coeff_H,
+                                           alt_bn128_libsnark::vector_Fr *a,
+                                            alt_bn128_libsnark::vector_Fr *b,
+                                            size_t length) {
+  size_t h_off = coeff_H->offset, a_off = a->offset, b_off = b->offset;
+#ifdef MULTICORE
+#pragma omp parallel for
+#endif
+  for (size_t i = 0; i < length; ++i) {
+    coeff_H->data->at(i + h_off) = a->data->at(i + a_off) + b->data->at(i + b_off);
+  }
 }
 
 void alt_bn128_libsnark::vector_Fr_copy_into(alt_bn128_libsnark::vector_Fr *src,
