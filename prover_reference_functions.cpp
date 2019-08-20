@@ -237,6 +237,9 @@ public:
   size_t m;
   std::shared_ptr<std::vector<libff::G1<alt_bn128_pp>>> A, B1, L, H;
   std::shared_ptr<std::vector<libff::G2<alt_bn128_pp>>> B2;
+  libff::G1<alt_bn128_pp> alpha_g1;
+  libff::G1<alt_bn128_pp> beta_g1;
+  libff::G2<alt_bn128_pp> beta_g2;
 
   groth16_params(FILE *params, size_t dd, size_t mm) {
     d = read_size_t(params);
@@ -272,6 +275,9 @@ public:
     for (size_t i = 0; i < d; ++i) {
       H->emplace_back(read_g1<alt_bn128_pp>(params));
     }
+    alpha_g1 = read_g1<alt_bn128_pp>(params);
+    beta_g1 = read_g1<alt_bn128_pp>(params);
+    beta_g2 = read_g2<alt_bn128_pp>(params);
   }
 };
 
@@ -337,6 +343,11 @@ alt_bn128_libsnark::G1 *alt_bn128_libsnark::G1_add(alt_bn128_libsnark::G1 *a,
 
 alt_bn128_libsnark::G1 *alt_bn128_libsnark::G1_scale(field *a, G1 *b) {
   return new G1{.data = a->data * b->data};
+}
+
+alt_bn128_libsnark::G2 *alt_bn128_libsnark::G2_add(alt_bn128_libsnark::G2 *a,
+                                               alt_bn128_libsnark::G2 *b) {
+  return new alt_bn128_libsnark::G2{.data = a->data + b->data};
 }
 
 void alt_bn128_libsnark::vector_Fr_muleq(alt_bn128_libsnark::vector_Fr *H_tmp,
@@ -484,6 +495,21 @@ alt_bn128_libsnark::vector_G2 *
 alt_bn128_libsnark::params_B2(alt_bn128_libsnark::groth16_params *params) {
   return new alt_bn128_libsnark::vector_G2{.data = params->B2};
 }
+alt_bn128_libsnark::G1 *
+alt_bn128_libsnark::alpha_g1(alt_bn128_libsnark::groth16_params *params) {
+  return new alt_bn128_libsnark::G1{.data = params->alpha_g1};
+}
+
+alt_bn128_libsnark::G1 *
+alt_bn128_libsnark::beta_g1(alt_bn128_libsnark::groth16_params *params) {
+  return new alt_bn128_libsnark::G1{.data = params->beta_g1};
+}
+
+alt_bn128_libsnark::G2 *
+alt_bn128_libsnark::beta_g2(alt_bn128_libsnark::groth16_params *params) {
+  return new alt_bn128_libsnark::G2{.data = params->beta_g2};
+}
+
 
 alt_bn128_libsnark::vector_Fr *
 alt_bn128_libsnark::input_ca(alt_bn128_libsnark::groth16_input *input) {

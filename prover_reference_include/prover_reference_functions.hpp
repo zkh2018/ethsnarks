@@ -40,6 +40,7 @@ public:
   static int G2_equal(G2 *a, G2 *b);
   static G1 *G1_add(G1 *a, G1 *b);
   static G1 *G1_scale(field *a, G1 *b);
+  static G2 *G2_add(G2 *a, G2 *b);
 
   static void vector_Fr_muleq(vector_Fr *H, vector_Fr *a, vector_Fr *b, size_t size);
   static void vector_Fr_subeq(vector_Fr *a, vector_Fr *b, size_t size);
@@ -80,6 +81,9 @@ public:
   static vector_G1 *params_L(groth16_params *params);
   static vector_G1 *params_H(groth16_params *params);
   static vector_G2 *params_B2(groth16_params *params);
+  static G1 *alpha_g1(groth16_params *params);
+  static G1 *beta_g1(groth16_params *params);
+  static G2 *beta_g2(groth16_params *params);
 
   static void delete_G1(G1 *a);
   static void delete_G2(G2 *a);
