@@ -374,17 +374,10 @@ void alt_bn128_libsnark::vector_Fr_subeq(alt_bn128_libsnark::vector_Fr *a,
     a->data->at(i + a_off) = a->data->at(i + a_off) - b->data->at(i + b_off);
   }
 }
-
-alt_bn128_libsnark::vector_Fr *
-alt_bn128_libsnark::vector_Fr_offset(alt_bn128_libsnark::vector_Fr *a,
-                                   size_t offset) {
-  return new vector_Fr{.data = a->data, .offset = offset};
-}
-
 void alt_bn128_libsnark::vector_Fr_add(alt_bn128_libsnark::vector_Fr *coeff_H,
                                            alt_bn128_libsnark::vector_Fr *a,
-                                            alt_bn128_libsnark::vector_Fr *b,
-                                            size_t length) {
+                                           alt_bn128_libsnark::vector_Fr *b,
+                                           size_t length) {
   size_t h_off = coeff_H->offset, a_off = a->offset, b_off = b->offset;
 #ifdef MULTICORE
 #pragma omp parallel for
@@ -392,6 +385,12 @@ void alt_bn128_libsnark::vector_Fr_add(alt_bn128_libsnark::vector_Fr *coeff_H,
   for (size_t i = 0; i < length; ++i) {
     coeff_H->data->at(i + h_off) = a->data->at(i + a_off) + b->data->at(i + b_off);
   }
+}
+
+alt_bn128_libsnark::vector_Fr *
+alt_bn128_libsnark::vector_Fr_offset(alt_bn128_libsnark::vector_Fr *a,
+                                   size_t offset) {
+  return new vector_Fr{.data = a->data, .offset = offset};
 }
 
 void alt_bn128_libsnark::vector_Fr_copy_into(alt_bn128_libsnark::vector_Fr *src,
@@ -439,6 +438,26 @@ void alt_bn128_libsnark::domain_divide_by_Z_on_coset(
     alt_bn128_libsnark::evaluation_domain *domain,
     alt_bn128_libsnark::vector_Fr *a) {
   domain->data->divide_by_Z_on_coset(*a->data);
+}
+void alt_bn128_libsnark::domain_mul_add_sub(alt_bn128_libsnark::vector_Fr *coeff_H,
+                                           alt_bn128_libsnark::vector_Fr *a,
+                                            alt_bn128_libsnark::vector_Fr *b,
+                                            size_t length) {
+  size_t h_off = coeff_H->offset, a_off = a->offset, b_off = b->offset;
+  auto Fr_zero = Fr<alt_bn128_pp>::zero();
+#ifdef MULTICORE
+#pragma omp parallel for
+#endif
+  for (size_t i = 0; i < length; ++i) {
+    coeff_H->data->at(i + h_off) = Fr_zero * a->data->at(i + a_off) + Fr_zero * b->data->at(i + b_off);
+  }
+  coeff_H->data->at(h_off) = coeff_H->data->at(h_off) - Fr_zero;
+}
+void alt_bn128_libsnark::domain_add_poly_Z(alt_bn128_libsnark::evaluation_domain *domain,
+                alt_bn128_libsnark::vector_Fr *coeff_H) {
+  auto Fr_zero1 = Fr<alt_bn128_pp>::zero();
+  auto Fr_zero2 = Fr<alt_bn128_pp>::zero();
+  domain->data->add_poly_Z(Fr_zero1*Fr_zero2, *coeff_H->data);
 }
 size_t
 alt_bn128_libsnark::domain_get_m(alt_bn128_libsnark::evaluation_domain *domain) {

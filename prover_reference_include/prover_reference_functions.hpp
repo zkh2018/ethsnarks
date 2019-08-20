@@ -57,6 +57,8 @@ public:
   static void domain_icosetFFT(evaluation_domain *domain, vector_Fr *a);
   static void domain_divide_by_Z_on_coset(evaluation_domain *domain,
                                           vector_Fr *a);
+  static void domain_mul_add_sub(vector_Fr *H, vector_Fr *a, vector_Fr *b, size_t size);
+  static void domain_add_poly_Z(evaluation_domain *domain, vector_Fr *H);
   static size_t domain_get_m(evaluation_domain *domain);
 
   static G1 *multiexp_G1(vector_Fr *scalar_start, vector_G1 *g_start,
