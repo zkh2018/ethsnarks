@@ -669,6 +669,7 @@ class groth16_parameters {
   groth16_parameters(const char* path) {
     FILE* params = fopen(path, "r");
     d = read_size_t(params);
+    read_size_t(params);    //skip orig_d
     m = read_size_t(params);
     for (size_t i = 0; i <= m; ++i) { A.emplace_back(read_g1<ppT>(params)); }
     for (size_t i = 0; i <= m; ++i) { B1.emplace_back(read_g1<ppT>(params)); }
@@ -763,7 +764,7 @@ void run_preprocess(const char *params_path, const char *output_path)
 
     // We will produce 2^C precomputed points [i]P for i = 1..2^C
     // for every input point P
-    static constexpr size_t C = 5;
+    static constexpr size_t C = 4;
 
     size_t d = params.d, m =  params.m;
     printf("d = %zu, m = %zu, C = %zu\n", d, m, C);
