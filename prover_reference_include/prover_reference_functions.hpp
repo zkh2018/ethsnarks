@@ -63,7 +63,7 @@ public:
   static G2 *multiexp_G2(vector_Fr *scalar_start, vector_G2 *g_start,
                          size_t length);
 
-  static groth16_input *read_input(FILE *inputs, size_t d, size_t m);
+  static groth16_input *read_input(FILE *inputs, size_t d, size_t orig_d, size_t m);
 
   static vector_Fr *input_w(groth16_input *input);
   static vector_Fr *input_ca(groth16_input *input);
@@ -90,6 +90,6 @@ public:
   static void delete_groth16_params(groth16_params *a);
   static void delete_evaluation_domain(evaluation_domain *a);
 
-  static void groth16_output_write(G1 *A, G2 *B, G1 *C,
+  static void groth16_output_write(G1 *A, G2 *B, G1 *C, groth16_input *inputs,
                                    const char *output_path);
 };

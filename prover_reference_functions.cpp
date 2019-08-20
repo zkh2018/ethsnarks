@@ -196,9 +196,10 @@ class alt_bn128_libsnark::groth16_input {
 public:
   std::shared_ptr<std::vector<Fr<alt_bn128_pp>>> w;
   std::shared_ptr<std::vector<Fr<alt_bn128_pp>>> ca, cb, cc;
+  Fr<alt_bn128_pp> primary_input;
   Fr<alt_bn128_pp> r;
 
-  groth16_input(FILE *inputs, size_t d, size_t m) {
+  groth16_input(FILE *inputs, size_t d, size_t orig_d, size_t m) {
     w = std::make_shared<std::vector<libff::Fr<alt_bn128_pp>>>(
         std::vector<libff::Fr<alt_bn128_pp>>());
     ca = std::make_shared<std::vector<libff::Fr<alt_bn128_pp>>>(
@@ -212,7 +213,11 @@ public:
       w->emplace_back(read_fr<alt_bn128_pp>(inputs));
     }
     for (size_t i = 0; i < d + 1; ++i) {
-      ca->emplace_back(read_fr<alt_bn128_pp>(inputs));
+      auto value = read_fr<alt_bn128_pp>(inputs);
+      ca->emplace_back(value);
+      if (i == orig_d) {
+        primary_input = value;
+      }
     }
     for (size_t i = 0; i < d + 1; ++i) {
       cb->emplace_back(read_fr<alt_bn128_pp>(inputs));
@@ -228,12 +233,14 @@ public:
 class alt_bn128_libsnark::groth16_params {
 public:
   size_t d;
+  size_t orig_d;
   size_t m;
   std::shared_ptr<std::vector<libff::G1<alt_bn128_pp>>> A, B1, L, H;
   std::shared_ptr<std::vector<libff::G2<alt_bn128_pp>>> B2;
 
   groth16_params(FILE *params, size_t dd, size_t mm) {
     d = read_size_t(params);
+    orig_d = read_size_t(params); 
     m = read_size_t(params);
     if (d != dd || m != mm) {
         fputs("Bad size read", stderr);
@@ -448,8 +455,8 @@ alt_bn128_libsnark::multiexp_G2(alt_bn128_libsnark::vector_Fr *scalar_start,
 }
 
 alt_bn128_libsnark::groth16_input *
-alt_bn128_libsnark::read_input(FILE *inputs, size_t d, size_t m) {
-  return new alt_bn128_libsnark::groth16_input(inputs, d, m);
+alt_bn128_libsnark::read_input(FILE *inputs, size_t d, size_t orig_d, size_t m) {
+  return new alt_bn128_libsnark::groth16_input(inputs, d, orig_d, m);
 }
 
 alt_bn128_libsnark::vector_Fr *
@@ -561,7 +568,7 @@ std::string outputPointG2AffineAsHex(G2<ppT> _p)
 }
 
 template<typename ppT>
-std::string proof_to_json(G1<ppT> A, G2<ppT> B, G1<ppT> C) {
+std::string proof_to_json(G1<ppT> A, G2<ppT> B, G1<ppT> C, alt_bn128_libsnark::groth16_input *inputs) {
     std::stringstream ss;
 
     ss << "{\n";
@@ -570,6 +577,7 @@ std::string proof_to_json(G1<ppT> A, G2<ppT> B, G1<ppT> C) {
     ss << " \"C\"  :[" << outputPointG1AffineAsHex<ppT>(C)<< "],\n";
     ss << " \"input\" :" << "["; //1 should always be the first variavle passed
 
+    ss << "\"0x" << HexStringFromBigint(inputs->primary_input.as_bigint()) << "\""; 
 #if 0
     for (size_t i = 0; i < input.size(); ++i)
     {   
@@ -578,10 +586,10 @@ std::string proof_to_json(G1<ppT> A, G2<ppT> B, G1<ppT> C) {
             ss<< ", ";
         }
     }
+#endif
     ss << "]\n";
     ss << "}";
 
-#endif
     ss.rdbuf()->pubseekpos(0, std::ios_base::out);
 
     return(ss.str());
@@ -590,6 +598,7 @@ std::string proof_to_json(G1<ppT> A, G2<ppT> B, G1<ppT> C) {
 void alt_bn128_libsnark::groth16_output_write(alt_bn128_libsnark::G1 *A,
                                             alt_bn128_libsnark::G2 *B,
                                             alt_bn128_libsnark::G1 *C,
+                                            alt_bn128_libsnark::groth16_input *inputs,
                                             const char *output_path) {
 #if 0
   FILE *out = fopen(output_path, "w");
@@ -598,7 +607,7 @@ void alt_bn128_libsnark::groth16_output_write(alt_bn128_libsnark::G1 *A,
   write_g1<alt_bn128_pp>(out, C->data);
   fclose(out);
 #else
-  auto jProof = proof_to_json<libff::alt_bn128_pp>(A->data, B->data, C->data);
+  auto jProof = proof_to_json<libff::alt_bn128_pp>(A->data, B->data, C->data, inputs);
   
   std::ofstream fproof(output_path);
   if (!fproof.is_open())
