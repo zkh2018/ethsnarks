@@ -37,11 +37,16 @@ void write_fr(FILE* output, Fr<ppT> x) {
 
 template<typename ppT>
 void write_fqe(FILE* output, Fqe<ppT> x) {
+#if 0
   std::vector<Fq<ppT>> v = x.all_base_field_elements();
   size_t deg = Fqe<ppT>::extension_degree();
   for (size_t i = 0; i < deg; ++i) {
     write_fq<ppT>(output, v[i]);
   }
+#endif
+  // TODO: hard code to Fp2 avoid libff change now
+  write_fq<ppT>(output, x.c0);
+  write_fq<ppT>(output, x.c1);
 }
 
 template<typename ppT>
@@ -78,7 +83,6 @@ Fq<ppT> read_fq(FILE* input) {
   return x;
 }
 
-
 template<typename ppT>
 Fr<ppT> read_fr(FILE* input) {
   Fr<ppT> x;
@@ -98,12 +102,18 @@ G1<ppT> read_g1(FILE* input) {
 
 template<typename ppT>
 Fqe<ppT> read_fqe(FILE* input) {
+#if 0
   std::vector<Fq<ppT>> elts;
   size_t deg = Fqe<ppT>::extension_degree();
   for (size_t i = 0; i < deg; ++i) {
     elts.emplace_back(read_fq<ppT>(input));
   }
   return Fqe<ppT>(elts);
+#endif
+  // TODO: hard code to Fp2 avoid libff change now
+  Fq<ppT> c0 = read_fq<ppT>(input);
+  Fq<ppT> c1 = read_fq<ppT>(input);
+  return Fqe<ppT>(c0, c1);
 }
 
 template<typename ppT>
