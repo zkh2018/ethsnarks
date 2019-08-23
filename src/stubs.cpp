@@ -54,6 +54,54 @@ int stub_genkeys_from_pb( ProtoboardT& pb, const char *pk_file, const char *vk_f
     return 0;
 }
 
+void write_params_file( ProvingKeyT &pk, const char *params_path, size_t orig_d, size_t m)
+{
+    auto params = fopen(params_path, "w");
+    size_t d = pk.H_query.size();   //domain->m
+    // Write parameters
+    write_size_t(params, d);
+    write_size_t(params, orig_d);
+    write_size_t(params, m);
+    for (size_t i = 0; i <= m; ++i) {
+      write_g1<ppT>(params, pk.A_query[i]);
+    }
+
+    for (size_t i = 0; i <= m; ++i) {
+      write_g1<ppT>(params, pk.B_query[i].h);
+    }
+
+    for (size_t i = 0; i <= m; ++i) {
+      write_g2<ppT>(params, pk.B_query[i].g);
+    }
+
+    for (size_t i = 0; i < m-1; ++i) {
+      write_g1<ppT>(params, pk.L_query[i]);
+    }
+
+    for (size_t i = 0; i < d; ++i) {
+      write_g1<ppT>(params, pk.H_query[i]);
+    }
+
+    // alpha_g1
+    write_g1<ppT>(params, pk.alpha_g1);
+    // beta_g1
+    write_g1<ppT>(params, pk.beta_g1);
+    // beta_g2
+    write_g2<ppT>(params, pk.beta_g2);
+    fclose(params);
+}
+
+int stub_genkeys_params_from_pb( ProtoboardT& pb, const char *pk_file, const char *vk_file, const char *params_file )
+{
+    const auto constraints = pb.get_constraint_system();
+    auto keypair = libsnark::r1cs_gg_ppzksnark_zok_generator<ppT>(constraints);
+    vk2json_file(keypair.vk, vk_file);
+    writeToFile<decltype(keypair.pk)>(pk_file, keypair.pk);
+    size_t d = pb.num_constraints();
+    size_t m = pb.get_constraint_system().num_variables();
+    write_params_file(keypair.pk, params_file, d, m);
+    return 0;
+}
 
 int stub_main_verify( const char *prog_name, int argc, const char **argv )
 {
