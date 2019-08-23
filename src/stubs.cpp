@@ -103,6 +103,91 @@ int stub_genkeys_params_from_pb( ProtoboardT& pb, const char *pk_file, const cha
     return 0;
 }
 
+int stub_write_input_from_pb( ProtoboardT& pb, const char *pk_file,  const char *input_path )
+{
+    libff::enter_block("Call to stub_write_input_from_pb");
+
+    libff::enter_block("Call to load pk file");
+    auto proving_key = ethsnarks::loadFromFile<ethsnarks::ProvingKeyT>(pk_file);
+    libff::leave_block("Call to load pk file");
+
+    auto constraint_system = proving_key.constraint_system;
+    auto primary_input = pb.primary_input();
+    auto auxiliary_input = pb.auxiliary_input();
+    size_t d = constraint_system.num_constraints();
+    size_t m = constraint_system.num_variables();
+    size_t num_input = constraint_system.num_inputs();
+
+    const std::shared_ptr<libfqfft::evaluation_domain<FieldT> > domain = libfqfft::get_evaluation_domain<FieldT>(d + num_input + 1);
+
+    auto full_variable_assignment = primary_input;
+    full_variable_assignment.insert(full_variable_assignment.end(), auxiliary_input.begin(), auxiliary_input.end());
+
+    // Write input
+    auto inputs = fopen(input_path, "w");
+    write_fr<ppT>(inputs, ethsnarks::FieldT::one());
+    for (size_t i = 0; i < m; ++i) {
+      write_fr<ppT>(inputs, full_variable_assignment[i]);
+    }
+
+    std::vector<FieldT> ca(domain->m, FieldT::zero()), cb(domain->m, FieldT::zero()), cc(domain->m, FieldT::zero());
+    for (size_t i = 0; i <= num_input; ++i)
+    {
+        ca[i+d] = (i > 0 ? full_variable_assignment[i-1] : FieldT::one());
+    }
+#ifdef MULTICORE
+#pragma omp parallel for
+#endif
+    for (size_t i = 0; i < d; ++i)
+    {
+#if 1
+        ca[i] += constraint_system.constraints[i].a.evaluate(full_variable_assignment);
+#else
+        ca[i] += keypair.pk.constraint_system.constraints[i].a.evaluate(full_variable_assignment);
+#endif
+    }
+    for (size_t i = 0; i < domain->m; ++i) {
+      write_fr<ppT>(inputs, ca[i]);
+    }
+#ifdef MULTICORE
+#pragma omp parallel for
+#endif
+    for (size_t i = 0; i < d; ++i)
+    {
+#if 1
+        cb[i] += constraint_system.constraints[i].b.evaluate(full_variable_assignment);
+#else
+        cb[i] += keypair.pk.constraint_system.constraints[i].b.evaluate(full_variable_assignment);
+#endif
+    }
+    for (size_t i = 0; i < domain->m; ++i) {
+      write_fr<ppT>(inputs, cb[i]);
+    }
+#ifdef MULTICORE
+#pragma omp parallel for
+#endif
+    for (size_t i = 0; i < d; ++i)
+    {
+#if 1
+        cc[i] += constraint_system.constraints[i].c.evaluate(full_variable_assignment);
+#else
+        cc[i] += keypair.pk.constraint_system.constraints[i].c.evaluate(full_variable_assignment);
+#endif
+    }
+
+    for (size_t i = 0; i < domain->m; ++i) {
+      write_fr<ppT>(inputs, cc[i]);
+    }
+
+    const libff::Fr<ppT> r = libff::Fr<ppT>::random_element();
+    write_fr<ppT>(inputs, r);
+
+    fclose(inputs);
+    libff::leave_block("Call to stub_write_input_from_pb");
+
+    return 1;
+}
+
 int stub_main_verify( const char *prog_name, int argc, const char **argv )
 {
     if( argc < 3 )
