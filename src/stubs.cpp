@@ -8,6 +8,7 @@
 #include "utils.hpp"
 #include "import.hpp"
 #include "export.hpp"
+#include "serialization.hpp"
 
 #include "r1cs_gg_ppzksnark_zok/r1cs_gg_ppzksnark_zok.hpp"
 
