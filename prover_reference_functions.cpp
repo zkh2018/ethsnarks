@@ -426,6 +426,18 @@ alt_bn128_libsnark::vector_Fr *alt_bn128_libsnark::vector_Fr_zeros(size_t length
           .offset = 0};
 }
 
+void alt_bn128_libsnark::coefficients_for_H_to_mem(alt_bn128_libsnark::vector_Fr *coeff_H, uint8_t *H_coeff_mem, uint8_t ele_size, size_t length) {
+  auto scalar_start = coeff_H->data->begin();
+  auto scalar_end = scalar_start + length;
+  auto scalar_it = scalar_start;
+  size_t offset = 0;
+  (*scalar_it).mont_repr.print_hex();
+  for (; scalar_it != scalar_end; ++scalar_it) {
+    memcpy(H_coeff_mem + offset, (*scalar_it).mont_repr.data, ele_size);
+    offset += ele_size;
+  }
+}
+
 size_t alt_bn128_libsnark::get_domain_m(alt_bn128_libsnark::evaluation_domain *domain) {
     return domain->data->m;
 }
@@ -808,8 +820,8 @@ void run_preprocess(const char *params_path, const char *output_path)
     output_g2_multiples<libff::alt_bn128_pp>(C, params.B2, output);
     printf("Processing L...\n");
     output_g1_multiples<libff::alt_bn128_pp>(C, params.L, output);
-    //printf("Processing H...\n");
-    //output_g1_multiples<libff::alt_bn128_pp>(C, params.H, output);
+    printf("Processing H...\n");
+    output_g1_multiples<libff::alt_bn128_pp>(C, params.H, output);
 
     fclose(output);
 }

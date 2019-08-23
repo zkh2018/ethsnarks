@@ -98,4 +98,5 @@ public:
 
   static void groth16_output_write(G1 *A, G2 *B, G1 *C, groth16_input *inputs,
                                    const char *output_path);
+  static void coefficients_for_H_to_mem(alt_bn128_libsnark::vector_Fr *coeff_H, uint8_t *H_coeff_mem, uint8_t ele_size, size_t length);
 };
