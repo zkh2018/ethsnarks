@@ -490,7 +490,6 @@ alt_bn128_libsnark::G1 *
 alt_bn128_libsnark::multiexp_G1(alt_bn128_libsnark::vector_Fr *scalar_start,
                               alt_bn128_libsnark::vector_G1 *g_start,
                               size_t length) {
-
   return new alt_bn128_libsnark::G1{
       multiexp<libff::G1<alt_bn128_pp>, Fr<alt_bn128_pp>>(
           scalar_start->data->begin() + scalar_start->offset,
