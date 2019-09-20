@@ -79,14 +79,22 @@ void write_g2(FILE* output, G2<ppT> g) {
 template<typename ppT>
 Fq<ppT> read_fq(FILE* input) {
   Fq<ppT> x;
-  fread((void *) x.mont_repr.data, num_limbs * sizeof(mp_size_t), 1, input);
+  size_t sizeRead =fread((void *) x.mont_repr.data, num_limbs * sizeof(mp_size_t), 1, input);
+  if (sizeRead != 1) {
+    fputs("fread error 1", stderr);
+    abort();
+  }
   return x;
 }
 
 template<typename ppT>
 Fr<ppT> read_fr(FILE* input) {
   Fr<ppT> x;
-  fread((void *) x.mont_repr.data, num_limbs * sizeof(mp_size_t), 1, input);
+  size_t sizeRead = fread((void *) x.mont_repr.data, num_limbs * sizeof(mp_size_t), 1, input);
+  if (sizeRead != 1) {
+    fputs("fread error 2", stderr);
+    abort();
+  }
   return x;
 }
 
@@ -128,7 +136,11 @@ G2<ppT> read_g2(FILE* input) {
 
 size_t read_size_t(FILE* input) {
   size_t n;
-  fread((void *) &n, sizeof(size_t), 1, input);
+  size_t sizeRead = fread((void *) &n, sizeof(size_t), 1, input);
+  if (sizeRead != 1) {
+    fputs("fread error 3", stderr);
+    abort();
+  }
   return n;
 }
 

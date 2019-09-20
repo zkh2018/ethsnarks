@@ -109,7 +109,11 @@ ethsnarks::G2T read_g2(FILE* input) {
 
 size_t read_size_t(FILE* input) {
   size_t n;
-  fread((void *) &n, sizeof(size_t), 1, input);
+  size_t sizeRead = fread((void *) &n, sizeof(size_t), 1, input);
+  if (sizeRead != 1) {
+    fputs("fread error", stderr);
+    abort();
+  }
   return n;
 }
 
