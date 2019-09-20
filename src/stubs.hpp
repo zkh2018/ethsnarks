@@ -16,6 +16,10 @@ int stub_genkeys_from_pb( ProtoboardT& pb, const char *pk_file, const char *vk_f
 
 std::string stub_prove_from_pb( ProtoboardT& pb, const char *pk_file );
 
+int stub_genkeys_params_from_pb( ProtoboardT& pb, const char *pk_file, const char *vk_file, const char *params_file );
+
+int stub_write_input_from_pb( ProtoboardT& pb, const char *pk_file,  const char *input_path );
+
 
 template<class GadgetT>
 int stub_genkeys( const char *pk_file, const char *vk_file )
