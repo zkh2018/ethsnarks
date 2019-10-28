@@ -17,6 +17,12 @@ std::string vk2json( VerificationKeyT &vk );
 
 void vk2json_file( VerificationKeyT &vk, const std::string &path );
 
+bool r1cs2json(libsnark::protoboard<FieldT>& pb, const std::string& path);
+
+bool witness2json(libsnark::protoboard<FieldT>& pb, const std::string& path);
+
+bool pk_bellman2ethsnarks(const ProtoboardT& pb, const std::string& bellman_pk_file, const std::string& pk_file);
+
 }
 
 #endif

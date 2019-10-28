@@ -1,6 +1,7 @@
 [submodule "depends/libsnark"]
 	path = depends/libsnark
-	url = https://github.com/Ethsnarks/libsnark.git
+	url = https://github.com/LoopringSecondary/libsnark.git
+	branch = mpc
 	ignore = dirty
 [submodule "depends/SHA3IUF"]
 	path = depends/SHA3IUF
