@@ -8,6 +8,10 @@
 
 
 #include "ethsnarks.hpp"
+#include "utils.hpp"
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
 
 namespace ethsnarks {
 
@@ -125,12 +129,11 @@ std::string bigintToString(libff::bigint<libff::alt_bn128_r_limbs> _x, unsigned 
     return str;
 }
 
-void constraint2json(linear_combination<FieldT> constraints, std::ofstream &fh)
+void constraint2json(libsnark::linear_combination<FieldT> constraints, std::ofstream &fh)
 {
     fh << "{";
     uint count = 0;
-    // if (!(constraints.terms.size() == 1 && lt.index == 0 && lt.coeff == 0))
-    for (const linear_term<FieldT>& lt : constraints.terms)
+    for (const libsnark::linear_term<FieldT>& lt : constraints.terms)
     {
         if (count != 0)
         {
@@ -190,6 +193,38 @@ bool witness2json(libsnark::protoboard<FieldT>& pb, const std::string& path)
     fh << "\n]";
     fh.close();
     return true;
+}
+
+libff::alt_bn128_G1 readG1(const json& input)
+{
+    assert(input.size() == 3);
+    auto x = libff::alt_bn128_Fq(input[0].get<std::string>().c_str());
+    auto y = libff::alt_bn128_Fq(input[1].get<std::string>().c_str());
+    auto z = libff::alt_bn128_Fq(input[2].get<std::string>().c_str());
+    auto g1 = libff::alt_bn128_G1(x, y, z);
+    return g1;
+}
+
+libff::alt_bn128_G2 readG2(const json& input)
+{
+    assert(input.size() == 3);
+    assert(input[0].size() == 2);
+    assert(input[1].size() == 2);
+    assert(input[2].size() == 2);
+    auto x2 = libff::alt_bn128_Fq2(
+        libff::alt_bn128_Fq(input[0][0].get<std::string>().c_str()),
+        libff::alt_bn128_Fq(input[0][1].get<std::string>().c_str())
+    );
+    auto y2 = libff::alt_bn128_Fq2(
+        libff::alt_bn128_Fq(input[1][0].get<std::string>().c_str()),
+        libff::alt_bn128_Fq(input[1][1].get<std::string>().c_str())
+    );
+    auto z2 = libff::alt_bn128_Fq2(
+        libff::alt_bn128_Fq(input[2][0].get<std::string>().c_str()),
+        libff::alt_bn128_Fq(input[2][1].get<std::string>().c_str())
+    );
+    auto g2 = libff::alt_bn128_G2(x2, y2, z2);
+    return g2;
 }
 
 bool pk_bellman2ethsnarks(const ProtoboardT& pb, const std::string& bellman_pk_file, const std::string& pk_file)
