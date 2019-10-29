@@ -7,7 +7,7 @@
 [submodule "depends/libfqfft"]
 	path = depends/libfqfft
 	url = https://github.com/Ethsnarks/libfqfft.git
-[submodule "libsnark"]
-	path = libsnark
+[submodule "depends/libsnark"]
+	path = depends/libsnark
 	url = https://github.com/LoopringSecondary/libsnark.git
 	branch = mpc
