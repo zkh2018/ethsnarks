@@ -67,8 +67,11 @@ vector<FieldT> create_F_list( const json &in_tree )
 */
 G1T create_G1(const string &in_X, const string &in_Y)
 {
+#ifdef CURVE_ALT_BN128
     return G1T(parse_Fq(in_X), parse_Fq(in_Y), FqT("1"));
-
+#elif CURVE_MCL_BN128
+    return G1T(in_X, in_Y, "1");
+#endif
     // TODO: verify well_formed
 }
 
@@ -82,13 +85,19 @@ G1T create_G1(const string &in_X, const string &in_Y)
 */
 G2T create_G2(const string &in_X_c1, const string &in_X_c0, const string &in_Y_c1, const string &in_Y_c0)
 {
+#ifdef CURVE_ALT_BN128
     typedef typename ppT::Fqe_type Fq2_T;
 
     return G2T(
         Fq2_T(parse_Fq(in_X_c0), parse_Fq(in_X_c1)),
         Fq2_T(parse_Fq(in_Y_c0), parse_Fq(in_Y_c1)),
         Fq2_T(FqT("1"), FqT("0")));   // Z is hard-coded, coordinates are affine
-
+#elif CURVE_MCL_BN128
+    return G2T(
+        in_X_c0, in_X_c1,
+        in_Y_c0, in_Y_c1,
+        "1", "0");  // Z is hard-coded, coordinates are affine
+#endif
     // TODO: verify well_formed
 }
 

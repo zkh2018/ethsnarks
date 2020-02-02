@@ -1,6 +1,7 @@
 #ifndef ETHSNARKS_HPP_
 #define ETHSNARKS_HPP_
 
+#include <libff/algebra/curves/mcl_bn128/mcl_bn128_pp.hpp>
 #include <libff/algebra/curves/alt_bn128/alt_bn128_pp.hpp>
 #include <libsnark/gadgetlib1/protoboard.hpp>
 #include <libsnark/gadgetlib1/gadget.hpp>
@@ -9,10 +10,22 @@
 
 namespace ethsnarks {
 
+#ifdef CURVE_ALT_BN128
 typedef libff::bigint<libff::alt_bn128_r_limbs> LimbT;
 typedef libff::alt_bn128_G1 G1T;
 typedef libff::alt_bn128_G2 G2T;
 typedef libff::alt_bn128_pp ppT;
+typedef libff::alt_bn128_Fq FqT;
+#elif CURVE_MCL_BN128
+typedef libff::bigint<libff::mcl_bn128_r_limbs> LimbT;
+typedef libff::mcl_bn128_G1 G1T;
+typedef libff::mcl_bn128_G2 G2T;
+typedef libff::mcl_bn128_pp ppT;
+typedef libff::mcl_bn128_Fq FqT;
+#else
+#error NO CURVE!
+#endif
+
 typedef libff::Fq<ppT> FqT;
 typedef libff::Fr<ppT> FieldT;
 typedef libsnark::r1cs_constraint<FieldT> ConstraintT;

@@ -16,7 +16,7 @@ using json = nlohmann::json;
 namespace ethsnarks {
 
 
-std::string HexStringFromBigint(libff::bigint<libff::alt_bn128_r_limbs> _x){
+std::string HexStringFromBigint(LimbT _x){
     mpz_t value;
     ::mpz_init(value);
 
@@ -31,27 +31,67 @@ std::string HexStringFromBigint(libff::bigint<libff::alt_bn128_r_limbs> _x){
     return str;
 }
 
+std::string bigintToString(LimbT _x, unsigned int base = 10)
+{
+    mpz_t value;
+    ::mpz_init(value);
+
+    _x.to_mpz(value);
+    char *value_out_hex = mpz_get_str(nullptr, base, value);
+
+    std::string str(value_out_hex);
+
+    ::mpz_clear(value);
+    ::free(value_out_hex);
+
+    return str;
+}
+
+std::string toHex(const std::string& _x){
+    return HexStringFromBigint(LimbT(_x.c_str()));
+}
+
 
 std::string outputPointG1AffineAsHex(G1T _p)
 {
-        auto aff = _p;
-        aff.to_affine_coordinates();
-        return "\"0x" +  HexStringFromBigint(aff.X.as_bigint()) + "\", \"0x" + HexStringFromBigint(aff.Y.as_bigint()) + "\""; 
+#ifdef CURVE_ALT_BN128
+    auto aff = _p;
+    aff.to_affine_coordinates();
+    return "\"0x" +  HexStringFromBigint(aff.X.as_bigint()) + "\", \"0x" + HexStringFromBigint(aff.Y.as_bigint()) + "\"";
+#elif CURVE_MCL_BN128
+    auto aff = _p;
+    aff.to_affine_coordinates();
+    return "\"0x" + toHex(aff.pt.x.getStr()) + "\", \"0x" + toHex(aff.pt.y.getStr()) + "\"";
+#endif
 }
 
 
 std::string outputPointG2AffineAsHex(G2T _p)
 {
-        G2T aff = _p;
+#ifdef CURVE_ALT_BN128
+    G2T aff = _p;
 
-        if (aff.Z.c0.as_bigint() != "0" && aff.Z.c1.as_bigint() != "0" ) {
-            aff.to_affine_coordinates();
-        }
-        return "[\"0x" +
-                HexStringFromBigint(aff.X.c1.as_bigint()) + "\", \"0x" +
-                HexStringFromBigint(aff.X.c0.as_bigint()) + "\"],\n [\"0x" + 
-                HexStringFromBigint(aff.Y.c1.as_bigint()) + "\", \"0x" +
-                HexStringFromBigint(aff.Y.c0.as_bigint()) + "\"]"; 
+    if (aff.Z.c0.as_bigint() != "0" && aff.Z.c1.as_bigint() != "0" ) {
+        aff.to_affine_coordinates();
+    }
+    return "[\"0x" +
+            HexStringFromBigint(aff.X.c1.as_bigint()) + "\", \"0x" +
+            HexStringFromBigint(aff.X.c0.as_bigint()) + "\"],\n [\"0x" +
+            HexStringFromBigint(aff.Y.c1.as_bigint()) + "\", \"0x" +
+            HexStringFromBigint(aff.Y.c0.as_bigint()) + "\"]";
+#elif CURVE_MCL_BN128
+    G2T aff = _p;
+
+    if (aff.pt.z.a.getStr() != "0" && aff.pt.z.b.getStr() != "0" ) {
+        aff.to_affine_coordinates();
+    }
+    return "[\"0x" +
+            toHex(aff.pt.x.b.getStr()) + "\", \"0x" +
+            toHex(aff.pt.x.a.getStr()) + "\"],\n [\"0x" +
+            toHex(aff.pt.y.b.getStr()) + "\", \"0x" +
+            toHex(aff.pt.y.a.getStr()) + "\"]";
+    return "0x";
+#endif
 }
 
 
@@ -65,9 +105,9 @@ std::string proof_to_json(ProofT &proof, PrimaryInputT &input) {
     ss << " \"input\" :" << "["; //1 should always be the first variavle passed
 
     for (size_t i = 0; i < input.size(); ++i)
-    {   
-        ss << "\"0x" << HexStringFromBigint(input[i].as_bigint()) << "\""; 
-        if ( i < input.size() - 1 ) { 
+    {
+        ss << "\"0x" << HexStringFromBigint(input[i].as_bigint()) << "\"";
+        if ( i < input.size() - 1 ) {
             ss<< ", ";
         }
     }
@@ -84,7 +124,7 @@ std::string vk2json(VerificationKeyT &vk )
 {
     std::stringstream ss;
     unsigned icLength = vk.gamma_ABC_g1.rest.indices.size() + 1;
-    
+
     ss << "{\n";
     ss << " \"alpha\" :[" << outputPointG1AffineAsHex(vk.alpha_g1) << "],\n";
     ss << " \"beta\"  :[" << outputPointG2AffineAsHex(vk.beta_g2) << "],\n";
@@ -92,12 +132,12 @@ std::string vk2json(VerificationKeyT &vk )
     ss << " \"delta\" :[" << outputPointG2AffineAsHex(vk.delta_g2)<< "],\n";
 
     ss <<  "\"gammaABC\" :[[" << outputPointG1AffineAsHex(vk.gamma_ABC_g1.first) << "]";
-    
+
     for (size_t i = 1; i < icLength; ++i)
-    {   
+    {
         auto vkICi = outputPointG1AffineAsHex(vk.gamma_ABC_g1.rest.values[i - 1]);
         ss << ",[" <<  vkICi << "]";
-    } 
+    }
     ss << "]";
     ss << "}";
     return ss.str();
@@ -111,22 +151,6 @@ void vk2json_file(VerificationKeyT &vk, const std::string &path )
     fh << vk2json(vk);
     fh.flush();
     fh.close();
-}
-
-std::string bigintToString(libff::bigint<libff::alt_bn128_r_limbs> _x, unsigned int base)
-{
-    mpz_t value;
-    ::mpz_init(value);
-
-    _x.to_mpz(value);
-    char *value_out_hex = mpz_get_str(nullptr, base, value);
-
-    std::string str(value_out_hex);
-
-    ::mpz_clear(value);
-    ::free(value_out_hex);
-
-    return str;
 }
 
 void constraint2json(libsnark::linear_combination<FieldT> constraints, std::ofstream &fh)
@@ -195,22 +219,27 @@ bool witness2json(libsnark::protoboard<FieldT>& pb, const std::string& path)
     return true;
 }
 
-libff::alt_bn128_G1 readG1(const json& input)
+G1T readG1(const json& input)
 {
     assert(input.size() == 3);
-    auto x = libff::alt_bn128_Fq(input[0].get<std::string>().c_str());
-    auto y = libff::alt_bn128_Fq(input[1].get<std::string>().c_str());
-    auto z = libff::alt_bn128_Fq(input[2].get<std::string>().c_str());
-    auto g1 = libff::alt_bn128_G1(x, y, z);
+#ifdef CURVE_ALT_BN128
+    auto x = FqT(input[0].get<std::string>().c_str());
+    auto y = FqT(input[1].get<std::string>().c_str());
+    auto z = FqT(input[2].get<std::string>().c_str());
+    auto g1 = G1T(x, y, z);
     return g1;
+#elif CURVE_MCL_BN128
+    return G1T(input[0].get<std::string>(), input[1].get<std::string>(), input[2].get<std::string>());
+#endif
 }
 
-libff::alt_bn128_G2 readG2(const json& input)
+G2T readG2(const json& input)
 {
     assert(input.size() == 3);
     assert(input[0].size() == 2);
     assert(input[1].size() == 2);
     assert(input[2].size() == 2);
+#ifdef CURVE_ALT_BN128
     auto x2 = libff::alt_bn128_Fq2(
         libff::alt_bn128_Fq(input[0][0].get<std::string>().c_str()),
         libff::alt_bn128_Fq(input[0][1].get<std::string>().c_str())
@@ -225,6 +254,13 @@ libff::alt_bn128_G2 readG2(const json& input)
     );
     auto g2 = libff::alt_bn128_G2(x2, y2, z2);
     return g2;
+#elif CURVE_MCL_BN128
+    return G2T(
+        input[0][0].get<std::string>(), input[0][1].get<std::string>(),
+        input[1][0].get<std::string>(), input[1][1].get<std::string>(),
+        input[2][0].get<std::string>(), input[2][1].get<std::string>()
+    );
+#endif
 }
 
 bool pk_bellman2ethsnarks(const ProtoboardT& pb, const std::string& bellman_pk_file, const std::string& pk_file)
@@ -285,7 +321,83 @@ bool pk_bellman2ethsnarks(const ProtoboardT& pb, const std::string& bellman_pk_f
     proving_key.delta_g2 = readG2(input["vk_delta_2"]);
 
     writeToFile<ethsnarks::ProvingKeyT>(pk_file, proving_key);
+    return true;
+}
 
+libff::mcl_bn128_G1 G1T_alt2mcl(const libff::alt_bn128_G1& alt)
+{
+    return libff::mcl_bn128_G1(
+        bigintToString(alt.X.as_bigint()),
+        bigintToString(alt.Y.as_bigint()),
+        bigintToString(alt.Z.as_bigint())
+    );
+}
+
+libff::mcl_bn128_G2 G2T_alt2mcl(const libff::alt_bn128_G2& alt)
+{
+    return libff::mcl_bn128_G2(
+        bigintToString(alt.X.c0.as_bigint()), bigintToString(alt.X.c1.as_bigint()),
+        bigintToString(alt.Y.c0.as_bigint()), bigintToString(alt.Y.c1.as_bigint()),
+        bigintToString(alt.Z.c0.as_bigint()), bigintToString(alt.Z.c1.as_bigint())
+    );
+}
+
+bool pk_alt2mcl(const ProtoboardT& pb, const std::string& alt_pk_file, const std::string& mcl_pk_file)
+{
+    // Can only be called when compiled with CURVE_MCL_BN128 because the pb needs to habe the correct types
+
+
+    libff::alt_bn128_pp::init_public_params();
+    auto proving_key = ethsnarks::loadFromFile<libsnark::r1cs_gg_ppzksnark_zok_proving_key<libff::alt_bn128_pp>>(alt_pk_file);
+    typedef libsnark::r1cs_gg_ppzksnark_zok_proving_key<libff::mcl_bn128_pp> MLCProvingKey;
+    MLCProvingKey mlc_proving_key;
+#ifndef CURVE_MCL_BN128
+    return false;
+#else
+    mlc_proving_key.constraint_system = pb.get_constraint_system();
+#endif
+
+    /* A */
+    for (unsigned int i = 0; i < proving_key.A_query.size(); i++)
+    {
+        mlc_proving_key.A_query.push_back(G1T_alt2mcl(proving_key.A_query[i]));
+    }
+
+    /* B */
+    libsnark::knowledge_commitment_vector<libff::G2<libff::mcl_bn128_pp>, libff::G1<libff::mcl_bn128_pp>> B_query;
+    B_query.domain_size_ = proving_key.B_query.domain_size_;
+    for (unsigned int i = 0; i < proving_key.B_query.values.size(); i++)
+    {
+        auto g1 = G1T_alt2mcl(proving_key.B_query.values[i].h);
+        auto g2 = G2T_alt2mcl(proving_key.B_query.values[i].g);
+        B_query.values.emplace_back(libsnark::knowledge_commitment<libff::G2<libff::mcl_bn128_pp>, libff::G1<libff::mcl_bn128_pp>>(g2, g1));
+    }
+    for (unsigned int i = 0; i < proving_key.B_query.indices.size(); i++)
+    {
+        B_query.indices.emplace_back(proving_key.B_query.indices[i]);
+    }
+    mlc_proving_key.B_query = B_query;
+
+    /* L */
+    for (unsigned int i = 0; i < proving_key.L_query.size(); i++)
+    {
+        mlc_proving_key.L_query.push_back(G1T_alt2mcl(proving_key.L_query[i]));
+    }
+
+    /* H */
+    for (unsigned int i = 0; i < proving_key.H_query.size(); i++)
+    {
+        mlc_proving_key.H_query.push_back(G1T_alt2mcl(proving_key.H_query[i]));
+    }
+
+    /* vk */
+    mlc_proving_key.alpha_g1 = G1T_alt2mcl(proving_key.alpha_g1);
+    mlc_proving_key.beta_g1 = G1T_alt2mcl(proving_key.beta_g1);
+    mlc_proving_key.beta_g2 = G2T_alt2mcl(proving_key.beta_g2);
+    mlc_proving_key.delta_g1 = G1T_alt2mcl(proving_key.delta_g1);
+    mlc_proving_key.delta_g2 = G2T_alt2mcl(proving_key.delta_g2);
+
+    ethsnarks::writeToFile<MLCProvingKey>(mcl_pk_file, mlc_proving_key);
     return true;
 }
 

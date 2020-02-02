@@ -23,6 +23,8 @@ bool witness2json(libsnark::protoboard<FieldT>& pb, const std::string& path);
 
 bool pk_bellman2ethsnarks(const ProtoboardT& pb, const std::string& bellman_pk_file, const std::string& pk_file);
 
+bool pk_alt2mcl(const ProtoboardT& pb, const std::string& alt_pk_file, const std::string& mcl_pk_file);
+
 }
 
 #endif
