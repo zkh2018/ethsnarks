@@ -9,5 +9,5 @@
 	url = https://github.com/Ethsnarks/libfqfft.git
 [submodule "depends/libsnark"]
 	path = depends/libsnark
-	url = https://github.com/LoopringSecondary/libsnark.git
+	url = https://github.com/Loopring/libsnark.git
 	branch = mcl
