@@ -16,6 +16,9 @@ int stub_genkeys_from_pb( ProtoboardT& pb, const char *pk_file, const char *vk_f
 
 std::string stub_prove_from_pb( ProtoboardT& pb, const char *pk_file );
 
+ethsnarks::ProvingKeyT load_proving_key( const char *pk_file );
+std::string prove( ProtoboardT& pb, const ethsnarks::ProvingKeyT& proving_key );
+
 
 template<class GadgetT>
 int stub_genkeys( const char *pk_file, const char *vk_file )
