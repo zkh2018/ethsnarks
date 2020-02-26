@@ -65,7 +65,6 @@ inline FieldT lc_val( const ProtoboardT& pb, const libsnark::linear_combination<
     return sum;
 }
 
-
 inline std::vector<FieldT> vals( const ProtoboardT& pb, const std::vector<libsnark::linear_combination<FieldT> > &in_lcs )
 {
     std::vector<FieldT> ret;
@@ -125,7 +124,7 @@ inline const VariableArrayT make_var_array( ProtoboardT &in_pb, const std::strin
     for( unsigned i = 0; i < values.size(); i++ )
     {
         in_pb.val(vars[i]) = values[i];
-    }    
+    }
     return vars;
 }
 
@@ -166,12 +165,9 @@ bool is_negative( const FieldT& value );
 
 template<typename T>
 void writeToFile(std::string path, T& obj) {
-    std::stringstream ss;
-    ss << obj;
     std::ofstream fh;
     fh.open(path, std::ios::binary);
-    ss.rdbuf()->pubseekpos(0, std::ios_base::out);
-    fh << ss.rdbuf();
+    fh << obj;
     fh.flush();
     fh.close();
 }
@@ -179,20 +175,12 @@ void writeToFile(std::string path, T& obj) {
 
 template<typename T>
 T loadFromFile(std::string path) {
-    std::stringstream ss;
     std::ifstream fh(path, std::ios::binary);
-
     // TODO: more useful error if file not found
     assert(fh.is_open());
-
-    ss << fh.rdbuf();
-    fh.close();
-
-    ss.rdbuf()->pubseekpos(0, std::ios_base::in);
-
     T obj;
-    ss >> obj;
-
+    fh >> obj;
+    fh.close();
     return obj;
 }
 

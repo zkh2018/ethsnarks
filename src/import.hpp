@@ -8,7 +8,6 @@
 
 namespace ethsnarks {
 
-
 /**
 * Loads a ppT::Fq_type from a string, allows for integer, hex or binary encoding
 * Prefix with 0x for hex and 0b for binary
@@ -44,6 +43,7 @@ std::vector<FieldT> create_F_list( const nlohmann::json &in_tree );
 using InputProofPairType = std::pair< PrimaryInputT, ProofT >;
 
 VerificationKeyT vk_from_json( std::stringstream &in_json );
+VerificationKeyT vk_from_json( const nlohmann::json &in_tree );
 
 InputProofPairType proof_from_json( std::stringstream &in_json );
 

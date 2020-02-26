@@ -7,6 +7,8 @@
 #include <libsnark/gadgetlib1/gadget.hpp>
 #include "r1cs_gg_ppzksnark_zok/r1cs_gg_ppzksnark_zok.hpp"
 
+#include <nlohmann/json.hpp>
+
 
 namespace ethsnarks {
 
@@ -38,10 +40,12 @@ typedef libsnark::linear_term<FieldT> LinearTermT;
 typedef libsnark::gadget<ethsnarks::FieldT> GadgetT;
 
 typedef libsnark::r1cs_gg_ppzksnark_zok_proof<ppT> ProofT;
-typedef libsnark::r1cs_gg_ppzksnark_zok_proving_key<ppT> ProvingKeyT;
+typedef libsnark::r1cs_gg_ppzksnark_zok_proving_key_nozk<ppT> ProvingKeyT;
 typedef libsnark::r1cs_gg_ppzksnark_zok_verification_key<ppT> VerificationKeyT;
 typedef libsnark::r1cs_gg_ppzksnark_zok_primary_input<ppT> PrimaryInputT;
 typedef libsnark::r1cs_gg_ppzksnark_zok_auxiliary_input<ppT> AuxiliaryInputT;
+
+typedef libsnark::ProverContext<ppT> ProverContextT;
 
 }
 

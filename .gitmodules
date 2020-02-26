@@ -10,4 +10,4 @@
 [submodule "depends/libsnark"]
 	path = depends/libsnark
 	url = https://github.com/Loopring/libsnark.git
-	branch = mcl
+	branch = opt

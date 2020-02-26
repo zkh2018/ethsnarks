@@ -346,14 +346,14 @@ void dump_pb_r1cs_constraints(const ProtoboardT& pb)
     const auto auxiliary_input = pb.auxiliary_input();
     full_variable_assignment.insert(full_variable_assignment.end(), auxiliary_input.begin(), auxiliary_input.end());
 
-    const auto cs = pb.get_constraint_system();
+    const auto& cs = pb.constraint_system;
 
     unsigned int i = 0;
     for( auto& constraint : cs.constraints )
     {
-        const FieldT ares = constraint.a.evaluate(full_variable_assignment);
-        const FieldT bres = constraint.b.evaluate(full_variable_assignment);
-        const FieldT cres = constraint.c.evaluate(full_variable_assignment);
+        const FieldT ares = constraint->evaluateA(full_variable_assignment);
+        const FieldT bres = constraint->evaluateB(full_variable_assignment);
+        const FieldT cres = constraint->evaluateC(full_variable_assignment);
 
         auto it = cs.constraint_annotations.find(i);
         printf("constraint %u (%s)\n", i++, (it == cs.constraint_annotations.end() ? "no annotation" : it->second.c_str()));
@@ -361,7 +361,7 @@ void dump_pb_r1cs_constraints(const ProtoboardT& pb)
         printf("\t<b,(1,x)> = "); bres.print();
         printf("\t<c,(1,x)> = "); cres.print();
         printf("constraint was:\n");
-        dump_r1cs_constraint(constraint, full_variable_assignment, cs.variable_annotations);
+        //dump_r1cs_constraint(constraint, full_variable_assignment, cs.variable_annotations);
         printf("\n");
     }
 #endif

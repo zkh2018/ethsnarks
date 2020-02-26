@@ -153,17 +153,17 @@ void vk2json_file(VerificationKeyT &vk, const std::string &path )
     fh.close();
 }
 
-void constraint2json(libsnark::linear_combination<FieldT> constraints, std::ofstream &fh)
+void constraint2json(libsnark::linear_combination_light<FieldT> constraints, std::ofstream &fh)
 {
     fh << "{";
     uint count = 0;
-    for (const libsnark::linear_term<FieldT>& lt : constraints.terms)
+    for (const libsnark::linear_term_light<FieldT>& lt : constraints.getTerms())
     {
         if (count != 0)
         {
             fh << ",";
         }
-        fh << '"' << lt.index << '"' << ": " << '"' << bigintToString(lt.coeff.as_bigint(), 10) << '"';
+        fh << '"' << lt.index << '"' << ": " << '"' << bigintToString(lt.getCoeff().as_bigint(), 10) << '"';
         count++;
     }
     fh << "}";
@@ -171,7 +171,7 @@ void constraint2json(libsnark::linear_combination<FieldT> constraints, std::ofst
 
 bool r1cs2json(libsnark::protoboard<FieldT>& pb, const std::string& path)
 {
-    libsnark::r1cs_constraint_system<FieldT> constraints = pb.get_constraint_system();
+    const libsnark::r1cs_constraint_system<FieldT>& constraints = pb.constraint_system;
     std::ofstream fh(path);
     fh << "{\n";
     fh << " \"nPubInputs\": " << constraints.primary_input_size << ",\n";
@@ -182,11 +182,11 @@ bool r1cs2json(libsnark::protoboard<FieldT>& pb, const std::string& path)
     for (size_t c = 0; c < constraints.num_constraints(); ++c)
     {
         fh << "  [";
-        constraint2json(constraints.constraints[c].a, fh);
+        constraint2json(constraints.constraints[c]->getA(), fh);
         fh << ",";
-        constraint2json(constraints.constraints[c].b, fh);
+        constraint2json(constraints.constraints[c]->getB(), fh);
         fh << ",";
-        constraint2json(constraints.constraints[c].c, fh);
+        constraint2json(constraints.constraints[c]->getC(), fh);
         if (c == constraints.num_constraints() - 1)
         {
             fh << "]\n";
@@ -263,10 +263,9 @@ G2T readG2(const json& input)
 #endif
 }
 
-bool pk_bellman2ethsnarks(const ProtoboardT& pb, const std::string& bellman_pk_file, const std::string& pk_file)
+bool pk_bellman2ethsnarks(const std::string& bellman_pk_file, const std::string& pk_file)
 {
-    ethsnarks::ProvingKeyT proving_key;
-    proving_key.constraint_system = pb.get_constraint_system();
+    libsnark::r1cs_gg_ppzksnark_zok_proving_key<ethsnarks::ppT> proving_key;
 
     // Read the bellman pk JSON file
     std::ifstream file(bellman_pk_file);
@@ -320,7 +319,7 @@ bool pk_bellman2ethsnarks(const ProtoboardT& pb, const std::string& bellman_pk_f
     proving_key.delta_g1 = readG1(input["vk_delta_1"]);
     proving_key.delta_g2 = readG2(input["vk_delta_2"]);
 
-    writeToFile<ethsnarks::ProvingKeyT>(pk_file, proving_key);
+    writeToFile<libsnark::r1cs_gg_ppzksnark_zok_proving_key<ethsnarks::ppT>>(pk_file, proving_key);
     return true;
 }
 
@@ -342,20 +341,12 @@ libff::mcl_bn128_G2 G2T_alt2mcl(const libff::alt_bn128_G2& alt)
     );
 }
 
-bool pk_alt2mcl(const ProtoboardT& pb, const std::string& alt_pk_file, const std::string& mcl_pk_file)
+bool pk_alt2mcl(const std::string& alt_pk_file, const std::string& mcl_pk_file)
 {
-    // Can only be called when compiled with CURVE_MCL_BN128 because the pb needs to habe the correct types
-
-
     libff::alt_bn128_pp::init_public_params();
     auto proving_key = ethsnarks::loadFromFile<libsnark::r1cs_gg_ppzksnark_zok_proving_key<libff::alt_bn128_pp>>(alt_pk_file);
-    typedef libsnark::r1cs_gg_ppzksnark_zok_proving_key<libff::mcl_bn128_pp> MLCProvingKey;
-    MLCProvingKey mlc_proving_key;
-#ifndef CURVE_MCL_BN128
-    return false;
-#else
-    mlc_proving_key.constraint_system = pb.get_constraint_system();
-#endif
+    typedef libsnark::r1cs_gg_ppzksnark_zok_proving_key<libff::mcl_bn128_pp> MCLProvingKey;
+    MCLProvingKey mlc_proving_key;
 
     /* A */
     for (unsigned int i = 0; i < proving_key.A_query.size(); i++)
@@ -397,7 +388,16 @@ bool pk_alt2mcl(const ProtoboardT& pb, const std::string& alt_pk_file, const std
     mlc_proving_key.delta_g1 = G1T_alt2mcl(proving_key.delta_g1);
     mlc_proving_key.delta_g2 = G2T_alt2mcl(proving_key.delta_g2);
 
-    ethsnarks::writeToFile<MLCProvingKey>(mcl_pk_file, mlc_proving_key);
+    ethsnarks::writeToFile<MCLProvingKey>(mcl_pk_file, mlc_proving_key);
+    return true;
+}
+
+bool pk_mcl2nozk(const std::string& mcl_pk_file, const std::string& nozk_pk_file)
+{
+    typedef libsnark::r1cs_gg_ppzksnark_zok_proving_key<libff::mcl_bn128_pp> MCLProvingKey;
+    MCLProvingKey pk_zk = ethsnarks::loadFromFile<MCLProvingKey>(mcl_pk_file.c_str());
+    auto pk_nozk = ProvingKeyT(pk_zk);
+    writeToFile<ProvingKeyT>(nozk_pk_file.c_str(), pk_nozk);
     return true;
 }
 

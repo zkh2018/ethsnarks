@@ -33,6 +33,8 @@ See r1cs_gg_ppzksnark_zok.hpp .
 
 namespace libsnark {
 
+/******************************** Proving key ********************************/
+
 template<typename ppT>
 bool r1cs_gg_ppzksnark_zok_proving_key<ppT>::operator==(const r1cs_gg_ppzksnark_zok_proving_key<ppT> &other) const
 {
@@ -60,7 +62,6 @@ std::ostream& operator<<(std::ostream &out, const r1cs_gg_ppzksnark_zok_proving_
     out << pk.B_query;
     out << pk.H_query;
     out << pk.L_query;
-    out << pk.constraint_system;
 
     return out;
 }
@@ -82,10 +83,66 @@ std::istream& operator>>(std::istream &in, r1cs_gg_ppzksnark_zok_proving_key<ppT
     in >> pk.B_query;
     in >> pk.H_query;
     in >> pk.L_query;
-    in >> pk.constraint_system;
 
     return in;
 }
+
+
+/******************************** Proving key (no ZK) ********************************/
+
+template<typename ppT>
+bool r1cs_gg_ppzksnark_zok_proving_key_nozk<ppT>::operator==(const r1cs_gg_ppzksnark_zok_proving_key_nozk<ppT> &other) const
+{
+    return (this->alpha_g1 == other.alpha_g1 &&
+            this->beta_g1 == other.beta_g1 &&
+            this->beta_g2 == other.beta_g2 &&
+            this->delta_g1 == other.delta_g1 &&
+            this->delta_g2 == other.delta_g2 &&
+            this->A_query == other.A_query &&
+            this->B_query == other.B_query &&
+            this->H_query == other.H_query &&
+            this->L_query == other.L_query &&
+            this->constraint_system == other.constraint_system);
+}
+
+template<typename ppT>
+std::ostream& operator<<(std::ostream &out, const r1cs_gg_ppzksnark_zok_proving_key_nozk<ppT> &pk)
+{
+    out << pk.alpha_g1 << OUTPUT_NEWLINE;
+    out << pk.beta_g1 << OUTPUT_NEWLINE;
+    out << pk.beta_g2 << OUTPUT_NEWLINE;
+    out << pk.delta_g1 << OUTPUT_NEWLINE;
+    out << pk.delta_g2 << OUTPUT_NEWLINE;
+    out << pk.A_query;
+    out << pk.B_query;
+    out << pk.H_query;
+    out << pk.L_query;
+
+    return out;
+}
+
+template<typename ppT>
+std::istream& operator>>(std::istream &in, r1cs_gg_ppzksnark_zok_proving_key_nozk<ppT> &pk)
+{
+    std::cout << "Start loading pk" << std::endl;
+    in >> pk.alpha_g1;
+    libff::consume_OUTPUT_NEWLINE(in);
+    in >> pk.beta_g1;
+    libff::consume_OUTPUT_NEWLINE(in);
+    in >> pk.beta_g2;
+    libff::consume_OUTPUT_NEWLINE(in);
+    in >> pk.delta_g1;
+    libff::consume_OUTPUT_NEWLINE(in);
+    in >> pk.delta_g2;
+    libff::consume_OUTPUT_NEWLINE(in);
+    in >> pk.A_query;
+    in >> pk.B_query;
+    in >> pk.H_query;
+    in >> pk.L_query;
+    return in;
+}
+
+//**
 
 template<typename ppT>
 bool r1cs_gg_ppzksnark_zok_verification_key<ppT>::operator==(const r1cs_gg_ppzksnark_zok_verification_key<ppT> &other) const
@@ -222,10 +279,6 @@ r1cs_gg_ppzksnark_zok_keypair<ppT> r1cs_gg_ppzksnark_zok_generator(const r1cs_gg
 {
     libff::enter_block("Call to r1cs_gg_ppzksnark_zok_generator");
 
-    /* Make the B_query "lighter" if possible */
-    r1cs_gg_ppzksnark_zok_constraint_system<ppT> r1cs_copy(r1cs);
-    r1cs_copy.swap_AB_if_beneficial();
-
     /* Generate secret randomness */
     const libff::Fr<ppT> t = libff::Fr<ppT>::random_element();
     const libff::Fr<ppT> alpha = libff::Fr<ppT>::random_element();
@@ -236,10 +289,10 @@ r1cs_gg_ppzksnark_zok_keypair<ppT> r1cs_gg_ppzksnark_zok_generator(const r1cs_gg
     const libff::Fr<ppT> delta_inverse = delta.inverse();
 
     /* A quadratic arithmetic program evaluated at t. */
-    qap_instance_evaluation<libff::Fr<ppT> > qap = r1cs_to_qap_instance_map_with_evaluation(r1cs_copy, t);
+    qap_instance_evaluation<libff::Fr<ppT> > qap = r1cs_to_qap_instance_map_with_evaluation(r1cs, t);
 
     libff::print_indent(); printf("* QAP number of variables: %zu\n", qap.num_variables());
-    libff::print_indent(); printf("* QAP pre degree: %zu\n", r1cs_copy.constraints.size());
+    libff::print_indent(); printf("* QAP pre degree: %zu\n", r1cs.constraints.size());
     libff::print_indent(); printf("* QAP degree: %zu\n", qap.degree());
     libff::print_indent(); printf("* QAP number of input variables: %zu\n", qap.num_inputs());
 
@@ -387,88 +440,70 @@ r1cs_gg_ppzksnark_zok_keypair<ppT> r1cs_gg_ppzksnark_zok_generator(const r1cs_gg
                                                                                std::move(A_query),
                                                                                std::move(B_query),
                                                                                std::move(H_query),
-                                                                               std::move(L_query),
-                                                                               std::move(r1cs_copy));
+                                                                               std::move(L_query));
 
-    pk.print_size();
-    vk.print_size();
+    //pk.print_size();
+    //vk.print_size();
 
     return r1cs_gg_ppzksnark_zok_keypair<ppT>(std::move(pk), std::move(vk));
 }
 
 template <typename ppT>
-r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(const r1cs_gg_ppzksnark_zok_proving_key<ppT> &pk,
-                                                      const r1cs_gg_ppzksnark_zok_primary_input<ppT> &primary_input,
-                                                      const r1cs_gg_ppzksnark_zok_auxiliary_input<ppT> &auxiliary_input)
+r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>& context, const std::vector<libff::Fr<ppT>>& full_variable_assignment)
 {
     libff::enter_block("Call to r1cs_gg_ppzksnark_zok_prover");
 
-#ifdef DEBUG
-    assert(pk.constraint_system.is_satisfied(primary_input, auxiliary_input));
-#endif
+    const std::shared_ptr<libfqfft::evaluation_domain<libff::Fr<ppT>>>& domain = context.domain;
+    const r1cs_gg_ppzksnark_zok_proving_key_nozk<ppT>& pk = context.provingKey;
+    const r1cs_constraint_system<libff::Fr<ppT>>& cs = *context.constraint_system;
 
     libff::enter_block("Compute the polynomial H");
-    const qap_witness<libff::Fr<ppT> > qap_wit = r1cs_to_qap_witness_map(pk.constraint_system, primary_input, auxiliary_input, libff::Fr<ppT>::zero(), libff::Fr<ppT>::zero(), libff::Fr<ppT>::zero());
+    r1cs_to_qap_witness_map(
+        context.domain,
+        cs,
+        full_variable_assignment,
+        context.aA,
+        context.aB,
+        context.aH
+    );
 
     /* We are dividing degree 2(d-1) polynomial by degree d polynomial
        and not adding a PGHR-style ZK-patch, so our H is degree d-2 */
-    assert(!qap_wit.coefficients_for_H[qap_wit.degree()-2].is_zero());
-    assert(qap_wit.coefficients_for_H[qap_wit.degree()-1].is_zero());
-    assert(qap_wit.coefficients_for_H[qap_wit.degree()].is_zero());
+    assert(!context.aH[domain->m-2].is_zero());
+    assert(context.aH[domain->m-1].is_zero());
+    assert(context.aH[domain->m].is_zero());
     libff::leave_block("Compute the polynomial H");
 
 #ifdef DEBUG
-    const libff::Fr<ppT> t = libff::Fr<ppT>::random_element();
-    qap_instance_evaluation<libff::Fr<ppT> > qap_inst = r1cs_to_qap_instance_map_with_evaluation(pk.constraint_system, t);
-    assert(qap_inst.is_satisfied(qap_wit));
-#endif
-
-    /* Choose two random field elements for prover zero-knowledge. */
-    const libff::Fr<ppT> r = libff::Fr<ppT>::random_element();
-    const libff::Fr<ppT> s = libff::Fr<ppT>::random_element();
-
-#ifdef DEBUG
-    assert(qap_wit.coefficients_for_ABCs.size() == qap_wit.num_variables());
-    assert(pk.A_query.size() == qap_wit.num_variables()+1);
-    assert(pk.B_query.domain_size() == qap_wit.num_variables()+1);
-    assert(pk.H_query.size() == qap_wit.degree() - 1);
-    assert(pk.L_query.size() == qap_wit.num_variables() - qap_wit.num_inputs());
-#endif
-
-#ifdef MULTICORE
-    const size_t chunks = omp_get_max_threads(); // to override, set OMP_NUM_THREADS env var or call omp_set_num_threads()
-#else
-    const size_t chunks = 1;
+    assert(full_variable_assignment.size() == cs.num_variables());
+    assert(pk.A_query.size() == cs.num_variables()+1);
+    assert(pk.B_query.domain_size() == cs.num_variables()+1);
+    assert(pk.H_query.size() == domain->m - 1);
+    assert(pk.L_query.size() == cs.num_variables() - cs.num_inputs());
 #endif
 
     libff::enter_block("Compute the proof");
 
     libff::enter_block("Compute evaluation to A-query", false);
-    // TODO: sort out indexing
-    libff::Fr_vector<ppT> const_padded_assignment(1, libff::Fr<ppT>::one());
-    const_padded_assignment.insert(const_padded_assignment.end(), qap_wit.coefficients_for_ABCs.begin(), qap_wit.coefficients_for_ABCs.end());
-
-    libff::G1<ppT> evaluation_At = libff::multi_exp_with_mixed_addition<libff::G1<ppT>,
-                                                                        libff::Fr<ppT>,
-                                                                        libff::multi_exp_method_BDLO12>(
-        pk.A_query.begin(),
-        pk.A_query.begin() + qap_wit.num_variables() + 1,
-        const_padded_assignment.begin(),
-        const_padded_assignment.begin() + qap_wit.num_variables() + 1,
-        chunks);
+    libff::G1<ppT> evaluation_At = kc_multi_exp_with_mixed_addition<libff::G1<ppT>,
+                                                                    libff::Fr<ppT>,
+                                                                    libff::multi_exp_method_BDLO12>(
+        pk.A_query,
+        full_variable_assignment.begin(),
+        full_variable_assignment.begin() + cs.num_variables() + 1,
+        context.scratch_exponents,
+        context.config);
     libff::leave_block("Compute evaluation to A-query", false);
 
     libff::enter_block("Compute evaluation to B-query", false);
-    knowledge_commitment<libff::G2<ppT>, libff::G1<ppT> > evaluation_Bt = kc_multi_exp_with_mixed_addition<libff::G2<ppT>,
-                                                                                                           libff::G1<ppT>,
-                                                                                                           libff::Fr<ppT>,
-                                                                                                           libff::multi_exp_method_BDLO12>(
+    libff::G2<ppT> evaluation_Bt = kc_multi_exp_with_mixed_addition<libff::G2<ppT>,
+                                                                    libff::Fr<ppT>,
+                                                                    libff::multi_exp_method_BDLO12>(
         pk.B_query,
-        0,
-        qap_wit.num_variables() + 1,
-        const_padded_assignment.begin(),
-        const_padded_assignment.begin() + qap_wit.num_variables() + 1,
-        chunks);
+        full_variable_assignment.begin(),
+        full_variable_assignment.begin() + cs.num_variables() + 1,
+        context.scratch_exponents,
+        context.config);
     libff::leave_block("Compute evaluation to B-query", false);
 
     libff::enter_block("Compute evaluation to H-query", false);
@@ -476,10 +511,11 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(const r1cs_gg_ppzk
                                                     libff::Fr<ppT>,
                                                     libff::multi_exp_method_BDLO12>(
         pk.H_query.begin(),
-        pk.H_query.begin() + (qap_wit.degree() - 1),
-        qap_wit.coefficients_for_H.begin(),
-        qap_wit.coefficients_for_H.begin() + (qap_wit.degree() - 1),
-        chunks);
+        pk.H_query.begin() + (domain->m - 1),
+        context.aH.begin(),
+        context.aH.begin() + (domain->m - 1),
+        context.scratch_exponents,
+        context.config);
     libff::leave_block("Compute evaluation to H-query", false);
 
     libff::enter_block("Compute evaluation to L-query", false);
@@ -488,20 +524,20 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(const r1cs_gg_ppzk
                                                                         libff::multi_exp_method_BDLO12>(
         pk.L_query.begin(),
         pk.L_query.end(),
-        const_padded_assignment.begin() + qap_wit.num_inputs() + 1,
-        const_padded_assignment.begin() + qap_wit.num_variables() + 1,
-        chunks);
+        full_variable_assignment.begin() + cs.num_inputs() + 1,
+        full_variable_assignment.begin() + cs.num_variables() + 1,
+        context.scratch_exponents,
+        context.config);
     libff::leave_block("Compute evaluation to L-query", false);
 
-    /* A = alpha + sum_i(a_i*A_i(t)) + r*delta */
-    libff::G1<ppT> g1_A = pk.alpha_g1 + evaluation_At + r * pk.delta_g1;
+    /* A = alpha + sum_i(a_i*A_i(t)) */
+    libff::G1<ppT> g1_A = pk.alpha_g1 + evaluation_At;
 
-    /* B = beta + sum_i(a_i*B_i(t)) + s*delta */
-    libff::G1<ppT> g1_B = pk.beta_g1 + evaluation_Bt.h + s * pk.delta_g1;
-    libff::G2<ppT> g2_B = pk.beta_g2 + evaluation_Bt.g + s * pk.delta_g2;
+    /* B = beta + sum_i(a_i*B_i(t)) */
+    libff::G2<ppT> g2_B = pk.beta_g2 + evaluation_Bt;
 
-    /* C = sum_i(a_i*((beta*A_i(t) + alpha*B_i(t) + C_i(t)) + H(t)*Z(t))/delta) + A*s + r*b - r*s*delta */
-    libff::G1<ppT> g1_C = evaluation_Ht + evaluation_Lt + s *  g1_A + r * g1_B - (r * s) * pk.delta_g1;
+    /* C = sum_i(a_i*((beta*A_i(t) + alpha*B_i(t) + C_i(t)) + H(t)*Z(t))/delta) */
+    libff::G1<ppT> g1_C = evaluation_Ht + evaluation_Lt;
 
     libff::leave_block("Compute the proof");
 

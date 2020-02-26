@@ -33,37 +33,55 @@ bool stub_verify( const char *vk_json, const char *proof_json )
 }
 
 
-std::string stub_prove_from_pb( ProtoboardT& pb, const char *pk_file )
-{
-    auto proving_key = ethsnarks::loadFromFile<ethsnarks::ProvingKeyT>(pk_file);
-    // TODO: verify if proving key was loaded correctly, if not return NULL
-
-    auto primary_input = pb.primary_input();
-    auto proof = libsnark::r1cs_gg_ppzksnark_zok_prover<ethsnarks::ppT>(proving_key, primary_input, pb.auxiliary_input());
-    return ethsnarks::proof_to_json(proof, primary_input);
-}
-
-
 ethsnarks::ProvingKeyT load_proving_key( const char *pk_file )
 {
     return ethsnarks::loadFromFile<ethsnarks::ProvingKeyT>(pk_file);
 }
 
 
-std::string prove( ProtoboardT& pb, const ethsnarks::ProvingKeyT& proving_key )
+std::string prove(ProverContextT& context, ProtoboardT& pb)
 {
     auto primary_input = pb.primary_input();
-    auto proof = libsnark::r1cs_gg_ppzksnark_zok_prover<ethsnarks::ppT>(proving_key, primary_input, pb.auxiliary_input());
+    auto proof = libsnark::r1cs_gg_ppzksnark_zok_prover<ethsnarks::ppT>(context, pb.values);
     return ethsnarks::proof_to_json(proof, primary_input);
 }
 
+static unsigned int roundUpToNearestPowerOf2(unsigned int v)
+{
+    v--;
+    v |= v >> 1;
+    v |= v >> 2;
+    v |= v >> 4;
+    v |= v >> 8;
+    v |= v >> 16;
+    v++;
+    return v;
+}
+
+const std::shared_ptr<libfqfft::evaluation_domain<FieldT>> get_domain ( ProtoboardT& pb, const ethsnarks::ProvingKeyT& proving_key, const libsnark::Config& config )
+{
+    const auto& cs = pb.constraint_system;
+    std::shared_ptr<libfqfft::evaluation_domain<FieldT>> result;
+    unsigned int domain_size = roundUpToNearestPowerOf2(cs.num_constraints() + cs.num_inputs() + 1);
+    if (config.fft.compare("basic_radix2") == 0)
+    {
+        result.reset(new libfqfft::basic_radix2_domain<FieldT>(domain_size));
+    }
+    else
+    {
+        result.reset(new libfqfft::recursive_domain<FieldT>(domain_size, config));
+    }
+    return result;
+}
 
 int stub_genkeys_from_pb( ProtoboardT& pb, const char *pk_file, const char *vk_file )
 {
-    const auto constraints = pb.get_constraint_system();
+    const auto& constraints = pb.constraint_system;
     auto keypair = libsnark::r1cs_gg_ppzksnark_zok_generator<ppT>(constraints);
     vk2json_file(keypair.vk, vk_file);
-    writeToFile<decltype(keypair.pk)>(pk_file, keypair.pk);
+
+    auto pk = ProvingKeyT(keypair.pk);
+    writeToFile<ProvingKeyT>(pk_file, pk);
 
     return 0;
 }
@@ -116,14 +134,16 @@ int stub_main_verify( const char *prog_name, int argc, const char **argv )
 
 bool stub_test_proof_verify( const ProtoboardT &in_pb )
 {
-    auto constraints = in_pb.get_constraint_system();
+    auto& constraints = in_pb.constraint_system;
     auto keypair = libsnark::r1cs_gg_ppzksnark_zok_generator<ppT>(constraints);
 
-    auto primary_input = in_pb.primary_input();
-    auto auxiliary_input = in_pb.auxiliary_input();
-    auto proof = libsnark::r1cs_gg_ppzksnark_zok_prover<ppT>(keypair.pk, primary_input, auxiliary_input);
+    ProverContextT context;
+    context.provingKey = keypair.pk;
+    context.config = libsnark::Config();
 
-    return libsnark::r1cs_gg_ppzksnark_zok_verifier_strong_IC <ppT> (keypair.vk, primary_input, proof);
+    auto proof = libsnark::r1cs_gg_ppzksnark_zok_prover<ppT>(context, in_pb.values);
+
+    return libsnark::r1cs_gg_ppzksnark_zok_verifier_strong_IC <ppT> (keypair.vk, in_pb.primary_input(), proof);
 }
 
 

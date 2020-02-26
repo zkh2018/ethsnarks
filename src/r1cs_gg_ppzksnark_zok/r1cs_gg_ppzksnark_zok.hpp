@@ -55,6 +55,8 @@ References:
 #include <libsnark/relations/constraint_satisfaction_problems/r1cs/r1cs.hpp>
 #include "r1cs_gg_ppzksnark_zok/r1cs_gg_ppzksnark_zok_params.hpp"
 
+#include <libfqfft/evaluation_domain/evaluation_domain.hpp>
+
 namespace libsnark {
 
 /******************************** Proving key ********************************/
@@ -85,8 +87,6 @@ public:
     libff::G1_vector<ppT> H_query;
     libff::G1_vector<ppT> L_query;
 
-    r1cs_gg_ppzksnark_zok_constraint_system<ppT> constraint_system;
-
     r1cs_gg_ppzksnark_zok_proving_key() {};
     r1cs_gg_ppzksnark_zok_proving_key<ppT>& operator=(const r1cs_gg_ppzksnark_zok_proving_key<ppT> &other) = default;
     r1cs_gg_ppzksnark_zok_proving_key(const r1cs_gg_ppzksnark_zok_proving_key<ppT> &other) = default;
@@ -99,8 +99,7 @@ public:
                                   libff::G1_vector<ppT> &&A_query,
                                   knowledge_commitment_vector<libff::G2<ppT>, libff::G1<ppT> > &&B_query,
                                   libff::G1_vector<ppT> &&H_query,
-                                  libff::G1_vector<ppT> &&L_query,
-                                  r1cs_gg_ppzksnark_zok_constraint_system<ppT> &&constraint_system) :
+                                  libff::G1_vector<ppT> &&L_query) :
         alpha_g1(std::move(alpha_g1)),
         beta_g1(std::move(beta_g1)),
         beta_g2(std::move(beta_g2)),
@@ -109,8 +108,7 @@ public:
         A_query(std::move(A_query)),
         B_query(std::move(B_query)),
         H_query(std::move(H_query)),
-        L_query(std::move(L_query)),
-        constraint_system(std::move(constraint_system))
+        L_query(std::move(L_query))
     {};
 
     size_t G1_size() const
@@ -152,6 +150,143 @@ public:
     bool operator==(const r1cs_gg_ppzksnark_zok_proving_key<ppT> &other) const;
     friend std::ostream& operator<< <ppT>(std::ostream &out, const r1cs_gg_ppzksnark_zok_proving_key<ppT> &pk);
     friend std::istream& operator>> <ppT>(std::istream &in, r1cs_gg_ppzksnark_zok_proving_key<ppT> &pk);
+};
+
+
+
+/******************************** Proving key (no ZK) ********************************/
+
+template<typename ppT>
+class r1cs_gg_ppzksnark_zok_proving_key_nozk;
+
+template<typename ppT>
+std::ostream& operator<<(std::ostream &out, const r1cs_gg_ppzksnark_zok_proving_key_nozk<ppT> &pk);
+
+template<typename ppT>
+std::istream& operator>>(std::istream &in, r1cs_gg_ppzksnark_zok_proving_key_nozk<ppT> &pk);
+
+/**
+ * A proving key for the R1CS GG-ppzkSNARK.
+ */
+template<typename ppT>
+class r1cs_gg_ppzksnark_zok_proving_key_nozk {
+public:
+    libff::G1<ppT> alpha_g1;
+    libff::G1<ppT> beta_g1;
+    libff::G2<ppT> beta_g2;
+    libff::G1<ppT> delta_g1;
+    libff::G2<ppT> delta_g2;
+
+    sparse_vector<libff::G1<ppT>> A_query;
+    sparse_vector<libff::G2<ppT>> B_query;
+    libff::G1_vector<ppT> H_query;
+    libff::G1_vector<ppT> L_query;
+
+    r1cs_gg_ppzksnark_zok_proving_key_nozk() {};
+    r1cs_gg_ppzksnark_zok_proving_key_nozk<ppT>& operator=(const r1cs_gg_ppzksnark_zok_proving_key_nozk<ppT> &other) = default;
+    r1cs_gg_ppzksnark_zok_proving_key_nozk(const r1cs_gg_ppzksnark_zok_proving_key_nozk<ppT> &other) = default;
+    r1cs_gg_ppzksnark_zok_proving_key_nozk(r1cs_gg_ppzksnark_zok_proving_key_nozk<ppT> &&other) = default;
+    r1cs_gg_ppzksnark_zok_proving_key_nozk(libff::G1<ppT> &&alpha_g1,
+                                  libff::G1<ppT> &&beta_g1,
+                                  libff::G2<ppT> &&beta_g2,
+                                  libff::G1<ppT> &&delta_g1,
+                                  libff::G2<ppT> &&delta_g2,
+                                  sparse_vector<libff::G1<ppT>> &&A_query,
+                                  sparse_vector<libff::G2<ppT>> &&B_query,
+                                  libff::G1_vector<ppT> &&H_query,
+                                  libff::G1_vector<ppT> &&L_query) :
+        alpha_g1(std::move(alpha_g1)),
+        beta_g1(std::move(beta_g1)),
+        beta_g2(std::move(beta_g2)),
+        delta_g1(std::move(delta_g1)),
+        delta_g2(std::move(delta_g2)),
+        A_query(std::move(A_query)),
+        B_query(std::move(B_query)),
+        H_query(std::move(H_query)),
+        L_query(std::move(L_query))
+    {}
+
+    r1cs_gg_ppzksnark_zok_proving_key_nozk(r1cs_gg_ppzksnark_zok_proving_key<ppT>& other)
+    {
+        alpha_g1 = other.alpha_g1;
+        beta_g1 = other.beta_g1;
+        beta_g2 = other.beta_g2;
+        delta_g1 = other.delta_g1;
+        delta_g2 = other.delta_g2;
+        A_query.domain_size_ = other.A_query.size();
+        for (unsigned int i = 0; i < other.A_query.size(); i++)
+        {
+            if (other.A_query[i] != libff::G1<ppT>::zero())
+            {
+                A_query.indices.emplace_back(i);
+                A_query.values.emplace_back(other.A_query[i]);
+            }
+        }
+        B_query.domain_size_ = other.B_query.domain_size_;
+        for (unsigned int i = 0; i < other.B_query.indices.size(); i++)
+        {
+            B_query.indices.emplace_back(other.B_query.indices[i]);
+            B_query.values.emplace_back(other.B_query.values[i].g);
+        }
+        H_query = other.H_query;
+        L_query = other.L_query;
+    };
+
+    size_t G1_size() const
+    {
+        return 1 + A_query.domain_size() + B_query.domain_size() + H_query.size() + L_query.size();
+    }
+
+    size_t G2_size() const
+    {
+        return 1 + B_query.domain_size();
+    }
+
+    size_t G1_sparse_size() const
+    {
+        return 1 + A_query.domain_size() + B_query.size() + H_query.size() + L_query.size();
+    }
+
+    size_t G2_sparse_size() const
+    {
+        return 1 + B_query.size();
+    }
+
+    size_t size_in_bits() const
+    {
+        return (libff::size_in_bits(A_query) + B_query.size_in_bits() +
+                libff::size_in_bits(H_query) + libff::size_in_bits(L_query) +
+                1 * libff::G1<ppT>::size_in_bits() + 1 * libff::G2<ppT>::size_in_bits());
+    }
+
+    void print_size() const
+    {
+        libff::print_indent(); printf("* G1 elements in PK: %zu\n", this->G1_size());
+        libff::print_indent(); printf("* Non-zero G1 elements in PK: %zu\n", this->G1_sparse_size());
+        libff::print_indent(); printf("* G2 elements in PK: %zu\n", this->G2_size());
+        libff::print_indent(); printf("* Non-zero G2 elements in PK: %zu\n", this->G2_sparse_size());
+        libff::print_indent(); printf("* PK size in bits: %zu\n", this->size_in_bits());
+    }
+
+    bool operator==(const r1cs_gg_ppzksnark_zok_proving_key_nozk<ppT> &other) const;
+    friend std::ostream& operator<< <ppT>(std::ostream &out, const r1cs_gg_ppzksnark_zok_proving_key_nozk<ppT> &pk);
+    friend std::istream& operator>> <ppT>(std::istream &in, r1cs_gg_ppzksnark_zok_proving_key_nozk<ppT> &pk);
+};
+
+
+/******************************** Proving Context ********************************/
+
+template<typename ppT>
+struct ProverContext
+{
+    r1cs_gg_ppzksnark_zok_proving_key_nozk<ppT> provingKey;
+    r1cs_gg_ppzksnark_zok_constraint_system<ppT>* constraint_system;
+    Config config;
+    std::shared_ptr<libfqfft::evaluation_domain<libff::Fr<ppT>>> domain;
+    std::vector<libff::bigint<libff::Fr<ppT>::num_limbs>> scratch_exponents;
+    std::vector<libff::Fr<ppT>> aA;
+    std::vector<libff::Fr<ppT>> aB;
+    std::vector<libff::Fr<ppT>> aH;
 };
 
 

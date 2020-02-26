@@ -4,6 +4,7 @@
 #include "utils.hpp"
 #include "export.hpp"
 
+
 namespace ethsnarks {
 
 bool stub_verify( const char *vk_json, const char *proof_json );
@@ -14,11 +15,10 @@ bool stub_test_proof_verify( const ProtoboardT &in_pb );
 
 int stub_genkeys_from_pb( ProtoboardT& pb, const char *pk_file, const char *vk_file );
 
-std::string stub_prove_from_pb( ProtoboardT& pb, const char *pk_file );
-
 ethsnarks::ProvingKeyT load_proving_key( const char *pk_file );
-std::string prove( ProtoboardT& pb, const ethsnarks::ProvingKeyT& proving_key );
+std::string prove(ProverContextT& context, ProtoboardT& pb);
 
+const std::shared_ptr<libfqfft::evaluation_domain<FieldT>> get_domain ( ProtoboardT& pb, const ethsnarks::ProvingKeyT& proving_key, const libsnark::Config& config );
 
 template<class GadgetT>
 int stub_genkeys( const char *pk_file, const char *vk_file )

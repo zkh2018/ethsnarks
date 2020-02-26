@@ -21,9 +21,10 @@ bool r1cs2json(libsnark::protoboard<FieldT>& pb, const std::string& path);
 
 bool witness2json(libsnark::protoboard<FieldT>& pb, const std::string& path);
 
-bool pk_bellman2ethsnarks(const ProtoboardT& pb, const std::string& bellman_pk_file, const std::string& pk_file);
+bool pk_bellman2ethsnarks(const std::string& bellman_pk_file, const std::string& pk_file);
 
-bool pk_alt2mcl(const ProtoboardT& pb, const std::string& alt_pk_file, const std::string& mcl_pk_file);
+bool pk_alt2mcl(const std::string& alt_pk_file, const std::string& mcl_pk_file);
+bool pk_mcl2nozk(const std::string& mcl_pk_file, const std::string& nozk_pk_file);
 
 }
 

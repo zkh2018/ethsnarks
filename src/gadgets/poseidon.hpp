@@ -36,7 +36,7 @@ public:
 		x2(make_variable(pb, FMT(annotation_prefix, ".x2"))),
 		x4(make_variable(pb, FMT(annotation_prefix, ".x4"))),
 		x5(make_variable(pb, FMT(annotation_prefix, ".x5")))
-	{		
+	{
 	}
 
 	void generate_r1cs_constraints(const linear_combination<FieldT>& x) const
@@ -56,7 +56,7 @@ public:
     	this->pb.val(x5) = val_x5;
     }
 
-    const VariableT& result() const 
+    const VariableT& result() const
     {
     	return x5;
     }
@@ -101,7 +101,7 @@ static void poseidon_matrix_fill(const std::string &seed, unsigned t, std::vecto
 	for( unsigned i = 0; i < t; i++ )
 	{
 		for( unsigned j = 0; j < t; j++ )
-		{		
+		{
 			result.emplace_back((c[i] - c[t+j]).inverse());
 		}
 	}
@@ -144,7 +144,7 @@ const PoseidonConstants& poseidon_params()
 */
 template<unsigned param_t, unsigned nSBox, unsigned nInputs, unsigned nOutputs>
 class Poseidon_Round : public GadgetT {
-public:		
+public:
 	const FieldT& C_i;
 	const std::vector<FieldT>& M;
 	const std::vector<libsnark::linear_combination<FieldT> > state;
@@ -167,14 +167,16 @@ public:
 	}
 
 	static std::vector<libsnark::linear_combination<FieldT> > make_outputs(
-		ProtoboardT& in_pb,
 		const FieldT& in_C_i,
 		const std::vector<FieldT>& in_M,
 		const std::vector<libsnark::linear_combination<FieldT> >& in_state,
 		const std::vector<FifthPower_gadget>& in_sboxes )
 	{
-		std::vector<libsnark::linear_combination<FieldT> > ret;
+		std::vector<libsnark::linear_combination<FieldT> > ret(nOutputs);
 
+#ifdef MULTICORE
+        #pragma omp parallel for
+#endif
 		for( unsigned i = 0; i < nOutputs; i++ )
 		{
 			const unsigned M_offset = i * param_t;
@@ -186,12 +188,12 @@ public:
 				constant_term += in_C_i * in_M[M_offset+j];
 			}
 
-			linear_combination<FieldT> lc;
+			linear_combination<FieldT>& lc = ret[i];
 			lc.terms.reserve(param_t);
 			if( nSBox < param_t )
 			{
 				lc.add_term(libsnark::ONE, constant_term);
-			}			
+			}
 
 			// Add S-Boxes to the output row
 			for( unsigned s = 0; s < nSBox; s++ )
@@ -204,8 +206,6 @@ public:
 			{
 				lc = lc + (in_state[k] * in_M[M_offset+k]);
 			}
-
-			ret.emplace_back(lc);
 		}
 		return ret;
 	}
@@ -232,7 +232,7 @@ public:
 		M(in_M),
 		state(in_state),
 		sboxes(make_sboxes(in_pb, annotation_prefix)),
-		outputs(make_outputs(in_pb, in_C_i, in_M, in_state, sboxes))
+		outputs(make_outputs(in_C_i, in_M, in_state, sboxes))
 	{
 		assert( nInputs <= param_t );
 		assert( nOutputs <= param_t );
@@ -266,7 +266,7 @@ public:
 
 
 template<unsigned param_t, unsigned param_c, unsigned param_F, unsigned param_P, unsigned nInputs, unsigned nOutputs, bool constrainOutputs=true>
-class Poseidon_gadget_T : public GadgetT
+class Master_Poseidon_gadget_T : public GadgetT
 {
 protected:
 	typedef Poseidon_Round<param_t, param_t, nInputs, param_t> FirstRoundT;    // ingests `nInput` elements, expands to `t` elements using round constants
@@ -284,10 +284,9 @@ protected:
 	static constexpr unsigned total_rounds = param_F + param_P;
 
 public:
-	const VariableArrayT& inputs;
+
 	const PoseidonConstants& constants;
-	
-	FirstRoundT first_round;	
+	FirstRoundT first_round;
 	std::vector<FullRoundT> prefix_full_rounds;
 	std::vector<PartialRoundT> partial_rounds;
 	std::vector<FullRoundT> suffix_full_rounds;
@@ -316,85 +315,12 @@ public:
 		return result;
 	}
 
-	static std::vector<FieldT> permute( std::vector<FieldT> inputs )
-	{
-		ProtoboardT pb;
-
-		assert( inputs.size() == nInputs );
-		auto var_inputs = make_var_array(pb, "input", inputs);
-
-		Poseidon_gadget_T<param_t, param_c, param_F, param_P, nInputs, nOutputs> gadget(pb, var_inputs, "gadget");		
-		gadget.generate_r1cs_witness();
-
-		/*
-		// Debugging statements
-		gadget.generate_r1cs_constraints();
-
-		unsigned i = 0;
-		const auto first_outputs = gadget.first_round.outputs;
-		for( unsigned j = 0; j < first_outputs.size(); j++ ) {
-			std::cout << "o[" << i << "][" << j << "] = ";
-			pb.val(first_outputs[j]).print();
-		}
-		std::cout << std::endl;
-
-		for( const auto prefix_round : gadget.prefix_full_rounds )
-		{
-			i += 1;
-			const auto outputs = prefix_round.outputs;
-			for( unsigned j = 0; j < outputs.size(); j++ ) {
-				std::cout << "o[" << i << "][" << j << "] = ";
-				pb.val(outputs[j]).print();
-			}
-		}
-		std::cout << std::endl;
-
-		for( const auto partial_round : gadget.partial_rounds )
-		{
-			i += 1;
-			const auto outputs = partial_round.outputs;
-			for( unsigned j = 0; j < outputs.size(); j++ ) {
-				std::cout << "o[" << i << "][" << j << "] = ";
-				pb.val(outputs[j]).print();
-			}
-		}
-		std::cout << std::endl;
-
-		for( const auto suffix_round : gadget.suffix_full_rounds )
-		{
-			i += 1;
-			const auto outputs = suffix_round.outputs;
-			for( unsigned j = 0; j < outputs.size(); j++ ) {
-				std::cout << "o[" << i << "][" << j << "] = ";
-				pb.val(outputs[j]).print();
-			}
-		}
-		std::cout << std::endl;
-
-		const auto last_outputs = gadget.last_round.outputs;
-		for( unsigned j = 0; j < last_outputs.size(); j++ ) {
-			std::cout << "o[" << i << "][" << j << "] = ";
-			pb.val(last_outputs[j]).print();
-		}
-		std::cout << std::endl;
-
-		if( ! pb.is_satisfied() ) {
-			std::cerr << "Not satisfied\n";
-		}
-
-		std::cout << pb.num_constraints() << " constraints" << std::endl;
-		*/
-
-		return vals(pb, gadget.results());
-	}
-
-	Poseidon_gadget_T(
-		ProtoboardT &pb,
+	Master_Poseidon_gadget_T(
+		ProtoboardT& pb,
 		const VariableArrayT& in_inputs,
 		const std::string& annotation_prefix
 	) :
 		GadgetT(pb, annotation_prefix),
-		inputs(in_inputs),
 		constants(poseidon_params<param_t, param_F, param_P>()),
 		first_round(pb, constants.C[0], constants.M, in_inputs, FMT(annotation_prefix, ".round[0]")),
 		prefix_full_rounds(
@@ -412,34 +338,7 @@ public:
 		last_round(pb, constants.C.back(), constants.M, suffix_full_rounds.back().outputs, FMT(annotation_prefix, ".round[%u]", total_rounds-1)),
 		_output_vars(constrainOutputs ? make_var_array(pb, nOutputs, ".output") : VariableArrayT())
 	{
-	}
 
-	template<bool x = constrainOutputs>
-	typename std::enable_if<!x, lc_outputs_t>::type
-	results() const
-	{
-		return last_round.outputs;
-	}
-
-	template<bool x = constrainOutputs>
-	typename std::enable_if<x, var_outputs_t>::type
-	results() const
-	{
-		return _output_vars;
-	}
-
-	template<bool x = constrainOutputs, unsigned n = nOutputs>
-	typename std::enable_if<!x && n == 1 , lc_output_t>::type
-	result() const
-	{
-		return last_round.outputs[0];
-	}
-
-	template<bool x = constrainOutputs, unsigned n = nOutputs>
-	typename std::enable_if<x && n == 1, var_output_t>::type
-	result() const
-	{
-		return _output_vars[0];
 	}
 
 	void generate_r1cs_constraints() const
@@ -473,7 +372,6 @@ public:
 		}
 	}
 
-
 	void generate_r1cs_witness() const
 	{
 		first_round.generate_r1cs_witness();
@@ -495,12 +393,126 @@ public:
 		// When outputs are constrained, fill in the variable
 		if( constrainOutputs )
 		{
-			unsigned i = 0;
-			for( const auto &value : vals(pb, last_round.outputs) )
+			for (unsigned int n = 0; n < last_round.outputs.size(); n++)
 			{
-				this->pb.val(_output_vars[i++]) = value;
+				pb.val(_output_vars[n]) = lc_val(pb, last_round.outputs[n]);
 			}
 		}
+	}
+};
+
+
+template<unsigned param_t, unsigned param_c, unsigned param_F, unsigned param_P, unsigned nInputs, unsigned nOutputs, bool constrainOutputs=true>
+class Poseidon_gadget_T : public GadgetT, public libsnark::ITranslator
+{
+public:
+	typedef Master_Poseidon_gadget_T<param_t, param_c, param_F, param_P, nInputs, nOutputs, constrainOutputs> Master;
+	const Master& master;
+
+	VariableArrayT instance_inputs;
+	unsigned int instance_variables_offset;
+	VariableT res;
+
+	const Master& get_master()
+	{
+		static ProtoboardT master_pb;
+		static Master* master;
+		static std::once_flag flag;
+		std::call_once(flag, [](){
+			master = new Master(master_pb, make_var_array(master_pb, nInputs, ".dummy_inputs"), ".poseidon_master");
+			master->generate_r1cs_constraints();
+			master_pb.set_use_thread_values(true);
+		});
+		return *master;
+	}
+
+	Poseidon_gadget_T(
+		ProtoboardT &pb,
+		const VariableArrayT& in_inputs,
+		const std::string& annotation_prefix
+	) :
+		GadgetT(pb, annotation_prefix),
+		master(get_master()),
+		instance_inputs(in_inputs)
+	{
+		// Keep track of where the variable for this instance start
+		instance_variables_offset = pb.num_variables() + 1;
+		// Allocate the variables on the pb needed for this instance
+		make_var_array(pb, master.pb.num_variables() - in_inputs.size(), FMT(annotation_prefix, ".instance_var"));
+		// We need to return a reference to the output variable so create the variable here
+		res = VariableT(translate(master._output_vars[0].index));
+	}
+
+	~Poseidon_gadget_T()
+	{
+		std::cout << "destructor" << std::endl;
+	}
+
+	void generate_r1cs_constraints() const
+	{
+		// For now, still copy all constraints to the main pb
+		const auto& constraints = master.pb.constraint_system.constraints;
+		for(unsigned int i = 0; i < constraints.size(); i++)
+		{
+			pb.constraint_system.constraints.emplace_back(
+				libsnark::make_unique<libsnark::r1cs_constraint_light_instance<FieldT>>(
+					(libsnark::r1cs_constraint_light<FieldT>*) constraints[i].get(),
+					(libsnark::ITranslator*) this
+				)
+			);
+		}
+	}
+
+	void generate_r1cs_witness() const
+	{
+		// TODO: this can be done smarter by replacing the variable indices in the background
+		// Set the input values
+		for (unsigned int i = 0; i < instance_inputs.size(); i++)
+		{
+			master.pb.val(1 + i) = pb.val(instance_inputs[i]);
+		}
+		// Calculate the funtion witnesses
+		master.generate_r1cs_witness();
+		// Copy variable values
+		for (unsigned int i = 0; i < master.pb.num_variables() - instance_inputs.size(); i++)
+		{
+			pb.val(instance_variables_offset + i) = master.pb.val(1 + instance_inputs.size() + i);
+		}
+	}
+
+	template<bool x = constrainOutputs, unsigned n = nOutputs>
+	typename std::enable_if<x && n == 1, const VariableT&>::type
+	result() const
+	{
+		return res;
+	}
+
+	unsigned int translate(unsigned int index) const override
+	{
+		if (index == 0)
+		{
+			return 0;
+		}
+		else if (index <= instance_inputs.size())
+		{
+			return instance_inputs[index - 1].index;
+		}
+		else
+		{
+			return instance_variables_offset + (index - (1 + instance_inputs.size()));
+		}
+	}
+
+	void swapAB() override
+	{
+		static std::once_flag flag;
+		std::call_once(flag, [&](){
+			const auto& constraints = master.pb.constraint_system.constraints;
+			for(unsigned int i = 0; i < constraints.size(); i++)
+			{
+				constraints[i]->swapAB();
+			}
+		});
 	}
 };
 
