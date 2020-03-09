@@ -475,8 +475,8 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
     libff::leave_block("Compute the polynomial H");
 
 #ifdef DEBUG
-    assert(full_variable_assignment.size() == cs.num_variables());
-    assert(pk.A_query.size() == cs.num_variables()+1);
+    assert(full_variable_assignment.size() == cs.num_variables() + 1);
+    assert(pk.A_query.domain_size() == cs.num_variables()+1);
     assert(pk.B_query.domain_size() == cs.num_variables()+1);
     assert(pk.H_query.size() == domain->m - 1);
     assert(pk.L_query.size() == cs.num_variables() - cs.num_inputs());
