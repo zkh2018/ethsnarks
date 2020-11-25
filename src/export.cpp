@@ -319,7 +319,10 @@ bool pk_bellman2ethsnarks(const std::string& bellman_pk_file, const std::string&
     proving_key.delta_g1 = readG1(input["vk_delta_1"]);
     proving_key.delta_g2 = readG2(input["vk_delta_2"]);
 
-    writeToFile<libsnark::r1cs_gg_ppzksnark_zok_proving_key<ethsnarks::ppT>>(pk_file, proving_key);
+    // Write to nozk format immediately
+    auto pk_nozk = ProvingKeyT(proving_key);
+    writeToFile<ProvingKeyT>(pk_file, pk_nozk);
+
     return true;
 }
 
