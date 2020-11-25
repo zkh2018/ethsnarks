@@ -65,7 +65,7 @@ public:
 
 	~sha256_compression_function_gadget_instance()
 	{
-		std::cout << "destructor" << std::endl;
+		//std::cout << "destructor" << std::endl;
 	}
 
 	void generate_r1cs_constraints() const

@@ -445,7 +445,7 @@ public:
 
 	~Poseidon_gadget_T()
 	{
-		std::cout << "destructor" << std::endl;
+		//std::cout << "destructor" << std::endl;
 	}
 
 	void generate_r1cs_constraints() const
