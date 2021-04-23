@@ -6,9 +6,9 @@
 	url = https://github.com/nlohmann/json.git
 [submodule "depends/libfqfft"]
 	path = depends/libfqfft
-	url = https://github.com/Loopring/libfqfft.git
+	url = https://github.com/CortexFoundation/libfqfft.git
 	branch = opt
 [submodule "depends/libsnark"]
 	path = depends/libsnark
-	url = https://github.com/Loopring/libsnark.git
+	url = https://github.com/CortexFoundation/libsnark.git
 	branch = opt
