@@ -279,7 +279,7 @@ public:
 template<typename ppT>
 struct ProverContext
 {
-    r1cs_gg_ppzksnark_zok_proving_key_nozk<ppT> provingKey;
+    r1cs_gg_ppzksnark_zok_proving_key_nozk<ppT>& provingKey;
     r1cs_gg_ppzksnark_zok_constraint_system<ppT>* constraint_system;
     Config config;
     std::shared_ptr<libfqfft::evaluation_domain<libff::Fr<ppT>>> domain;
@@ -287,6 +287,7 @@ struct ProverContext
     std::vector<libff::Fr<ppT>> aA;
     std::vector<libff::Fr<ppT>> aB;
     std::vector<libff::Fr<ppT>> aH;
+    ProverContext(r1cs_gg_ppzksnark_zok_proving_key_nozk<ppT> & pk) : provingKey(pk){};
 };
 
 

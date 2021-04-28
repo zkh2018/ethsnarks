@@ -137,8 +137,9 @@ bool stub_test_proof_verify( const ProtoboardT &in_pb )
     auto& constraints = in_pb.constraint_system;
     auto keypair = libsnark::r1cs_gg_ppzksnark_zok_generator<ppT>(constraints);
 
-    ProverContextT context;
-    context.provingKey = keypair.pk;
+    auto pk = ProvingKeyT(keypair.pk);
+    ProverContextT context(pk);
+    // context.provingKey = keypair.pk;
     context.config = libsnark::Config();
 
     auto proof = libsnark::r1cs_gg_ppzksnark_zok_prover<ppT>(context, in_pb.values);
