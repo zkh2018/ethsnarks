@@ -8,6 +8,7 @@
 
 
 #include "ethsnarks.hpp"
+#include "libff/algebra/curves/mcl_bn128/mcl_bn128_pp.hpp"
 #include "utils.hpp"
 #include <nlohmann/json.hpp>
 
@@ -396,13 +397,16 @@ bool pk_alt2mcl(const std::string& alt_pk_file, const std::string& mcl_pk_file)
 }
 
 bool pk_mcl2nozk(const std::string& mcl_pk_file, const std::string& nozk_pk_file)
-{
+{   
+    libff::mcl_bn128_pp::init_public_params();
     typedef libsnark::r1cs_gg_ppzksnark_zok_proving_key<libff::mcl_bn128_pp> MCLProvingKey;
     MCLProvingKey pk_zk = ethsnarks::loadFromFile<MCLProvingKey>(mcl_pk_file.c_str());
-    auto pk_nozk = ProvingKeyT(pk_zk);
-    writeToFile<ProvingKeyT>(nozk_pk_file.c_str(), pk_nozk);
+    using ProvingKeyT_mcl = libsnark::r1cs_gg_ppzksnark_zok_proving_key_nozk<libff::mcl_bn128_pp>; 
+    auto pk_nozk = ProvingKeyT_mcl(pk_zk);
+    writeToFile<ProvingKeyT_mcl>(nozk_pk_file.c_str(), pk_nozk);
     return true;
 }
+
 
 }
 // namespace ethsnarks
