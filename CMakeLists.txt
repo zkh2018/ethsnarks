@@ -15,7 +15,7 @@ option(ETHSNARKS_DISABLE_TESTS "Disable ethsnarks tests" OFF)
 option(ETHSNARKS_DISABLE_UTILS "Disable ethsnarks utilties" ON)
 option(ETHSNARKS_DISABLE_PINOCCHIO "Disable pinocchio / xjsnark compatibility" OFF)
 
-option(ETHSNARKS_NO_THREADS "Disable testing for threads support" OFF)
+option(ETHSNARKS_NO_THREADS "Disable testing for threads support" ON)
 if( NOT ${ETHSNARKS_NO_THREADS} )
   find_package(Threads REQUIRED)
 endif()

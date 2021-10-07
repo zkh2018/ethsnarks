@@ -485,7 +485,16 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
     libff::enter_block("Compute the proof");
 
     libff::enter_block("Compute evaluation to A-query", false);
-    libff::G1<ppT> evaluation_At = kc_multi_exp_with_mixed_addition<libff::G1<ppT>,
+    //libff::G1<ppT> evaluation_At = kc_multi_exp_with_mixed_addition<libff::G1<ppT>,
+    //                                                                libff::Fr<ppT>,
+    //                                                                libff::multi_exp_method_BDLO12>(
+    //    pk.A_query,
+    //    full_variable_assignment.begin(),
+    //    full_variable_assignment.begin() + cs.num_variables() + 1,
+    //    context.scratch_exponents,
+    //    context.config);
+
+    libff::G1<ppT> evaluation_At = gpu_kc_multi_exp_with_mixed_addition_g1<libff::G1<ppT>,
                                                                     libff::Fr<ppT>,
                                                                     libff::multi_exp_method_BDLO12>(
         pk.A_query,
