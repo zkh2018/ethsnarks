@@ -19,6 +19,8 @@ See r1cs_gg_ppzksnark_zok.hpp .
 #include <functional>
 #include <iostream>
 #include <sstream>
+#include <thread>
+
 
 #include <libff/algebra/scalar_multiplication/multiexp.hpp>
 #include <libff/common/profiling.hpp>
@@ -494,8 +496,21 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
     //    context.scratch_exponents,
     //    context.config);
 
-    libff::G1<ppT> evaluation_At = gpu_kc_multi_exp_with_mixed_addition_g1<libff::G1<ppT>,
+    //libff::G1<ppT> evaluation_At = gpu_kc_multi_exp_with_mixed_addition_g1<libff::G1<ppT>,
     //libff::G1<ppT> evaluation_At = kc_multi_exp_with_mixed_addition<libff::G1<ppT>,
+    //
+    //                                                                libff::Fr<ppT>,
+    //                                                                libff::multi_exp_method_BDLO12>(
+    //    pk.A_query,
+    //    full_variable_assignment.begin(),
+    //    full_variable_assignment.begin() + cs.num_variables() + 1,
+    //    context.scratch_exponents,
+    //    context.config);
+    libff::G1<ppT> evaluation_At;
+    //std::thread t1([&](){
+        evaluation_At = gpu_kc_multi_exp_with_mixed_addition_g1<libff::G1<ppT>,
+        //evaluation_At = kc_multi_exp_with_mixed_addition<libff::G1<ppT>,
+    
                                                                     libff::Fr<ppT>,
                                                                     libff::multi_exp_method_BDLO12>(
         pk.A_query,
@@ -503,11 +518,17 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
         full_variable_assignment.begin() + cs.num_variables() + 1,
         context.scratch_exponents,
         context.config);
+    //});
+    //t1.join();
+    //gpu::gpu_reset();
     libff::leave_block("Compute evaluation to A-query", false);
 
     libff::enter_block("Compute evaluation to B-query", false);
     //libff::G2<ppT> evaluation_Bt = kc_multi_exp_with_mixed_addition<libff::G2<ppT>,
-    libff::G2<ppT> evaluation_Bt = gpu_kc_multi_exp_with_mixed_addition_g2<libff::G2<ppT>,
+    libff::G2<ppT> evaluation_Bt;
+    //std::thread t2([&]() {
+        evaluation_Bt = kc_multi_exp_with_mixed_addition<libff::G2<ppT>,
+        //evaluation_Bt = gpu_kc_multi_exp_with_mixed_addition_g2<libff::G2<ppT>,
                                                                     libff::Fr<ppT>,
                                                                     libff::multi_exp_method_BDLO12>(
         pk.B_query,
@@ -515,6 +536,9 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
         full_variable_assignment.begin() + cs.num_variables() + 1,
         context.scratch_exponents,
         context.config);
+    //});
+    //t2.join();
+    //gpu::gpu_reset();
     libff::leave_block("Compute evaluation to B-query", false);
 
     libff::enter_block("Compute evaluation to H-query", false);
@@ -531,7 +555,8 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
     libff::leave_block("Compute evaluation to H-query", false);
 
     libff::enter_block("Compute evaluation to L-query", false);
-    libff::G1<ppT> evaluation_Lt = libff::multi_exp_with_mixed_addition<libff::G1<ppT>,
+    //libff::G1<ppT> evaluation_Lt = libff::multi_exp_with_mixed_addition<libff::G1<ppT>,
+    libff::G1<ppT> evaluation_Lt = libff::multi_exp_with_mixed_addition_gpu<libff::G1<ppT>,
                                                                         libff::Fr<ppT>,
                                                                         libff::multi_exp_method_BDLO12>(
         pk.L_query.begin(),
