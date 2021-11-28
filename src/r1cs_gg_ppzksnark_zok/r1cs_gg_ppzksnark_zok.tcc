@@ -484,6 +484,8 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
     assert(pk.L_query.size() == cs.num_variables() - cs.num_inputs());
 #endif
 
+    gpu::warm_up();
+
     libff::enter_block("Compute the proof");
 
     libff::enter_block("Compute evaluation to A-query", false);
@@ -506,66 +508,112 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
     //    full_variable_assignment.begin() + cs.num_variables() + 1,
     //    context.scratch_exponents,
     //    context.config);
-    libff::G1<ppT> evaluation_At;
-    //std::thread t1([&](){
-        evaluation_At = gpu_kc_multi_exp_with_mixed_addition_g1<libff::G1<ppT>,
-        //evaluation_At = kc_multi_exp_with_mixed_addition<libff::G1<ppT>,
-    
-                                                                    libff::Fr<ppT>,
-                                                                    libff::multi_exp_method_BDLO12>(
-        pk.A_query,
-        full_variable_assignment.begin(),
-        full_variable_assignment.begin() + cs.num_variables() + 1,
-        context.scratch_exponents,
-        context.config);
-    //});
+    libff::G1<ppT> evaluation_At, evaluation_Ht, evaluation_Lt;
+    std::thread t1([&](){
+        //evaluation_At = gpu_kc_multi_exp_with_mixed_addition_g1<libff::G1<ppT>,
+        evaluation_At = kc_multi_exp_with_mixed_addition<libff::G1<ppT>,
+
+        libff::Fr<ppT>,
+        libff::multi_exp_method_BDLO12>(
+            pk.A_query,
+            full_variable_assignment.begin(),
+            full_variable_assignment.begin() + cs.num_variables() + 1,
+            context.scratch_exponents,
+            context.config);
+        if(false){
+          FILE *fp = fopen("at_out.txt", "a+");
+          for(int i = 0; i < 4; i++){
+            fprintf(fp, "(%lu, %lu) ", evaluation_At.X.mont_repr.data[i], evaluation_At.Y.mont_repr.data[i]);
+          }
+          fprintf(fp, "\n");
+          fclose(fp);
+        }
+
+        evaluation_Ht = libff::multi_exp<libff::G1<ppT>,
+        //evaluation_Ht = libff::multi_exp_gpu<libff::G1<ppT>,
+        libff::Fr<ppT>,
+        libff::multi_exp_method_BDLO12>(
+            pk.H_query.begin(),
+            pk.H_query.begin() + (domain->m - 1),
+            context.aH.begin(),
+            context.aH.begin() + (domain->m - 1),
+            context.scratch_exponents,
+            context.config);
+        if(false){
+          FILE *fp2 = fopen("ht_out.txt", "a+");
+          for(int i = 0; i < 4; i++){
+            fprintf(fp2, "(%lu, %lu) ", evaluation_Ht.X.mont_repr.data[i], evaluation_Ht.Y.mont_repr.data[i]);
+          }
+          fprintf(fp2, "\n");
+          fclose(fp2);
+        }
+
+        evaluation_Lt = libff::multi_exp_with_mixed_addition<libff::G1<ppT>,
+        //evaluation_Lt = libff::multi_exp_with_mixed_addition_gpu<libff::G1<ppT>,
+
+        libff::Fr<ppT>,
+        libff::multi_exp_method_BDLO12>(
+            pk.L_query.begin(),
+            pk.L_query.end(),
+            full_variable_assignment.begin() + cs.num_inputs() + 1,
+            full_variable_assignment.begin() + cs.num_variables() + 1,
+            context.scratch_exponents,
+            context.config);
+        if(false){
+          FILE *fp3 = fopen("lt_out.txt", "a+");
+          for(int i = 0; i < 4; i++){
+            fprintf(fp3, "(%lu, %lu) ", evaluation_Lt.X.mont_repr.data[i], evaluation_Lt.Y.mont_repr.data[i]);
+          }
+          fprintf(fp3, "\n");
+          fclose(fp3);
+        }
+    });
     //t1.join();
     //gpu::gpu_reset();
     libff::leave_block("Compute evaluation to A-query", false);
 
+    //libff::enter_block("Compute evaluation to H-query", false);
+    //libff::leave_block("Compute evaluation to H-query", false);
+
+    //libff::enter_block("Compute evaluation to L-query", false);
+    //libff::leave_block("Compute evaluation to L-query", false);
+    //t1.join();
+  
     libff::enter_block("Compute evaluation to B-query", false);
     //libff::G2<ppT> evaluation_Bt = kc_multi_exp_with_mixed_addition<libff::G2<ppT>,
     libff::G2<ppT> evaluation_Bt;
     //std::thread t2([&]() {
-        evaluation_Bt = kc_multi_exp_with_mixed_addition<libff::G2<ppT>,
-        //evaluation_Bt = gpu_kc_multi_exp_with_mixed_addition_g2<libff::G2<ppT>,
-                                                                    libff::Fr<ppT>,
-                                                                    libff::multi_exp_method_BDLO12>(
-        pk.B_query,
-        full_variable_assignment.begin(),
-        full_variable_assignment.begin() + cs.num_variables() + 1,
-        context.scratch_exponents,
-        context.config);
+        //evaluation_Bt = kc_multi_exp_with_mixed_addition<libff::G2<ppT>,
+        evaluation_Bt = gpu_kc_multi_exp_with_mixed_addition_g2<libff::G2<ppT>,
+        libff::Fr<ppT>,
+        libff::multi_exp_method_BDLO12>(
+            pk.B_query,
+            full_variable_assignment.begin(),
+            full_variable_assignment.begin() + cs.num_variables() + 1,
+            context.scratch_exponents,
+            context.config);
+        if(false){
+          FILE *fp4 = fopen("bt_out.txt", "a+");
+          for(int i = 0; i < 4; i++){
+            fprintf(fp4, "(%lu, %lu) ", evaluation_Bt.X.c0.mont_repr.data[i], evaluation_Bt.X.c1.mont_repr.data[i]);
+          }
+          fprintf(fp4, "\n");
+          for(int i = 0; i < 4; i++){
+            fprintf(fp4, "(%lu, %lu) ", evaluation_Bt.Y.c0.mont_repr.data[i], evaluation_Bt.Y.c1.mont_repr.data[i]);
+          }
+          fprintf(fp4, "\n");
+          for(int i = 0; i < 4; i++){
+            fprintf(fp4, "(%lu, %lu) ", evaluation_Bt.Z.c0.mont_repr.data[i], evaluation_Bt.Z.c1.mont_repr.data[i]);
+          }
+          fprintf(fp4, "\n");
+          fclose(fp4);
+        }
     //});
     //t2.join();
     //gpu::gpu_reset();
     libff::leave_block("Compute evaluation to B-query", false);
+    t1.join();
 
-    libff::enter_block("Compute evaluation to H-query", false);
-    //libff::G1<ppT> evaluation_Ht = libff::multi_exp<libff::G1<ppT>,
-    libff::G1<ppT> evaluation_Ht = libff::multi_exp_gpu<libff::G1<ppT>,
-                                                    libff::Fr<ppT>,
-                                                    libff::multi_exp_method_BDLO12>(
-        pk.H_query.begin(),
-        pk.H_query.begin() + (domain->m - 1),
-        context.aH.begin(),
-        context.aH.begin() + (domain->m - 1),
-        context.scratch_exponents,
-        context.config);
-    libff::leave_block("Compute evaluation to H-query", false);
-
-    libff::enter_block("Compute evaluation to L-query", false);
-    //libff::G1<ppT> evaluation_Lt = libff::multi_exp_with_mixed_addition<libff::G1<ppT>,
-    libff::G1<ppT> evaluation_Lt = libff::multi_exp_with_mixed_addition_gpu<libff::G1<ppT>,
-                                                                        libff::Fr<ppT>,
-                                                                        libff::multi_exp_method_BDLO12>(
-        pk.L_query.begin(),
-        pk.L_query.end(),
-        full_variable_assignment.begin() + cs.num_inputs() + 1,
-        full_variable_assignment.begin() + cs.num_variables() + 1,
-        context.scratch_exponents,
-        context.config);
-    libff::leave_block("Compute evaluation to L-query", false);
 
     /* A = alpha + sum_i(a_i*A_i(t)) */
     libff::G1<ppT> g1_A = pk.alpha_g1 + evaluation_At;
