@@ -572,13 +572,6 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
     //gpu::gpu_reset();
     libff::leave_block("Compute evaluation to A-query", false);
 
-    //libff::enter_block("Compute evaluation to H-query", false);
-    //libff::leave_block("Compute evaluation to H-query", false);
-
-    //libff::enter_block("Compute evaluation to L-query", false);
-    //libff::leave_block("Compute evaluation to L-query", false);
-    //t1.join();
-  
     libff::enter_block("Compute evaluation to B-query", false);
     //libff::G2<ppT> evaluation_Bt = kc_multi_exp_with_mixed_addition<libff::G2<ppT>,
     libff::G2<ppT> evaluation_Bt;
@@ -605,14 +598,22 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
           for(int i = 0; i < 4; i++){
             fprintf(fp4, "(%lu, %lu) ", evaluation_Bt.Z.c0.mont_repr.data[i], evaluation_Bt.Z.c1.mont_repr.data[i]);
           }
-          fprintf(fp4, "\n");
+          fprintf(fp4, "\n\n");
           fclose(fp4);
         }
+    libff::leave_block("Compute evaluation to B-query", false);
+    t1.join();
+
+    //libff::enter_block("Compute evaluation to H-query", false);
+    //libff::leave_block("Compute evaluation to H-query", false);
+
+    //libff::enter_block("Compute evaluation to L-query", false);
+    //libff::leave_block("Compute evaluation to L-query", false);
+  
     //});
     //t2.join();
     //gpu::gpu_reset();
-    libff::leave_block("Compute evaluation to B-query", false);
-    t1.join();
+    //t1.join();
 
 
     /* A = alpha + sum_i(a_i*A_i(t)) */
