@@ -36,6 +36,13 @@ else()
   endif()
 endif()
 
+set(CMAKE_C_FLAGS "-g ${CMAKE_C_FLAGS} -lcgbn_math -L/home/zkh/github/zion/3rd_party/CGBN -I/usr/local/cuda/include/ -L/usr/local/cuda/lib64/ -lcudart")
+set(CMAKE_CXX_FLAGS "-g ${CMAKE_CXX_FLAGS} -lcgbn_math -L/home/zkh/github/zion/3rd_party/CGBN -I/usr/local/cuda/include/ -L/usr/local/cuda/lib64/ -lcudart")
+
+include_directories(/home/zkh/github/zion/3rd_party/CGBN)
+include_directories(/home/zkh/github/zion/3rd_party/CGBN/include)
+include_directories(/home/zkh/github/zion/3rd_party/CGBN/include/samples)
+
 if( NOT ${ETHSNARKS_DISABLE_TESTS} )
   include(CTest)
   enable_testing()
