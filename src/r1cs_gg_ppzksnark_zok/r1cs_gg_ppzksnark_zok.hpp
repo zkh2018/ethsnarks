@@ -519,6 +519,11 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(const r1cs_gg_ppzk
                                                       const r1cs_gg_ppzksnark_zok_primary_input<ppT> &primary_input,
                                                       const r1cs_gg_ppzksnark_zok_auxiliary_input<ppT> &auxiliary_input);
 
+template<typename ppT>
+r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover_gpu(const r1cs_gg_ppzksnark_zok_proving_key<ppT> &pk,
+                                                      const r1cs_gg_ppzksnark_zok_primary_input<ppT> &primary_input,
+                                                      const r1cs_gg_ppzksnark_zok_auxiliary_input<ppT> &auxiliary_input);
+
 /*
   Below are four variants of verifier algorithm for the R1CS GG-ppzkSNARK.
 
