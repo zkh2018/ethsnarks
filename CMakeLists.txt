@@ -36,12 +36,7 @@ else()
   endif()
 endif()
 
-set(CMAKE_C_FLAGS "-g ${CMAKE_C_FLAGS} -lcgbn_math -L/home/zkh/github/zion/3rd_party/CGBN -I/usr/local/cuda/include/ -L/usr/local/cuda/lib64/ -lcudart")
-set(CMAKE_CXX_FLAGS "-g ${CMAKE_CXX_FLAGS} -lcgbn_math -L/home/zkh/github/zion/3rd_party/CGBN -I/usr/local/cuda/include/ -L/usr/local/cuda/lib64/ -lcudart")
-
-include_directories(/home/zkh/github/zion/3rd_party/CGBN)
-include_directories(/home/zkh/github/zion/3rd_party/CGBN/include)
-include_directories(/home/zkh/github/zion/3rd_party/CGBN/include/samples)
+include_directories(/usr/local/cuda/include)
 
 if( NOT ${ETHSNARKS_DISABLE_TESTS} )
   include(CTest)
@@ -97,6 +92,14 @@ set(
   CACHE
   STRING
   "Optionally specify the dependency installation directory relative to the source directory (default: inside dependency folder)"
+)
+
+set(
+  DEPENDS_DIR_CGBN
+  "${DEPENDS_DIR}/libsnark/depends/libff/depends/CGBN/"
+  CACHE
+  STRING
+  "the cuda implementation of alt_bn128"
 )
 
 set(
@@ -287,7 +290,7 @@ add_library(
 )
 
 target_include_directories(ff PUBLIC
-  ${GMP_INCLUDE_DIR} "${DEPENDS_DIR_MCL}/include"
+  ${GMP_INCLUDE_DIR} "${DEPENDS_DIR_MCL}/include" ${DEPENDS_DIR_CGBN} "${DEPENDS_DIR_CGBN}/include" "${DEPENDS_DIR_CGBN}/samples}"
   ${DEPENDS_DIR_LIBSNARK} ${DEPENDS_DIR_LIBFF} ${DEPENDS_DIR_LIBFQFFT})
 
 set_property(TARGET ff PROPERTY CXX_STANDARD 11)
@@ -299,11 +302,11 @@ if("${DEBUG}" OR "${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
 endif()
 
 target_include_directories(ff INTERFACE
-  ${GMP_INCLUDE_DIR} "${DEPENDS_DIR_MCL}/include"
+	${GMP_INCLUDE_DIR} "${DEPENDS_DIR_MCL}/include" ${DEPENDS_DIR_CGBN} "${DEPENDS_DIR_CGBN}/include" "${DEPENDS_DIR_CGBN}/samples}"
   ${DEPENDS_DIR_LIBSNARK} ${DEPENDS_DIR_LIBFF} ${DEPENDS_DIR_LIBFQFFT})
 
 
-target_link_libraries(ff ${GMP_LIBRARY} ${PROCPS_LIBRARIES} mcl_st)
+target_link_libraries(ff ${GMP_LIBRARY} ${PROCPS_LIBRARIES} mcl_st cgbn_math)
 
 if(OpenMP_CXX_FOUND)
     target_link_libraries(ff OpenMP::OpenMP_CXX)
@@ -312,3 +315,4 @@ endif()
 add_subdirectory(src)
 add_subdirectory(depends)
 add_subdirectory("${DEPENDS_DIR_MCL}")
+add_subdirectory("${DEPENDS_DIR_CGBN}")
