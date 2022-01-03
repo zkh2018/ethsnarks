@@ -552,7 +552,7 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
 }
 
 #ifndef RUN_GPU_ALL
-//#define RUN_GPU_ALL
+#define RUN_GPU_ALL
 #endif
 
 template <typename ppT>
@@ -593,14 +593,14 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover_gpu(ProverContext<
 
     libff::enter_block("Compute the proof");
 
-    libff::enter_block("Compute evaluation to A,H,L-query", false);
+    libff::enter_block("gpu Compute evaluation to A,H,L-query", false);
 
     libff::G1<ppT> evaluation_At, evaluation_Ht, evaluation_Lt;
     std::thread t1([&](){
 #ifdef RUN_GPU_ALL
         evaluation_At = gpu_kc_multi_exp_with_mixed_addition_g1<libff::G1<ppT>,
 #else
-        evaluation_At = kc_multi_exp_with_mixed_addition<libff::G1<ppT>,
+      evaluation_At = kc_multi_exp_with_mixed_addition<libff::G1<ppT>,
 #endif
         libff::Fr<ppT>,
         libff::multi_exp_method_BDLO12>(
@@ -610,9 +610,9 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover_gpu(ProverContext<
             context.scratch_exponents,
             context.config);
 #ifdef RUN_GPU_ALL
-        evaluation_Ht = libff::multi_exp_gpu<libff::G1<ppT>,
+	evaluation_Ht = libff::multi_exp_gpu<libff::G1<ppT>,
 #else
-        evaluation_Ht = libff::multi_exp<libff::G1<ppT>,
+    evaluation_Ht = libff::multi_exp<libff::G1<ppT>,
 #endif
         libff::Fr<ppT>,
         libff::multi_exp_method_BDLO12>(
@@ -624,9 +624,9 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover_gpu(ProverContext<
             context.config);
 
 #ifdef RUN_GPU_ALL
-        evaluation_Lt = libff::multi_exp_with_mixed_addition_gpu<libff::G1<ppT>,
+	evaluation_Lt = libff::multi_exp_with_mixed_addition_gpu<libff::G1<ppT>,
 #else
-        evaluation_Lt = libff::multi_exp_with_mixed_addition<libff::G1<ppT>,
+      evaluation_Lt = libff::multi_exp_with_mixed_addition<libff::G1<ppT>,
 #endif
 
         libff::Fr<ppT>,
@@ -638,8 +638,8 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover_gpu(ProverContext<
             context.scratch_exponents,
             context.config);
     });
-    //t1.join();
-    libff::leave_block("Compute evaluation to A,H,L-query", false);
+    t1.join();
+    libff::leave_block("gpu Compute evaluation to A,H,L-query", false);
 
     libff::enter_block("Compute evaluation to B-query", false);
     libff::G2<ppT> evaluation_Bt;
@@ -653,7 +653,7 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover_gpu(ProverContext<
                       context.scratch_exponents,
                       context.config);
     libff::leave_block("Compute evaluation to B-query", false);
-    t1.join();
+    //t1.join();
 
     /* A = alpha + sum_i(a_i*A_i(t)) */
     libff::G1<ppT> g1_A = pk.alpha_g1 + evaluation_At;
