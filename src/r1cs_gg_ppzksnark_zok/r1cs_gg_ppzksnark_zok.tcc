@@ -538,9 +538,9 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
             context.scratch_exponents,
             context.config);
     });
-    t1.join();
-    t3.join();
-    t4.join();
+    //t1.join();
+    //t3.join();
+    //t4.join();
     libff::leave_block("Compute evaluation to L-query", false);
 
     libff::enter_block("Compute evaluation to B-query", false);
@@ -556,10 +556,10 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
                       context.scratch_exponents,
                       context.config);
     });
-    //t1.join();
+    t1.join();
     t2.join();
-    //t3.join();
-    //t4.join();
+    t3.join();
+    t4.join();
     libff::leave_block("Compute evaluation to B-query", false);
     /* A = alpha + sum_i(a_i*A_i(t)) */
     libff::G1<ppT> g1_A = pk.alpha_g1 + evaluation_At;
