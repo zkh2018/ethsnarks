@@ -546,8 +546,8 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
     libff::enter_block("Compute evaluation to B-query", false);
     libff::G2<ppT> evaluation_Bt;
     std::thread t2([&](){
-        //evaluation_Bt = kc_multi_exp_with_mixed_addition<libff::G2<ppT>,
-        evaluation_Bt = gpu_kc_multi_exp_with_mixed_addition_g2_mcl<libff::G2<ppT>,
+        evaluation_Bt = kc_multi_exp_with_mixed_addition<libff::G2<ppT>,
+        //evaluation_Bt = gpu_kc_multi_exp_with_mixed_addition_g2_mcl<libff::G2<ppT>,
                   libff::Fr<ppT>,
                   libff::multi_exp_method_BDLO12>(
                       pk.B_query,
