@@ -450,7 +450,7 @@ r1cs_gg_ppzksnark_zok_keypair<ppT> r1cs_gg_ppzksnark_zok_generator(const r1cs_gg
     return r1cs_gg_ppzksnark_zok_keypair<ppT>(std::move(pk), std::move(vk));
 }
 
-#define GPU_MCL
+//#define GPU_MCL
 template <typename ppT>
 r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>& context, const std::vector<libff::Fr<ppT>>& full_variable_assignment)
 {
@@ -494,6 +494,8 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
     //libff::G1<ppT> evaluation_Ht = libff::multi_exp<libff::G1<ppT>,
     libff::G1<ppT> evaluation_Ht; 
 #ifdef GPU_MCL
+//#if false
+    libff::GpuMclData gpu_mcl_data_ht;
     std::thread t3([&](){
         evaluation_Ht = libff::multi_exp_gpu_mcl<libff::G1<ppT>,
 #else
@@ -506,7 +508,13 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
             context.aH.begin(),
             context.aH.begin() + (domain->m - 1),
             context.scratch_exponents,
+#ifdef GPU_MCL
+            context.config,
+            gpu_mcl_data_ht);
+#else
             context.config);
+#endif
+        
 #ifdef GPU_MCL
     });
 #endif
@@ -516,7 +524,8 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
     libff::enter_block("Compute evaluation to L-query", false);
      //libff::G1<ppT> evaluation_Lt = libff::multi_exp_with_mixed_addition<libff::G1<ppT>,
     libff::G1<ppT> evaluation_Lt; 
-#ifdef GPU_MCL
+//#ifdef GPU_MCL
+#if false
     std::thread t4([&](){
         evaluation_Lt = libff::multi_exp_with_mixed_addition_gpu_mcl<libff::G1<ppT>,
 #else
@@ -530,7 +539,8 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
             full_variable_assignment.begin() + cs.num_variables() + 1,
             context.scratch_exponents,
             context.config);
-#ifdef GPU_MCL
+//#ifdef GPU_MCL
+#if false
     });
 #endif
     //t1.join();
@@ -543,6 +553,8 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
     ///libff::G1<ppT> evaluation_At = kc_multi_exp_with_mixed_addition<libff::G1<ppT>,
     libff::G1<ppT> evaluation_At;
 #ifdef GPU_MCL
+    libff::GpuMclData gpu_mcl_data_at;
+///#if false
     std::thread t1([&](){
         evaluation_At = kc_multi_exp_with_mixed_addition_mcl<libff::G1<ppT>,
 #else
@@ -554,7 +566,14 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
             full_variable_assignment.begin(),
             full_variable_assignment.begin() + cs.num_variables() + 1,
             context.scratch_exponents,
+
+#ifdef GPU_MCL
+            context.config,
+            gpu_mcl_data_at);
+#else
             context.config);
+#endif
+    
 #ifdef GPU_MCL
     });
 #endif
@@ -576,10 +595,11 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
     //});
     libff::leave_block("Compute evaluation to B-query", false);
 #ifdef GPU_MCL
-    t1.join();
+    //t1.join();
     //t2.join();
-    t3.join();
-    t4.join();
+    //t3.join();
+    //t4.join();
+    //gpu::sync_device();
 #endif
     /* A = alpha + sum_i(a_i*A_i(t)) */
     libff::G1<ppT> g1_A = pk.alpha_g1 + evaluation_At;
