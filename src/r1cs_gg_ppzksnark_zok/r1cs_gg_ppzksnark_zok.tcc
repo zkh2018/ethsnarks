@@ -450,7 +450,7 @@ r1cs_gg_ppzksnark_zok_keypair<ppT> r1cs_gg_ppzksnark_zok_generator(const r1cs_gg
     return r1cs_gg_ppzksnark_zok_keypair<ppT>(std::move(pk), std::move(vk));
 }
 
-//#define GPU_MCL
+#define GPU_MCL
 template <typename ppT>
 r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>& context, const std::vector<libff::Fr<ppT>>& full_variable_assignment)
 {
@@ -496,6 +496,17 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
 #ifdef GPU_MCL
 //#if false
     libff::GpuMclData gpu_mcl_data_ht;
+    libff::multi_exp_gpu_mcl_preprocess<libff::G1<ppT>,
+        libff::Fr<ppT>,
+        libff::multi_exp_method_BDLO12>(
+            pk.H_query.begin(),
+            pk.H_query.begin() + (domain->m - 1),
+            context.aH.begin(),
+            context.aH.begin() + (domain->m - 1),
+            context.scratch_exponents,
+            context.config,
+            gpu_mcl_data_ht);
+
     std::thread t3([&](){
         evaluation_Ht = libff::multi_exp_gpu_mcl<libff::G1<ppT>,
 #else
@@ -509,6 +520,7 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
             context.aH.begin() + (domain->m - 1),
             context.scratch_exponents,
 #ifdef GPU_MCL
+//#if false
             context.config,
             gpu_mcl_data_ht);
 #else
@@ -516,16 +528,27 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
 #endif
         
 #ifdef GPU_MCL
+//#if false
     });
 #endif
     //t3.join();
     libff::leave_block("Compute evaluation to H-query", false);
 
     libff::enter_block("Compute evaluation to L-query", false);
-     //libff::G1<ppT> evaluation_Lt = libff::multi_exp_with_mixed_addition<libff::G1<ppT>,
     libff::G1<ppT> evaluation_Lt; 
-//#ifdef GPU_MCL
-#if false
+#ifdef GPU_MCL
+    libff::GpuMclData gpu_mcl_data_lt;
+    libff::multi_exp_with_mixed_addition_gpu_mcl_preprocess<libff::G1<ppT>,
+                  libff::Fr<ppT>,
+                  libff::multi_exp_method_BDLO12>(
+                          pk.L_query.begin(),
+                          pk.L_query.end(),
+                          full_variable_assignment.begin() + cs.num_inputs() + 1,
+                          full_variable_assignment.begin() + cs.num_variables() + 1,
+                          context.scratch_exponents,
+                          context.config,
+                          gpu_mcl_data_lt);
+//#if false
     std::thread t4([&](){
         evaluation_Lt = libff::multi_exp_with_mixed_addition_gpu_mcl<libff::G1<ppT>,
 #else
@@ -538,9 +561,15 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
             full_variable_assignment.begin() + cs.num_inputs() + 1,
             full_variable_assignment.begin() + cs.num_variables() + 1,
             context.scratch_exponents,
+#ifdef GPU_MCL
+            context.config,
+            gpu_mcl_data_lt);
+#else
             context.config);
-//#ifdef GPU_MCL
-#if false
+#endif
+
+#ifdef GPU_MCL
+//#if false
     });
 #endif
     //t1.join();
@@ -554,6 +583,18 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
     libff::G1<ppT> evaluation_At;
 #ifdef GPU_MCL
     libff::GpuMclData gpu_mcl_data_at;
+    libff::enter_block("preprocess", false);
+    kc_multi_exp_with_mixed_addition_mcl_preprocess<libff::G1<ppT>,
+        libff::Fr<ppT>,
+        libff::multi_exp_method_BDLO12>(
+            pk.A_query,
+            full_variable_assignment.begin(),
+            full_variable_assignment.begin() + cs.num_variables() + 1,
+            context.scratch_exponents,
+            context.config,
+            gpu_mcl_data_at);
+    libff::leave_block("preprocess", false);
+
 ///#if false
     std::thread t1([&](){
         evaluation_At = kc_multi_exp_with_mixed_addition_mcl<libff::G1<ppT>,
@@ -595,10 +636,10 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
     //});
     libff::leave_block("Compute evaluation to B-query", false);
 #ifdef GPU_MCL
-    //t1.join();
+    t1.join();
     //t2.join();
-    //t3.join();
-    //t4.join();
+    t3.join();
+    t4.join();
     //gpu::sync_device();
 #endif
     /* A = alpha + sum_i(a_i*A_i(t)) */
