@@ -458,8 +458,8 @@ r1cs_gg_ppzksnark_zok_keypair<ppT> r1cs_gg_ppzksnark_zok_generator(const r1cs_gg
 template <typename ppT>
 r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>& context, const std::vector<libff::Fr<ppT>>& full_variable_assignment)
 {
-    gpu::warm_up();
-    libff::enter_block("Call to cpu_r1cs_gg_ppzksnark_zok_prover");
+    //gpu::warm_up();
+    libff::enter_block("Call to r1cs_gg_ppzksnark_zok_prover");
 
     const std::shared_ptr<libfqfft::evaluation_domain<libff::Fr<ppT>>>& domain = context.domain;
     const r1cs_gg_ppzksnark_zok_proving_key_nozk<ppT>& pk = context.provingKey;
