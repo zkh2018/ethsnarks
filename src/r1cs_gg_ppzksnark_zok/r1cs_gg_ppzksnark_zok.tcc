@@ -688,7 +688,7 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover_gpu(ProverContext<
     assert(pk.L_query.size() == cs.num_variables() - cs.num_inputs());
 #endif
 
-    gpu::warm_up();
+    //gpu::warm_up();
 
     libff::enter_block("Compute the proof");
 
