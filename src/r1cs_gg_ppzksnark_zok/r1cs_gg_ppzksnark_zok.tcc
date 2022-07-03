@@ -493,11 +493,49 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
 
     libff::enter_block("Compute the proof");
 
+    libff::enter_block("Compute evaluation to A-query", false);
+    libff::G1<ppT> evaluation_At;
+#ifdef GPU_AT
+    libff::GpuMclData<libff::G1<ppT>, libff::Fr<ppT>> gpu_mcl_data_at;
+    kc_multi_exp_with_mixed_addition_mcl_preprocess<libff::G1<ppT>,
+        libff::Fr<ppT>,
+        libff::multi_exp_method_BDLO12>(
+            pk.A_query,
+            full_variable_assignment.begin(),
+            full_variable_assignment.begin() + cs.num_variables() + 1,
+            context.scratch_exponents,
+            context.config,
+            gpu_mcl_data_at);
+
+    std::thread t1([&](){
+        evaluation_At = kc_multi_exp_with_mixed_addition_mcl<libff::G1<ppT>,
+#else
+        evaluation_At = kc_multi_exp_with_mixed_addition<libff::G1<ppT>,
+#endif
+        libff::Fr<ppT>,
+        libff::multi_exp_method_BDLO12>(
+            pk.A_query,
+            full_variable_assignment.begin(),
+            full_variable_assignment.begin() + cs.num_variables() + 1,
+            context.scratch_exponents,
+
+#ifdef GPU_AT
+            context.config,
+            gpu_mcl_data_at);
+#else
+            context.config);
+#endif
+    
+#ifdef GPU_AT
+    });
+#endif
+    libff::leave_block("Compute evaluation to A-query", false);
+
 
     libff::enter_block("Compute evaluation to H-query", false);
     libff::G1<ppT> evaluation_Ht; 
 #ifdef GPU_HT 
-    libff::GpuMclData gpu_mcl_data_ht;
+    libff::GpuMclData<libff::G1<ppT>, libff::Fr<ppT>> gpu_mcl_data_ht;
     libff::multi_exp_gpu_mcl_preprocess<libff::G1<ppT>,
         libff::Fr<ppT>,
         libff::multi_exp_method_BDLO12>(
@@ -536,7 +574,7 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
     libff::enter_block("Compute evaluation to L-query", false);
     libff::G1<ppT> evaluation_Lt; 
 #ifdef GPU_LT
-    libff::GpuMclData gpu_mcl_data_lt;
+    libff::GpuMclData<libff::G1<ppT>, libff::Fr<ppT>> gpu_mcl_data_lt;
     libff::multi_exp_with_mixed_addition_gpu_mcl_preprocess<libff::G1<ppT>,
                   libff::Fr<ppT>,
                   libff::multi_exp_method_BDLO12>(
@@ -571,44 +609,6 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
 #endif
     libff::leave_block("Compute evaluation to L-query", false);
 
-
-    libff::enter_block("Compute evaluation to A-query", false);
-    libff::G1<ppT> evaluation_At;
-#ifdef GPU_AT
-    libff::GpuMclData gpu_mcl_data_at;
-    kc_multi_exp_with_mixed_addition_mcl_preprocess<libff::G1<ppT>,
-        libff::Fr<ppT>,
-        libff::multi_exp_method_BDLO12>(
-            pk.A_query,
-            full_variable_assignment.begin(),
-            full_variable_assignment.begin() + cs.num_variables() + 1,
-            context.scratch_exponents,
-            context.config,
-            gpu_mcl_data_at);
-
-    std::thread t1([&](){
-        evaluation_At = kc_multi_exp_with_mixed_addition_mcl<libff::G1<ppT>,
-#else
-        evaluation_At = kc_multi_exp_with_mixed_addition<libff::G1<ppT>,
-#endif
-        libff::Fr<ppT>,
-        libff::multi_exp_method_BDLO12>(
-            pk.A_query,
-            full_variable_assignment.begin(),
-            full_variable_assignment.begin() + cs.num_variables() + 1,
-            context.scratch_exponents,
-
-#ifdef GPU_AT
-            context.config,
-            gpu_mcl_data_at);
-#else
-            context.config);
-#endif
-    
-#ifdef GPU_AT
-    });
-#endif
-    libff::leave_block("Compute evaluation to A-query", false);
 
     libff::enter_block("Compute evaluation to B-query", false);
     libff::G2<ppT> evaluation_Bt;
