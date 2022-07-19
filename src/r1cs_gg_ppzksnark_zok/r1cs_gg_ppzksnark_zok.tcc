@@ -465,6 +465,8 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
     const r1cs_gg_ppzksnark_zok_proving_key_nozk<ppT>& pk = context.provingKey;
     const r1cs_constraint_system<libff::Fr<ppT>>& cs = *context.constraint_system;
 
+    cudaSetDevice(context.config.device_id);
+
     libff::enter_block("Compute the polynomial H");
     r1cs_to_qap_witness_map(
         context.domain,
@@ -496,8 +498,11 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
     libff::enter_block("Compute evaluation to A-query", false);
     libff::G1<ppT> evaluation_At;
 #ifdef GPU_AT
-    libff::GpuMclData<libff::G1<ppT>, libff::Fr<ppT>> gpu_mcl_data_at;
-    kc_multi_exp_with_mixed_addition_mcl_preprocess<libff::G1<ppT>,
+
+    std::thread t1([&](){
+        cudaSetDevice(context.config.device_id);
+        libff::GpuMclData<libff::G1<ppT>, libff::Fr<ppT>> gpu_mcl_data_at;
+        kc_multi_exp_with_mixed_addition_mcl_preprocess<libff::G1<ppT>,
         libff::Fr<ppT>,
         libff::multi_exp_method_BDLO12>(
             pk.A_query,
@@ -507,7 +512,6 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
             context.config,
             gpu_mcl_data_at);
 
-    std::thread t1([&](){
         evaluation_At = kc_multi_exp_with_mixed_addition_mcl<libff::G1<ppT>,
 #else
         evaluation_At = kc_multi_exp_with_mixed_addition<libff::G1<ppT>,
@@ -535,8 +539,11 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
     libff::enter_block("Compute evaluation to H-query", false);
     libff::G1<ppT> evaluation_Ht; 
 #ifdef GPU_HT 
-    libff::GpuMclData<libff::G1<ppT>, libff::Fr<ppT>> gpu_mcl_data_ht;
-    libff::multi_exp_gpu_mcl_preprocess<libff::G1<ppT>,
+
+    std::thread t3([&](){
+        cudaSetDevice(context.config.device_id);
+        libff::GpuMclData<libff::G1<ppT>, libff::Fr<ppT>> gpu_mcl_data_ht;
+        libff::multi_exp_gpu_mcl_preprocess<libff::G1<ppT>,
         libff::Fr<ppT>,
         libff::multi_exp_method_BDLO12>(
             pk.H_query.begin(),
@@ -546,8 +553,6 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
             context.scratch_exponents,
             context.config,
             gpu_mcl_data_ht);
-
-    std::thread t3([&](){
         evaluation_Ht = libff::multi_exp_gpu_mcl<libff::G1<ppT>,
 #else
         evaluation_Ht = libff::multi_exp<libff::G1<ppT>,
@@ -574,18 +579,19 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
     libff::enter_block("Compute evaluation to L-query", false);
     libff::G1<ppT> evaluation_Lt; 
 #ifdef GPU_LT
-    libff::GpuMclData<libff::G1<ppT>, libff::Fr<ppT>> gpu_mcl_data_lt;
-    libff::multi_exp_with_mixed_addition_gpu_mcl_preprocess<libff::G1<ppT>,
-                  libff::Fr<ppT>,
-                  libff::multi_exp_method_BDLO12>(
-                          pk.L_query.begin(),
-                          pk.L_query.end(),
-                          full_variable_assignment.begin() + cs.num_inputs() + 1,
-                          full_variable_assignment.begin() + cs.num_variables() + 1,
-                          context.scratch_exponents,
-                          context.config,
-                          gpu_mcl_data_lt);
     std::thread t4([&](){
+        cudaSetDevice(context.config.device_id);
+        libff::GpuMclData<libff::G1<ppT>, libff::Fr<ppT>> gpu_mcl_data_lt;
+        libff::multi_exp_with_mixed_addition_gpu_mcl_preprocess<libff::G1<ppT>,
+        libff::Fr<ppT>,
+        libff::multi_exp_method_BDLO12>(
+            pk.L_query.begin(),
+            pk.L_query.end(),
+            full_variable_assignment.begin() + cs.num_inputs() + 1,
+            full_variable_assignment.begin() + cs.num_variables() + 1,
+            context.scratch_exponents,
+            context.config,
+            gpu_mcl_data_lt);
         evaluation_Lt = libff::multi_exp_with_mixed_addition_gpu_mcl<libff::G1<ppT>,
 #else
         evaluation_Lt = libff::multi_exp_with_mixed_addition<libff::G1<ppT>,

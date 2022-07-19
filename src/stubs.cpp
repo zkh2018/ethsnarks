@@ -42,11 +42,7 @@ ethsnarks::ProvingKeyT load_proving_key( const char *pk_file )
 std::string prove(ProverContextT& context, ProtoboardT& pb)
 {
     auto primary_input = pb.primary_input();
-#ifdef USE_GPU
-    auto proof = libsnark::r1cs_gg_ppzksnark_zok_prover_gpu<ethsnarks::ppT>(context, pb.values);
-#else
     auto proof = libsnark::r1cs_gg_ppzksnark_zok_prover<ethsnarks::ppT>(context, pb.values);
-#endif
     return ethsnarks::proof_to_json(proof, primary_input);
 }
 

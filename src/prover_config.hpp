@@ -21,6 +21,7 @@ struct Config
         multi_exp_prefetch_locality = 0;
         prefetch_stride = 128;
         multi_exp_look_ahead = 1;
+        device_id = 0;
     }
 
     unsigned int num_threads;
@@ -32,6 +33,7 @@ struct Config
     unsigned int multi_exp_prefetch_locality;   // 4 == no prefetching, [0, 3] prefetch locality
     unsigned int prefetch_stride;               // 4 * L1_CACHE_BYTES
     unsigned int multi_exp_look_ahead;
+    int device_id;
 };
 
 static std::ostream &operator<<(std::ostream &os, const Config& c)
