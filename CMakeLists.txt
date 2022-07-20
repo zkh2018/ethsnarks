@@ -36,7 +36,6 @@ else()
   endif()
 endif()
 
-include_directories(/usr/local/cuda/include)
 
 if( NOT ${ETHSNARKS_DISABLE_TESTS} )
   include(CTest)
@@ -94,13 +93,6 @@ set(
   "Optionally specify the dependency installation directory relative to the source directory (default: inside dependency folder)"
 )
 
-set(
-  DEPENDS_DIR_CGBN
-  "${DEPENDS_DIR}/libsnark/depends/libff/depends/CGBN/"
-  CACHE
-  STRING
-  "the cuda implementation of alt_bn128"
-)
 
 set(
   OPT_FLAGS
@@ -109,6 +101,22 @@ set(
   STRING
   "Override C++ compiler optimization flags"
 )
+
+#set(USE_GPU ON CACHE BOOL "use gpu")
+if("${USE_GPU}")
+    include_directories(/usr/local/cuda/include)
+    message("ethsnarks USE_GPU=ON")
+    set(CMAKE_C_FLAGS " -DUSE_GPU ${CMAKE_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS " -DUSE_GPU ${CMAKE_CXX_FLAGS}")
+
+    set(
+      DEPENDS_DIR_CGBN
+      "${DEPENDS_DIR}/libsnark/depends/libff/depends/CGBN/"
+      CACHE
+      STRING
+      "the cuda implementation of mcl_bn128"
+    )
+endif()
 
 option(
   MULTICORE
@@ -290,8 +298,12 @@ add_library(
 )
 
 target_include_directories(ff PUBLIC
-  ${GMP_INCLUDE_DIR} "${DEPENDS_DIR_MCL}/include" ${DEPENDS_DIR_CGBN} "${DEPENDS_DIR_CGBN}/include" "${DEPENDS_DIR_CGBN}/samples}"
-  ${DEPENDS_DIR_LIBSNARK} ${DEPENDS_DIR_LIBFF} ${DEPENDS_DIR_LIBFQFFT})
+  ${GMP_INCLUDE_DIR} "${DEPENDS_DIR_MCL}/include" ${DEPENDS_DIR_LIBSNARK} ${DEPENDS_DIR_LIBFF} ${DEPENDS_DIR_LIBFQFFT})
+
+if("${USE_GPU}")
+    target_include_directories(ff PUBLIC
+      ${GMP_INCLUDE_DIR} ${DEPENDS_DIR_CGBN} "${DEPENDS_DIR_CGBN}/include" "${DEPENDS_DIR_CGBN}/samples}")
+endif()
 
 set_property(TARGET ff PROPERTY CXX_STANDARD 11)
 
@@ -305,8 +317,15 @@ target_include_directories(ff INTERFACE
 	${GMP_INCLUDE_DIR} "${DEPENDS_DIR_MCL}/include" ${DEPENDS_DIR_CGBN} "${DEPENDS_DIR_CGBN}/include" "${DEPENDS_DIR_CGBN}/samples}"
   ${DEPENDS_DIR_LIBSNARK} ${DEPENDS_DIR_LIBFF} ${DEPENDS_DIR_LIBFQFFT})
 
+if("${USE_GPU}")
+    target_include_directories(ff INTERFACE
+        ${GMP_INCLUDE_DIR} ${DEPENDS_DIR_CGBN} "${DEPENDS_DIR_CGBN}/include" "${DEPENDS_DIR_CGBN}/samples}")
+endif()
 
-target_link_libraries(ff ${GMP_LIBRARY} ${PROCPS_LIBRARIES} mcl_st cgbn_math)
+target_link_libraries(ff ${GMP_LIBRARY} ${PROCPS_LIBRARIES} mcl_st)
+if("${USE_GPU}")
+target_link_libraries(ff cgbn_math)
+endif()
 
 if(OpenMP_CXX_FOUND)
     target_link_libraries(ff OpenMP::OpenMP_CXX)
@@ -315,4 +334,6 @@ endif()
 add_subdirectory(src)
 add_subdirectory(depends)
 add_subdirectory("${DEPENDS_DIR_MCL}")
-add_subdirectory("${DEPENDS_DIR_CGBN}")
+if("${USE_GPU}")
+    add_subdirectory("${DEPENDS_DIR_CGBN}")
+endif()
