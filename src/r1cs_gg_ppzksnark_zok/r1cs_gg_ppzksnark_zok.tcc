@@ -618,9 +618,10 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
 
     libff::enter_block("Compute evaluation to B-query", false);
     //gpu is too slow to calculate Bt, so it is calculated on cpu
+    cudaSetDevice(context.config.device_id);
     libff::GpuMclData<libff::G2<ppT>, libff::Fr<ppT>, gpu::mcl_bn128_g2> gpu_mcl_data_bt;
     libff::G2<ppT> evaluation_Bt;
-        ///evaluation_Bt = kc_multi_exp_with_mixed_addition<libff::G2<ppT>,
+        //evaluation_Bt = kc_multi_exp_with_mixed_addition<libff::G2<ppT>,
         evaluation_Bt = gpu_kc_multi_exp_with_mixed_addition_g2_mcl<libff::G2<ppT>,
                   libff::Fr<ppT>,
                   libff::multi_exp_method_BDLO12>(
