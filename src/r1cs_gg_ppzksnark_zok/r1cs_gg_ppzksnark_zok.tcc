@@ -455,6 +455,7 @@ r1cs_gg_ppzksnark_zok_keypair<ppT> r1cs_gg_ppzksnark_zok_generator(const r1cs_gg
 #define GPU_AT
 #define GPU_HT
 #define GPU_LT
+#define GPU_BT
 
 template <typename ppT>
 r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>& context, const std::vector<libff::Fr<ppT>>& full_variable_assignment)
@@ -618,20 +619,27 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
 
     libff::enter_block("Compute evaluation to B-query", false);
     //gpu is too slow to calculate Bt, so it is calculated on cpu
+    libff::G2<ppT> evaluation_Bt;
+#ifdef GPU_BT
     cudaSetDevice(context.config.device_id);
     libff::GpuMclData<libff::G2<ppT>, libff::Fr<ppT>, gpu::mcl_bn128_g2> gpu_mcl_data_bt;
-    libff::G2<ppT> evaluation_Bt;
-        //evaluation_Bt = kc_multi_exp_with_mixed_addition<libff::G2<ppT>,
         evaluation_Bt = gpu_kc_multi_exp_with_mixed_addition_g2_mcl<libff::G2<ppT>,
+#else
+        evaluation_Bt = kc_multi_exp_with_mixed_addition<libff::G2<ppT>,
+#endif
                   libff::Fr<ppT>,
                   libff::multi_exp_method_BDLO12>(
                       pk.B_query,
                       full_variable_assignment.begin(),
                       full_variable_assignment.begin() + cs.num_variables() + 1,
                       context.scratch_exponents,
-                      //context.config);
+#ifdef GPU_BT
                       context.config,
                       gpu_mcl_data_bt);
+#else
+                      context.config);
+#endif
+
     libff::leave_block("Compute evaluation to B-query", false);
 
 #ifdef GPU_AT
@@ -755,133 +763,6 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
                       context.scratch_exponents,
                       context.config);
     libff::leave_block("Compute evaluation to B-query", false);
-    /* A = alpha + sum_i(a_i*A_i(t)) */
-    libff::G1<ppT> g1_A = pk.alpha_g1 + evaluation_At;
-
-    /* B = beta + sum_i(a_i*B_i(t)) */
-    libff::G2<ppT> g2_B = pk.beta_g2 + evaluation_Bt;
-
-    /* C = sum_i(a_i*((beta*A_i(t) + alpha*B_i(t) + C_i(t)) + H(t)*Z(t))/delta) */
-    libff::G1<ppT> g1_C = evaluation_Ht + evaluation_Lt;
-
-    libff::leave_block("Compute the proof");
-
-    libff::leave_block("Call to r1cs_gg_ppzksnark_zok_prover");
-
-    r1cs_gg_ppzksnark_zok_proof<ppT> proof = r1cs_gg_ppzksnark_zok_proof<ppT>(std::move(g1_A), std::move(g2_B), std::move(g1_C));
-    proof.print_size();
-
-    return proof;
-}
-#endif
-
-#ifdef USE_GPU
-template <typename ppT>
-r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover_gpu(ProverContext<ppT>& context, const std::vector<libff::Fr<ppT>>& full_variable_assignment)
-{
-    libff::enter_block("Call to gpu_r1cs_gg_ppzksnark_zok_prover");
-
-    const std::shared_ptr<libfqfft::evaluation_domain<libff::Fr<ppT>>>& domain = context.domain;
-    const r1cs_gg_ppzksnark_zok_proving_key_nozk<ppT>& pk = context.provingKey;
-    const r1cs_constraint_system<libff::Fr<ppT>>& cs = *context.constraint_system;
-
-    libff::enter_block("Compute the polynomial H");
-    r1cs_to_qap_witness_map(
-        context.domain,
-        cs,
-        full_variable_assignment,
-        context.aA,
-        context.aB,
-        context.aH
-    );
-
-    /* We are dividing degree 2(d-1) polynomial by degree d polynomial
-       and not adding a PGHR-style ZK-patch, so our H is degree d-2 */
-    assert(!context.aH[domain->m-2].is_zero());
-    assert(context.aH[domain->m-1].is_zero());
-    assert(context.aH[domain->m].is_zero());
-    libff::leave_block("Compute the polynomial H");
-
-#ifdef DEBUG
-    assert(full_variable_assignment.size() == cs.num_variables() + 1);
-    assert(pk.A_query.domain_size() == cs.num_variables()+1);
-    assert(pk.B_query.domain_size() == cs.num_variables()+1);
-    assert(pk.H_query.size() == domain->m - 1);
-    assert(pk.L_query.size() == cs.num_variables() - cs.num_inputs());
-#endif
-
-    //gpu::warm_up();
-
-    libff::enter_block("Compute the proof");
-
-    libff::enter_block("gpu Compute evaluation to A,H,L-query", false);
-
-    libff::G1<ppT> evaluation_At, evaluation_Ht, evaluation_Lt;
-    std::thread t1([&](){
-#ifdef RUN_GPU_ALL
-        evaluation_At = gpu_kc_multi_exp_with_mixed_addition_g1<libff::G1<ppT>,
-#else
-      evaluation_At = kc_multi_exp_with_mixed_addition<libff::G1<ppT>,
-#endif
-        libff::Fr<ppT>,
-        libff::multi_exp_method_BDLO12>(
-            pk.A_query,
-            full_variable_assignment.begin(),
-            full_variable_assignment.begin() + cs.num_variables() + 1,
-            context.scratch_exponents,
-            context.config);
-	});
-    std::thread t2([&](){
-#ifdef RUN_GPU_ALL
-	evaluation_Ht = libff::multi_exp_gpu<libff::G1<ppT>,
-#else
-    evaluation_Ht = libff::multi_exp<libff::G1<ppT>,
-#endif
-        libff::Fr<ppT>,
-        libff::multi_exp_method_BDLO12>(
-            pk.H_query.begin(),
-            pk.H_query.begin() + (domain->m - 1),
-            context.aH.begin(),
-            context.aH.begin() + (domain->m - 1),
-            context.scratch_exponents,
-            context.config);
-	});
-
-    std::thread t3([&](){
-#ifdef RUN_GPU_ALL
-	evaluation_Lt = libff::multi_exp_with_mixed_addition_gpu<libff::G1<ppT>,
-#else
-      evaluation_Lt = libff::multi_exp_with_mixed_addition<libff::G1<ppT>,
-#endif
-
-        libff::Fr<ppT>,
-        libff::multi_exp_method_BDLO12>(
-            pk.L_query.begin(),
-            pk.L_query.end(),
-            full_variable_assignment.begin() + cs.num_inputs() + 1,
-            full_variable_assignment.begin() + cs.num_variables() + 1,
-            context.scratch_exponents,
-            context.config);
-    });
-    //t1.join();
-    libff::leave_block("gpu Compute evaluation to A,H,L-query", false);
-
-    libff::enter_block("Compute evaluation to B-query", false);
-    libff::G2<ppT> evaluation_Bt;
-    //evaluation_Bt = kc_multi_exp_with_mixed_addition<libff::G2<ppT>,
-    evaluation_Bt = gpu_kc_multi_exp_with_mixed_addition_g2<libff::G2<ppT>,
-                  libff::Fr<ppT>,
-                  libff::multi_exp_method_BDLO12>(
-                      pk.B_query,
-                      full_variable_assignment.begin(),
-                      full_variable_assignment.begin() + cs.num_variables() + 1,
-                      context.scratch_exponents,
-                      context.config);
-    libff::leave_block("Compute evaluation to B-query", false);
-    t1.join();
-    t2.join();
-    t3.join();
-
     /* A = alpha + sum_i(a_i*A_i(t)) */
     libff::G1<ppT> g1_A = pk.alpha_g1 + evaluation_At;
 
