@@ -454,7 +454,7 @@ r1cs_gg_ppzksnark_zok_keypair<ppT> r1cs_gg_ppzksnark_zok_generator(const r1cs_gg
 #define GPU_MCL
 #define GPU_AT
 #define GPU_HT
-#define GPU_LT
+//#define GPU_LT
 #define GPU_BT
 
 template <typename ppT>
