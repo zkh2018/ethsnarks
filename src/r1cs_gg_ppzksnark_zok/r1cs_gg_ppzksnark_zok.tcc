@@ -454,7 +454,7 @@ r1cs_gg_ppzksnark_zok_keypair<ppT> r1cs_gg_ppzksnark_zok_generator(const r1cs_gg
 #define GPU_MCL
 #define GPU_AT
 #define GPU_HT
-//#define GPU_LT
+#define GPU_LT
 #define GPU_BT
 
 template <typename ppT>
@@ -579,6 +579,35 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
 #endif
     libff::leave_block("Compute evaluation to H-query", false);
 
+
+    libff::enter_block("Compute evaluation to B-query", false);
+    //gpu is too slow to calculate Bt, so it is calculated on cpu
+    libff::G2<ppT> evaluation_Bt;
+#ifdef GPU_BT
+    std::thread t5([&](){
+            cudaSetDevice(context.config.device_id);
+            cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync);
+            libff::GpuMclData<libff::G2<ppT>, libff::Fr<ppT>, gpu::mcl_bn128_g2> gpu_mcl_data_bt;
+            evaluation_Bt = gpu_kc_multi_exp_with_mixed_addition_g2_mcl<libff::G2<ppT>,
+#else
+            evaluation_Bt = kc_multi_exp_with_mixed_addition<libff::G2<ppT>,
+#endif
+            libff::Fr<ppT>,
+            libff::multi_exp_method_BDLO12>(
+                    pk.B_query,
+                    full_variable_assignment.begin(),
+                    full_variable_assignment.begin() + cs.num_variables() + 1,
+                    context.scratch_exponents,
+#ifdef GPU_BT
+                    context.config,
+                    gpu_mcl_data_bt);
+    });
+#else
+                    context.config);
+#endif
+
+    libff::leave_block("Compute evaluation to B-query", false);
+
     libff::enter_block("Compute evaluation to L-query", false);
     libff::G1<ppT> evaluation_Lt; 
 #ifdef GPU_LT
@@ -619,34 +648,6 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
 #endif
     libff::leave_block("Compute evaluation to L-query", false);
 
-
-    libff::enter_block("Compute evaluation to B-query", false);
-    //gpu is too slow to calculate Bt, so it is calculated on cpu
-    libff::G2<ppT> evaluation_Bt;
-#ifdef GPU_BT
-    std::thread t5([&](){
-            cudaSetDevice(context.config.device_id);
-            cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync);
-            libff::GpuMclData<libff::G2<ppT>, libff::Fr<ppT>, gpu::mcl_bn128_g2> gpu_mcl_data_bt;
-            evaluation_Bt = gpu_kc_multi_exp_with_mixed_addition_g2_mcl<libff::G2<ppT>,
-#else
-            evaluation_Bt = kc_multi_exp_with_mixed_addition<libff::G2<ppT>,
-#endif
-            libff::Fr<ppT>,
-            libff::multi_exp_method_BDLO12>(
-                    pk.B_query,
-                    full_variable_assignment.begin(),
-                    full_variable_assignment.begin() + cs.num_variables() + 1,
-                    context.scratch_exponents,
-#ifdef GPU_BT
-                    context.config,
-                    gpu_mcl_data_bt);
-    });
-#else
-                    context.config);
-#endif
-
-    libff::leave_block("Compute evaluation to B-query", false);
 
 #ifdef GPU_AT
     t1.join();
