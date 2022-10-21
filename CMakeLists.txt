@@ -110,8 +110,8 @@ if("${USE_GPU}")
     set(CMAKE_CXX_FLAGS " -DUSE_GPU ${CMAKE_CXX_FLAGS}")
 
     set(
-      DEPENDS_DIR_CGBN
-      "${DEPENDS_DIR}/libsnark/depends/libff/depends/CGBN/"
+      DEPENDS_DIR_MCL_GPU
+      "${DEPENDS_DIR}/libsnark/depends/libff/depends/mcl_gpu/"
       CACHE
       STRING
       "the cuda implementation of mcl_bn128"
@@ -302,7 +302,7 @@ target_include_directories(ff PUBLIC
 
 if("${USE_GPU}")
     target_include_directories(ff PUBLIC
-      ${GMP_INCLUDE_DIR} ${DEPENDS_DIR_CGBN} "${DEPENDS_DIR_CGBN}/include" "${DEPENDS_DIR_CGBN}/samples}")
+      ${GMP_INCLUDE_DIR} ${DEPENDS_DIR_MCL_GPU} "${DEPENDS_DIR_MCL_GPU}/include" "${DEPENDS_DIR_MCL_GPU}/samples}")
 endif()
 
 set_property(TARGET ff PROPERTY CXX_STANDARD 11)
@@ -314,17 +314,17 @@ if("${DEBUG}" OR "${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
 endif()
 
 target_include_directories(ff INTERFACE
-	${GMP_INCLUDE_DIR} "${DEPENDS_DIR_MCL}/include" ${DEPENDS_DIR_CGBN} "${DEPENDS_DIR_CGBN}/include" "${DEPENDS_DIR_CGBN}/samples}"
+	${GMP_INCLUDE_DIR} "${DEPENDS_DIR_MCL}/include" ${DEPENDS_DIR_MCL_GPU} "${DEPENDS_DIR_MCL_GPU}/include" "${DEPENDS_DIR_MCL_GPU}/samples}"
   ${DEPENDS_DIR_LIBSNARK} ${DEPENDS_DIR_LIBFF} ${DEPENDS_DIR_LIBFQFFT})
 
 if("${USE_GPU}")
     target_include_directories(ff INTERFACE
-        ${GMP_INCLUDE_DIR} ${DEPENDS_DIR_CGBN} "${DEPENDS_DIR_CGBN}/include" "${DEPENDS_DIR_CGBN}/samples}")
+        ${GMP_INCLUDE_DIR} ${DEPENDS_DIR_MCL_GPU} "${DEPENDS_DIR_MCL_GPU}/include" "${DEPENDS_DIR_MCL_GPU}/samples}")
 endif()
 
 target_link_libraries(ff ${GMP_LIBRARY} ${PROCPS_LIBRARIES} mcl_st)
 if("${USE_GPU}")
-target_link_libraries(ff cgbn_math)
+target_link_libraries(ff mcl_gpu)
 endif()
 
 if(OpenMP_CXX_FOUND)
@@ -335,5 +335,5 @@ add_subdirectory(src)
 add_subdirectory(depends)
 add_subdirectory("${DEPENDS_DIR_MCL}")
 if("${USE_GPU}")
-    add_subdirectory("${DEPENDS_DIR_CGBN}")
+    add_subdirectory("${DEPENDS_DIR_MCL_GPU}")
 endif()
