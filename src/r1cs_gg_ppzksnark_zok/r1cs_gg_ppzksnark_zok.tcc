@@ -30,8 +30,8 @@ See r1cs_gg_ppzksnark_zok.hpp .
 #include <omp.h>
 #endif
 
-#include <libsnark/knowledge_commitment/kc_multiexp.hpp>
 #include <libsnark/reductions/r1cs_to_qap/r1cs_to_qap.hpp>
+#include <libsnark/knowledge_commitment/kc_multiexp.hpp>
 
 namespace libsnark {
 
@@ -468,6 +468,7 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
     const r1cs_constraint_system<libff::Fr<ppT>>& cs = *context.constraint_system;
 
     cudaSetDevice(context.config.device_id);
+    gpu::Fp_model d_H;
 
     libff::enter_block("Compute the polynomial H");
     r1cs_to_qap_witness_map(
@@ -476,14 +477,19 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
         full_variable_assignment,
         context.aA,
         context.aB,
+        #ifdef USE_GPU
+        context.aH,
+        d_H
+        #else
         context.aH
+        #endif
     );
 
     /* We are dividing degree 2(d-1) polynomial by degree d polynomial
        and not adding a PGHR-style ZK-patch, so our H is degree d-2 */
-    assert(!context.aH[domain->m-2].is_zero());
-    assert(context.aH[domain->m-1].is_zero());
-    assert(context.aH[domain->m].is_zero());
+    //assert(!context.aH[domain->m-2].is_zero());
+    //assert(context.aH[domain->m-1].is_zero());
+    //assert(context.aH[domain->m].is_zero());
     libff::leave_block("Compute the polynomial H");
 
 #ifdef DEBUG
@@ -551,6 +557,7 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
         libff::multi_exp_method_BDLO12>(
             pk.H_query.begin(),
             pk.H_query.begin() + (domain->m - 1),
+            d_H,
             context.aH.begin(),
             context.aH.begin() + (domain->m - 1),
             context.scratch_exponents,
