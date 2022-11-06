@@ -56,6 +56,7 @@ References:
 #include "r1cs_gg_ppzksnark_zok/r1cs_gg_ppzksnark_zok_params.hpp"
 
 #include <libfqfft/evaluation_domain/evaluation_domain.hpp>
+#include <libsnark/knowledge_commitment/kc_multiexp.hpp>
 
 namespace libsnark {
 
@@ -287,6 +288,9 @@ struct ProverContext
     std::vector<libff::Fr<ppT>> aA;
     std::vector<libff::Fr<ppT>> aB;
     std::vector<libff::Fr<ppT>> aH;
+    gpu::Fp_model d_H;
+
+    libff::GpuMclData<libff::G1<ppT>, libff::Fr<ppT>> *gpu_mcl_data_at;
     ProverContext(r1cs_gg_ppzksnark_zok_proving_key_nozk<ppT> & pk) : provingKey(pk){};
 };
 

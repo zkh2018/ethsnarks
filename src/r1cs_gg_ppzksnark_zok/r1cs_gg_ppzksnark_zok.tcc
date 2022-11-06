@@ -468,7 +468,8 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
     const r1cs_constraint_system<libff::Fr<ppT>>& cs = *context.constraint_system;
 
     cudaSetDevice(context.config.device_id);
-    gpu::Fp_model d_H;
+    //gpu::Fp_model d_H;
+    //context.d_H.resize(1);
 
     libff::enter_block("Compute the polynomial H");
     r1cs_to_qap_witness_map(
@@ -479,7 +480,7 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
         context.aB,
         #ifdef USE_GPU
         context.aH,
-        d_H
+        context.d_H
         #else
         context.aH
         #endif
@@ -510,7 +511,7 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
     std::thread t1([&](){
         cudaSetDevice(context.config.device_id);
         cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync);
-        libff::GpuMclData<libff::G1<ppT>, libff::Fr<ppT>> gpu_mcl_data_at;
+        //libff::GpuMclData<libff::G1<ppT>, libff::Fr<ppT>>& gpu_mcl_data_at = *context.gpu_mcl_data_at;
         kc_multi_exp_with_mixed_addition_mcl_preprocess<libff::G1<ppT>,
         libff::Fr<ppT>,
         libff::multi_exp_method_BDLO12>(
@@ -519,7 +520,7 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
             full_variable_assignment.begin() + cs.num_variables() + 1,
             context.scratch_exponents,
             context.config,
-            gpu_mcl_data_at);
+            *context.gpu_mcl_data_at);
 
         evaluation_At = kc_multi_exp_with_mixed_addition_mcl<libff::G1<ppT>,
 #else
@@ -534,7 +535,7 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
 
 #ifdef GPU_AT
             context.config,
-            gpu_mcl_data_at);
+            *context.gpu_mcl_data_at);
 #else
             context.config);
 #endif
@@ -557,7 +558,7 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
         libff::multi_exp_method_BDLO12>(
             pk.H_query.begin(),
             pk.H_query.begin() + (domain->m - 1),
-            d_H,
+            context.d_H,
             context.aH.begin(),
             context.aH.begin() + (domain->m - 1),
             context.scratch_exponents,
@@ -669,6 +670,7 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
 #ifdef GPU_BT
     t5.join();
 #endif
+    //context.d_H.release();
     /* A = alpha + sum_i(a_i*A_i(t)) */
     libff::G1<ppT> g1_A = pk.alpha_g1 + evaluation_At;
 

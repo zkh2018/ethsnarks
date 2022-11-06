@@ -17,7 +17,7 @@ struct Config
         fft = "recursive";
         smt = false;
         swapAB = true;
-        multi_exp_c = 0;
+        multi_exp_c = 16;
         multi_exp_prefetch_locality = 0;
         prefetch_stride = 128;
         multi_exp_look_ahead = 1;
