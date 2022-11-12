@@ -467,9 +467,10 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
     const r1cs_gg_ppzksnark_zok_proving_key_nozk<ppT>& pk = context.provingKey;
     const r1cs_constraint_system<libff::Fr<ppT>>& cs = *context.constraint_system;
 
+#ifdef USE_GPU
     cudaSetDevice(context.config.device_id);
-    //gpu::Fp_model d_H;
-    //context.d_H.resize(1);
+    gpu::Fp_model d_H;
+#endif
 
     libff::enter_block("Compute the polynomial H");
     r1cs_to_qap_witness_map(
@@ -480,7 +481,7 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
         context.aB,
         #ifdef USE_GPU
         context.aH,
-        context.d_H
+        d_H
         #else
         context.aH
         #endif
@@ -511,7 +512,7 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
     std::thread t1([&](){
         cudaSetDevice(context.config.device_id);
         cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync);
-        //libff::GpuMclData<libff::G1<ppT>, libff::Fr<ppT>>& gpu_mcl_data_at = *context.gpu_mcl_data_at;
+        //libff::GpuMclData<libff::G1<ppT>, libff::Fr<ppT>> gpu_mcl_data_at ;
         kc_multi_exp_with_mixed_addition_mcl_preprocess<libff::G1<ppT>,
         libff::Fr<ppT>,
         libff::multi_exp_method_BDLO12>(
@@ -545,6 +546,7 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
 #endif
     libff::leave_block("Compute evaluation to A-query", false);
 
+
     libff::enter_block("Compute evaluation to H-query", false);
     libff::G1<ppT> evaluation_Ht; 
 #ifdef GPU_HT 
@@ -552,13 +554,13 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
     std::thread t3([&](){
         cudaSetDevice(context.config.device_id);
         cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync);
-        libff::GpuMclData<libff::G1<ppT>, libff::Fr<ppT>> gpu_mcl_data_ht;
+        libff::GpuMclData<libff::G1<ppT>, libff::Fr<ppT>> gpu_mcl_data_ht(context.config.device_id);
         libff::multi_exp_gpu_mcl_preprocess<libff::G1<ppT>,
         libff::Fr<ppT>,
         libff::multi_exp_method_BDLO12>(
             pk.H_query.begin(),
             pk.H_query.begin() + (domain->m - 1),
-            context.d_H,
+            d_H,
             context.aH.begin(),
             context.aH.begin() + (domain->m - 1),
             context.scratch_exponents,
@@ -595,7 +597,7 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
     std::thread t5([&](){
             cudaSetDevice(context.config.device_id);
             cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync);
-            libff::GpuMclData<libff::G2<ppT>, libff::Fr<ppT>, gpu::mcl_bn128_g2> gpu_mcl_data_bt;
+            //libff::GpuMclData<libff::G2<ppT>, libff::Fr<ppT>, gpu::mcl_bn128_g2> gpu_mcl_data_bt(context.config.device_id);
             evaluation_Bt = gpu_kc_multi_exp_with_mixed_addition_g2_mcl<libff::G2<ppT>,
 #else
             evaluation_Bt = kc_multi_exp_with_mixed_addition<libff::G2<ppT>,
@@ -608,7 +610,7 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
                     context.scratch_exponents,
 #ifdef GPU_BT
                     context.config,
-                    gpu_mcl_data_bt);
+                    *context.gpu_mcl_data_bt);
     });
 #else
                     context.config);
@@ -622,7 +624,7 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
     std::thread t4([&](){
         cudaSetDevice(context.config.device_id);
         cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync);
-        libff::GpuMclData<libff::G1<ppT>, libff::Fr<ppT>> gpu_mcl_data_lt;
+        libff::GpuMclData<libff::G1<ppT>, libff::Fr<ppT>> gpu_mcl_data_lt(context.config.device_id);
         libff::multi_exp_with_mixed_addition_gpu_mcl_preprocess<libff::G1<ppT>,
         libff::Fr<ppT>,
         libff::multi_exp_method_BDLO12>(
