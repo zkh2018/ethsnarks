@@ -288,10 +288,12 @@ struct ProverContext
     std::vector<libff::Fr<ppT>> aA;
     std::vector<libff::Fr<ppT>> aB;
     std::vector<libff::Fr<ppT>> aH;
-    gpu::Fp_model d_H;
-
+#if USE_GPU
     libff::GpuMclData<libff::G1<ppT>, libff::Fr<ppT>> *gpu_mcl_data_at;
+    libff::GpuMclData<libff::G1<ppT>, libff::Fr<ppT>> *gpu_mcl_data_lt;
+    libff::GpuMclData<libff::G1<ppT>, libff::Fr<ppT>> *gpu_mcl_data_ht;
     libff::GpuMclData<libff::G2<ppT>, libff::Fr<ppT>, gpu::mcl_bn128_g2> *gpu_mcl_data_bt;
+#endif
     ProverContext(r1cs_gg_ppzksnark_zok_proving_key_nozk<ppT> & pk) : provingKey(pk){};
 };
 
