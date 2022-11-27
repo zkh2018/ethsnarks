@@ -469,7 +469,11 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
 
 #ifdef USE_GPU
     cudaSetDevice(context.config.device_id);
-    gpu::Fp_model d_H;
+    static int count = 0;
+    gpu::Buffer<gpu::Int, gpu::N> d_H;
+    d_H.name_ = std::to_string(count);
+    std::cout << "d_H.name = " << d_H.name_ << std::endl;
+    count += 1;
 #endif
 
     libff::enter_block("Compute the polynomial H");
@@ -493,6 +497,7 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
     //assert(context.aH[domain->m-1].is_zero());
     //assert(context.aH[domain->m].is_zero());
     libff::leave_block("Compute the polynomial H");
+    printf("after map\n");
 
 #ifdef DEBUG
     assert(full_variable_assignment.size() == cs.num_variables() + 1);
