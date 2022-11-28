@@ -471,9 +471,6 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
     cudaSetDevice(context.config.device_id);
     static int count = 0;
     gpu::Buffer<gpu::Int, gpu::N> d_H;
-    d_H.name_ = std::to_string(count);
-    std::cout << "d_H.name = " << d_H.name_ << std::endl;
-    count += 1;
 #endif
 
     libff::enter_block("Compute the polynomial H");
