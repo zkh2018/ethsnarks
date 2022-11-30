@@ -494,7 +494,6 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
     //assert(context.aH[domain->m-1].is_zero());
     //assert(context.aH[domain->m].is_zero());
     libff::leave_block("Compute the polynomial H");
-    printf("after map\n");
 
 #ifdef DEBUG
     assert(full_variable_assignment.size() == cs.num_variables() + 1);
@@ -546,6 +545,7 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
 #ifdef GPU_AT
     });
 #endif
+    t1.join();
     libff::leave_block("Compute evaluation to A-query", false);
 
 
@@ -589,6 +589,7 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
 #ifdef GPU_HT
     });
 #endif
+    t3.join();
     libff::leave_block("Compute evaluation to H-query", false);
 
 
@@ -617,6 +618,7 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
 #else
                     context.config);
 #endif
+                    t5.join();
 
     libff::leave_block("Compute evaluation to B-query", false);
 
@@ -658,22 +660,23 @@ r1cs_gg_ppzksnark_zok_proof<ppT> r1cs_gg_ppzksnark_zok_prover(ProverContext<ppT>
 #ifdef GPU_LT
     });
 #endif
+t4.join();
     libff::leave_block("Compute evaluation to L-query", false);
 
 
-#ifdef GPU_AT
-    t1.join();
-#endif
-
-#ifdef GPU_HT
-    t3.join();
-#endif
-#ifdef GPU_LT
-    t4.join();
-#endif
-#ifdef GPU_BT
-    t5.join();
-#endif
+//#ifdef GPU_AT
+//    t1.join();
+//#endif
+//
+//#ifdef GPU_HT
+//    t3.join();
+//#endif
+//#ifdef GPU_LT
+//    t4.join();
+//#endif
+//#ifdef GPU_BT
+//    t5.join();
+//#endif
     //context.d_H.release();
     d_H.release();
     /* A = alpha + sum_i(a_i*A_i(t)) */
